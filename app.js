@@ -29,3 +29,33 @@ function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('st
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','observed_problem','affected_user','known_fact','unverified_assumption','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};
 showStudent();renderCard();loadTeacher();
+
+const resetLink = document.createElement('button');
+resetLink.type = 'button'; resetLink.className = 'quiet'; resetLink.textContent = '忘記密碼？寄送重設連結';
+$('teacher-gate').append(resetLink);
+resetLink.onclick = async () => {
+  const email = $('teacher-email').value.trim();
+  if (!email) return message('teacher-message', '請先輸入教師 Email。', true);
+  try {
+    await api('/auth/v1/recover', { method: 'POST', body: JSON.stringify({ email, redirect_to: 'https://hpyuan1220.github.io/startup-journey-lab-app/' }) });
+    message('teacher-message', '若此 Email 已註冊，重設連結已寄出。請到信箱開啟。');
+  } catch (e) { message('teacher-message', e.message, true); }
+};
+
+const recovery = new URLSearchParams(location.hash.slice(1));
+const recoveryToken = recovery.get('access_token');
+if (recoveryToken && recovery.get('type') === 'recovery') {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); $('teacher').classList.add('active');
+  $('teacher-gate').hidden = true;
+  const panel = document.createElement('section'); panel.className = 'gate';
+  panel.innerHTML = '<h2>設定新的教師密碼</h2><label>新密碼<input id="new-teacher-password" type="password" minlength="8" autocomplete="new-password"></label><button id="save-new-password" class="primary">儲存新密碼</button><p id="recovery-message" role="status"></p>';
+  $('teacher').append(panel);
+  $('save-new-password').onclick = async () => {
+    const password = $('new-teacher-password').value;
+    if (password.length < 8) return message('recovery-message', '密碼至少需要 8 個字元。', true);
+    try {
+      await api('/auth/v1/user', { method: 'PUT', headers: { Authorization: `Bearer ${recoveryToken}` }, body: JSON.stringify({ password }) });
+      history.replaceState(null, '', location.pathname); message('recovery-message', '新密碼已儲存，現在可用它登入教師洞察。');
+    } catch (e) { message('recovery-message', e.message, true); }
+  };
+}
