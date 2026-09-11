@@ -7,6 +7,7 @@
   --line:#c9c2b4;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:"PingFang TC","Noto Sans TC",sans-serif;line-height:1.6}
 .topbar{max-width:1180px;margin:auto;padding:54px 28px 28px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--ink)}
 .topbar h1{margin:4px 0 8px;font-size:clamp(2rem,5vw,4.4rem);line-height:1.08;letter-spacing:-.04em}
