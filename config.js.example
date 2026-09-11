@@ -1,0 +1,5 @@
+// Copy this file to config.js and fill the public Project Settings > API values.
+window.STARTUP_JOURNEY_CONFIG = {
+  supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
+  supabaseAnonKey: 'YOUR_PUBLIC_ANON_KEY',
+};
