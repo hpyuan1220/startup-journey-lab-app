@@ -38,7 +38,7 @@
 仍待驗證：
 
 - [x] 8. 教師洞察查看回饋且不影響成績（teacher-ai-feedback.js，顯示證據準備度與缺口，可隱藏單則，不寫入成績）
-- [ ] 12. 50 位學生同時使用（腳本已備妥：scripts/load-test.mjs，需在本機執行）
+- [ ] 12. 50 位學生同時使用（腳本已備妥：scripts/load-test.mjs，需在本機執行；沙箱環境連不到 supabase.co）
 
 ## 安全修正紀錄
 
