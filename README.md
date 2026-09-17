@@ -24,3 +24,15 @@
 - `skills/startup-journey-class/`：製作 Week 2–10 時使用的 Codex Skill 備份。
 
 本資料夾是 Week 2–10 的唯一主專案工作區。舊資料夾只保留作為備份，不再直接修改。
+
+## Week 1 AI 學習建議
+
+學生完成起點卡的六個關鍵欄位後，可按「取得 AI 學習建議」，由 AI 檢查問題是否具體、
+事實與假設是否分開，並提出一週內可完成的下一步。
+
+- 設定步驟：[supabase/AI_FEEDBACK_SETUP.md](supabase/AI_FEEDBACK_SETUP.md)
+- 專案狀態與待驗收項目：[docs/PROJECT_STATE.md](docs/PROJECT_STATE.md)
+- 離線測試：`node tests/ai-feedback.test.mjs`
+
+模型 API Key 只存在 Supabase Function Secrets，不在前端檔案或本 Repository 中。
+AI 回饋不寫入成績，正式評分由教師決定。

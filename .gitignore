@@ -1,0 +1,4 @@
+Claude.dmg
+*.dmg
+.DS_Store
+node_modules/

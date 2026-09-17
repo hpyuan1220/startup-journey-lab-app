@@ -1,0 +1,111 @@
+/* Startup Journey Lab — Week 1 AI 學習建議（獨立樣式，不修改 styles.css） */
+.ai-feedback {
+  margin: 8px 0 4px;
+  padding: 24px;
+  background: #fffdf8;
+  border: 2px solid var(--ink);
+}
+.ai-feedback h2 {
+  margin: .25rem 0 .5rem;
+  font-size: 1.5rem;
+}
+.ai-feedback-intro {
+  margin: 0 0 16px;
+  color: #52615a;
+  font-size: .92rem;
+}
+.ai-feedback-controls {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+#ai-feedback-run {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  font-weight: 700;
+  min-width: 190px;
+}
+#ai-feedback-run:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+.ai-feedback-status {
+  margin: 0;
+  font-weight: 700;
+  min-height: 1.6em;
+}
+.ai-status-icon {
+  margin-right: 6px;
+}
+.ai-feedback-status.tone-busy { color: #52615a; }
+.ai-feedback-status.tone-done { color: var(--green); }
+.ai-feedback-status.tone-stale { color: #7a5a12; }
+.ai-feedback-status.tone-warn,
+.ai-feedback-status.tone-error { color: #9e362a; }
+.ai-feedback-body {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+.ai-feedback-body h3 {
+  margin: 0 0 .3rem;
+  font-size: 1.02rem;
+  color: var(--green);
+}
+.ai-feedback-body ul {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+.ai-feedback-body li { margin: .25rem 0; }
+.ai-overall {
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--lime);
+  border: 1px solid var(--ink);
+  font-weight: 700;
+}
+.ai-next-action {
+  margin: 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--coral);
+  background: #f9f6ee;
+}
+.ai-readiness {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .94rem;
+}
+.ai-readiness caption {
+  text-align: left;
+  font-weight: 800;
+  color: var(--green);
+  padding-bottom: 6px;
+}
+.ai-readiness th,
+.ai-readiness td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.ai-readiness th[scope="col"] { background: #efeade; }
+.ai-readiness tr.ai-total th,
+.ai-readiness tr.ai-total td {
+  background: #efeade;
+  font-weight: 800;
+}
+.ai-limitations {
+  margin: 0;
+  font-size: .86rem;
+  color: #52615a;
+}
+@media (max-width: 800px) {
+  .ai-feedback { padding: 18px; }
+  .ai-feedback-controls { align-items: flex-start; flex-direction: column; }
+  #ai-feedback-run { width: 100%; }
+  .ai-readiness { display: block; overflow-x: auto; }
+}
