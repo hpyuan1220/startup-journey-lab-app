@@ -14,6 +14,20 @@ function renderCard(){ const data=formData(); const map=[['verbatim_complaint','
 async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok) throw new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`); return body; }
 async function studentApi(body){ return api('/functions/v1/Student-api',{method:'POST',body:JSON.stringify(body)}); }
 function showStudent(){ $('student-gate').hidden=Boolean(studentSession); $('student-workspace').hidden=!studentSession; if(studentSession) $('student-label').textContent=`學號：${studentSession.student_id}`; }
+async function restoreStudent(){
+  showStudent();
+  if(!studentSession){ renderCard(); return; }
+  try{
+    const loaded=await studentApi({action:'load',token:studentSession.token});
+    fill(loaded.submission||{});
+    message('form-message',loaded.submission?'已恢復上次儲存的內容。':'尚未儲存草稿。');
+  }catch(e){
+    localStorage.removeItem('sjl-student-session');
+    studentSession=null;
+    showStudent();
+    message('access-message','登入已過期，請重新輸入學號與班級邀請碼。',true);
+  }
+}
 
 document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); $(btn.dataset.view).classList.add('active');}));
 $('student-enter').onclick=async()=>{ if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true); try{message('access-message','正在確認班級…'); studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value}); localStorage.setItem('sjl-student-session',JSON.stringify(studentSession)); showStudent(); const loaded=await studentApi({action:'load',token:studentSession.token}); fill(loaded.submission||{}); message('form-message','已進入起點卡，可先儲存草稿。');}catch(e){message('access-message',e.message,true);}};
@@ -29,7 +43,7 @@ $('teacher-logout').onclick=()=>{teacherToken='';localStorage.removeItem('sjl-te
 function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;const rows=teacherRows.filter(r=>`${r.student_name} ${r.student_id}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?r.needs_follow_up:r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需追問',teacherRows.filter(r=>r.needs_follow_up).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article><h3>${r.student_name||'未填姓名'} <small>${r.student_id}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${r.observed_problem||'尚未填寫問題'}</p><p>原句：${r.verbatim_complaint||'—'}<br>現場：${r.observed_context||'—'}<br>下週問題：${r.interview_next_question||'—'}</p><p>事實：${r.known_fact||'—'}<br>假設：${r.unverified_assumption||'—'}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};
-showStudent();renderCard();loadTeacher();
+restoreStudent();loadTeacher();
 
 const resetLink = document.createElement('button');
 resetLink.type = 'button'; resetLink.className = 'quiet'; resetLink.textContent = '忘記密碼？寄送重設連結';
