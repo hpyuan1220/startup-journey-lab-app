@@ -37,8 +37,16 @@
 
 仍待驗證：
 
-- [ ] 8. 教師洞察查看回饋且不影響成績（教師端 UI 尚未接上 week1_ai_feedback_latest）
-- [ ] 12. 50 位學生同時使用時的等待、速率限制與錯誤提示（需實際課堂或壓力測試）
+- [x] 8. 教師洞察查看回饋且不影響成績（teacher-ai-feedback.js，顯示證據準備度與缺口，可隱藏單則，不寫入成績）
+- [ ] 12. 50 位學生同時使用（腳本已備妥：scripts/load-test.mjs，需在本機執行）
+
+## 安全修正紀錄
+
+- 2026-09-17： 檢視表原本繞過 RLS，帶公開 anon key 可讀到全班回饋與學號。
+  成因：Postgres 檢視表預設以擁有者權限執行，且 Supabase 預設將 public schema 新物件 SELECT 授予 anon。
+  修正：（security_invoker = true + revoke from anon）。
+  修正後以 anon key 查詢回傳 401 permission denied。
+  教訓：**每次新增 view 都要單獨驗證 anon 權限，底層資料表有 RLS 不代表 view 安全。**
 
 ## 營運設定
 
