@@ -20,7 +20,7 @@
 
   var byStudent = {};
   var loaded = false;
-  var loading = false;
+  var inflight = null;
 
   function token() {
     try { return localStorage.getItem('sjl-teacher-token') || ''; } catch (e) { return ''; }
@@ -38,18 +38,32 @@
     };
   }
 
+  // 共用同一個進行中的請求，避免兩個 observer 同時觸發時，
+  // 後到的那個拿到空 Promise 就用空資料去渲染。
   function fetchFeedback() {
-    if (!configured() || !token() || loading) return Promise.resolve();
-    loading = true;
-    return fetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback_latest?select=*', { headers: headers() })
-      .then(function (res) { return res.ok ? res.json() : []; })
+    if (!configured() || !token()) return Promise.resolve();
+    if (inflight) return inflight;
+    inflight = fetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback_latest?select=*', { headers: headers() })
+      .then(function (res) {
+        if (!res.ok) throw new Error('http-' + res.status);
+        return res.json();
+      })
       .then(function (rows) {
         byStudent = {};
         (rows || []).forEach(function (row) { byStudent[row.student_id] = row; });
         loaded = true;
       })
-      .catch(function () { /* 讀不到就不顯示，不影響既有教師畫面 */ })
-      .then(function () { loading = false; });
+      .catch(function () {
+        // 讀不到就維持原樣，並允許下次重新整理時再試一次。
+        loaded = false;
+      })
+      .then(function () { inflight = null; });
+    return inflight;
+  }
+
+  function isEmpty() {
+    for (var k in byStudent) { if (Object.prototype.hasOwnProperty.call(byStudent, k)) return false; }
+    return true;
   }
 
   function hideFeedback(id, button) {
@@ -204,8 +218,8 @@
   }
 
   var observer = new MutationObserver(function () {
-    if (!loaded) {
-      fetchFeedback().then(function () { decorateAll(false); });
+    if (!loaded || isEmpty()) {
+      fetchFeedback().then(function () { decorateAll(true); });
     } else {
       decorateAll(false);
     }
