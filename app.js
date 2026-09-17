@@ -8,6 +8,25 @@ let savedStatus = '';
 
 function configured(){ return cfg.supabaseUrl && !cfg.supabaseUrl.includes('YOUR_') && cfg.supabaseAnonKey && !cfg.supabaseAnonKey.includes('YOUR_'); }
 function message(id, text, bad=false){ const el=$(id); el.textContent=text; el.classList.toggle('error',bad); }
+function startAction(button, label){
+  if(!button) return;
+  button.dataset.defaultLabel ||= button.textContent;
+  button.classList.remove('action-success','action-failed');
+  button.textContent=label;
+  button.disabled=true;
+}
+function finishAction(button, label, failed=false){
+  if(!button) return;
+  button.disabled=false;
+  button.textContent=label;
+  button.classList.toggle('action-success',!failed);
+  button.classList.toggle('action-failed',failed);
+  clearTimeout(button._labelTimer);
+  button._labelTimer=setTimeout(()=>{
+    button.textContent=button.dataset.defaultLabel || button.textContent;
+    button.classList.remove('action-success','action-failed');
+  },2200);
+}
 function formData(){ const data=Object.fromEntries(new FormData($('week1-form')).entries()); data.consent_to_share_in_class=$('week1-form').consent_to_share_in_class.checked; data.student_id=studentSession?.student_id || ''; return data; }
 function fill(data={}){ savedStatus=data.status || ''; Object.entries(data).forEach(([k,v])=>{const el=$('week1-form').elements[k]; if(el) el.type==='checkbox' ? el.checked=Boolean(v) : el.value=v || '';}); renderCard(); }
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }
@@ -33,10 +52,55 @@ document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('clic
 $('student-enter').onclick=async()=>{ if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true); try{message('access-message','正在確認班級…'); studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value}); localStorage.setItem('sjl-student-session',JSON.stringify(studentSession)); showStudent(); const loaded=await studentApi({action:'load',token:studentSession.token}); fill(loaded.submission||{}); message('form-message','已進入起點卡，可先儲存草稿。');}catch(e){message('access-message',e.message,true);}};
 $('student-exit').onclick=()=>{localStorage.removeItem('sjl-student-session');studentSession=null;showStudent();};
 $('week1-form').addEventListener('input',renderCard);
-async function save(status){ const data=formData(); const missing=required.filter(k=>!data[k]?.trim()); if(status==='submitted'&&missing.length){message('form-message',`尚未完成：${missing.map(k=>({student_name:'姓名',team_preference:'分組角色',verbatim_complaint:'原句或抱怨',observed_context:'當時的現場',observed_problem:'生活不便',affected_user:'受到影響的人',known_fact:'事實',unverified_assumption:'假設',interview_next_question:'下週訪談問題',expected_learning:'期待',concern:'擔心'})[k]).join('、')}`,true);return;} try{const result=await studentApi({action:'save',token:studentSession.token,submission:{...data,status}}); savedStatus=result.submission.status || status; $('updated-at').textContent=`最後更新：${new Date(result.submission.updated_at).toLocaleString('zh-TW')}`;message('form-message',status==='submitted'?'已正式提交，老師現在可以查看。':'草稿已儲存。');}catch(e){message('form-message',e.message,true);}}
-$('save-draft').onclick=()=>save('draft'); $('week1-form').onsubmit=(e)=>{e.preventDefault();save('submitted');};
-$('clear-form').onclick=async()=>{if(savedStatus==='submitted'){message('form-message','這份起點卡已正式提交，為保留提交紀錄，無法從學生端清除。若需修改，請聯絡老師。',true);return;} if(confirm('確定清除目前草稿？清除後重新整理也不會恢復。')){$('week1-form').reset();renderCard(); await save('draft');}};
-$('export-text').onclick=()=>{const d=formData(), text=['Startup Journey Lab｜Week 1 個人起點卡',`姓名：${d.student_name}`,`學號：${d.student_id}`,`角色：${d.team_preference}`,'',`原句或抱怨：${d.verbatim_complaint}`,`當時的現場：${d.observed_context}`,`生活不便：${d.observed_problem}`,`受到影響的人：${d.affected_user}`,`事實：${d.known_fact}`,`假設：${d.unverified_assumption}`,`下週訪談問題：${d.interview_next_question}`,`期待：${d.expected_learning}`,`擔心：${d.concern}`,`可匿名分享：${d.consent_to_share_in_class?'同意':'不同意'}`].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));a.download=`Week1-${d.student_id||'起點卡'}.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);message('form-message','文字檔已開始下載；仍請依老師指定方式提交。');};
+async function save(status, button, labels={}){
+  const data=formData();
+  const missing=required.filter(k=>!data[k]?.trim());
+  if(status==='submitted'&&missing.length){
+    message('form-message',`尚未完成：${missing.map(k=>({student_name:'姓名',team_preference:'分組角色',verbatim_complaint:'原句或抱怨',observed_context:'當時的現場',observed_problem:'生活不便',affected_user:'受到影響的人',known_fact:'事實',unverified_assumption:'假設',interview_next_question:'下週訪談問題',expected_learning:'期待',concern:'擔心'})[k]).join('、')}`,true);
+    finishAction(button,'請補齊欄位',true);
+    return false;
+  }
+  startAction(button,labels.busy || (status==='submitted'?'提交中…':'儲存中…'));
+  try{
+    const result=await studentApi({action:'save',token:studentSession.token,submission:{...data,status}});
+    savedStatus=result.submission.status || status;
+    $('updated-at').textContent=`最後更新：${new Date(result.submission.updated_at).toLocaleString('zh-TW')}`;
+    message('form-message',labels.message || (status==='submitted'?'已正式提交，老師現在可以查看。':'草稿已儲存。'));
+    finishAction(button,labels.done || (status==='submitted'?'已提交 ✓':'已儲存 ✓'));
+    return true;
+  }catch(e){
+    message('form-message',e.message,true);
+    finishAction(button,'請重試',true);
+    return false;
+  }
+}
+$('save-draft').onclick=()=>save('draft',$('save-draft'));
+$('week1-form').onsubmit=(e)=>{e.preventDefault();save('submitted',e.submitter||$('week1-form').querySelector('[type="submit"]'));};
+$('clear-form').onclick=async()=>{
+  const button=$('clear-form');
+  if(savedStatus==='submitted'){
+    message('form-message','這份起點卡已正式提交，為保留提交紀錄，無法從學生端清除。若需修改，請聯絡老師。',true);
+    finishAction(button,'無法清除',true);
+    return;
+  }
+  if(confirm('確定清除目前草稿？清除後重新整理也不會恢復。')){
+    $('week1-form').reset();
+    renderCard();
+    await save('draft',button,{busy:'清除中…',done:'已清除 ✓',message:'草稿內容已清除。'});
+  }
+};
+$('export-text').onclick=()=>{
+  const button=$('export-text');
+  startAction(button,'準備下載…');
+  const d=formData(), text=['Startup Journey Lab｜Week 1 個人起點卡',`姓名：${d.student_name}`,`學號：${d.student_id}`,`角色：${d.team_preference}`,'',`原句或抱怨：${d.verbatim_complaint}`,`當時的現場：${d.observed_context}`,`生活不便：${d.observed_problem}`,`受到影響的人：${d.affected_user}`,`事實：${d.known_fact}`,`假設：${d.unverified_assumption}`,`下週訪談問題：${d.interview_next_question}`,`期待：${d.expected_learning}`,`擔心：${d.concern}`,`可匿名分享：${d.consent_to_share_in_class?'同意':'不同意'}`].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));
+  a.download=`Week1-${d.student_id||'起點卡'}.txt`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+  message('form-message','文字檔已下載；仍請依老師指定方式提交。');
+  finishAction(button,'已下載 ✓');
+};
 async function loadTeacher(){if(!teacherToken)return; try{const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});teacherRows=rows;renderTeacher();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;}catch(e){$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;message('teacher-message',`載入教師資料失敗：${e.message}`,true);}}
 $('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});teacherToken=r.access_token;localStorage.setItem('sjl-teacher-token',teacherToken);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
 $('teacher-logout').onclick=()=>{teacherToken='';localStorage.removeItem('sjl-teacher-token');$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
