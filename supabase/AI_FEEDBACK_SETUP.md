@@ -12,8 +12,16 @@ Supabase Dashboard → SQL Editor → New query，貼上
 
 ## 步驟 2：部署 Edge Function
 
-Dashboard → Edge Functions → Deploy a new function，名稱填 `ai-feedback`，
-把 `supabase/functions/ai-feedback/index.ts` 與 `validate.ts` 兩個檔案貼進去，Deploy。
+Dashboard → Edge Functions → Deploy a new function → Via Editor，名稱填 `ai-feedback`，
+把 **`supabase/functions/ai-feedback/index.bundled.ts`** 整份貼進 `index.ts`，Deploy。
+
+Dashboard 的多檔案編輯器重新命名檔案不穩定，所以改用單一檔案版本：
+`index.bundled.ts` 是 `validate.ts` + `index.ts` 自動合併的結果，內容完全相同。
+改過原始檔之後重新產生：
+
+```
+node scripts/build-edge-function.mjs
+```
 
 若使用 CLI：
 
