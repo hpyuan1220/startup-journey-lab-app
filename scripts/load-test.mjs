@@ -155,14 +155,31 @@ if (!SPEND) {
   const rate = concurrent.filter((r) => r.status === 429).length;
   const fail = concurrent.filter((r) => r.status === 502 || r.status === 503).length;
 
+  const fresh = concurrent.filter((r) => r.status === 200 && !r.cached).length;
+
   console.log('\n===== 判讀 =====');
-  console.log(`成功 ${ok} / ${concurrent.length}`);
+  console.log(`成功 ${ok} / ${concurrent.length}（其中真正呼叫模型 ${fresh} 筆、走快取 ${s.cached} 筆）`);
+
+  if (ok && fresh === 0) {
+    console.log('');
+    console.log('⚠️  全部命中快取 —— 這一輪沒有真的呼叫模型。');
+    console.log('    這證明了快取在並發下有效，但沒有測到 OpenAI 的瞬間負載。');
+    console.log('    要測模型路徑，先在 SQL Editor 執行下方的清除 SQL，再重跑一次。');
+  }
   if (rate) console.log(`被每日次數上限擋下 ${rate} 筆 —— 這是預期行為，代表限流有效`);
   if (fail) console.log(`模型端失敗 ${fail} 筆 —— 檢查 OpenAI 額度與速率限制`);
   if (s.times.length && percentile(s.times, 90) > 20000) {
     console.log('p90 超過 20 秒 —— 學生會覺得卡住，建議在課堂上分批使用');
   }
-  console.log(ok === concurrent.length ? '✅ 驗收項目 12 通過' : '⚠️ 未全數成功，見上方狀態碼');
+  if (ok === concurrent.length && fresh === concurrent.length) {
+    console.log('✅ 驗收項目 12 通過（50 筆真實模型呼叫全數成功）');
+  } else if (ok === concurrent.length && fresh === 0) {
+    console.log('◻️ 驗收項目 12 尚未完成 —— 全部走快取，模型路徑未受測');
+  } else if (ok === concurrent.length) {
+    console.log('◻️ 驗收項目 12 部分完成 —— 僅 ' + fresh + ' 筆真正呼叫模型');
+  } else {
+    console.log('⚠️ 未全數成功，見上方狀態碼');
+  }
 }
 
 console.log('\n===== 清除測試資料 =====');
