@@ -1,0 +1,7 @@
+interface:
+  display_name: "Startup Journey Class"
+  short_description: "依同一教學邏輯製作每週 AI 創業課程與互動教材"
+  default_prompt: "Use $startup-journey-class to draft the next weekly class materials."
+policy:
+  allow_implicit_invocation: true
+
