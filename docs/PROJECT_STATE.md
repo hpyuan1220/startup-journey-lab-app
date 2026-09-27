@@ -98,3 +98,13 @@
 ## 2026-09-27 授權後部署與驗收
 
 使用者已明確同意部署及匿名文字傳送至 OpenAI API，解除上節所述阻礙。week2-api 與 Student-api 均已部署；50 人正式 Supabase 同時保存全部成功，模型比較完成，Week 2 選用 gpt-5.4-mini。27 項本機測試及真實端點／匿名預覽驗證詳見 [WEEK2_LIVE_ACCEPTANCE.md](WEEK2_LIVE_ACCEPTANCE.md)。原正式班資料仍保留。教師真實登入與續期尚待驗證，不能視同已通過。
+
+## 正式發布確認
+
+- 功能 commit：`3fc6268`；已推送 main 及 feature/week2-adaptive。
+- GitHub Pages run `36295242748`：success。
+- 公開 index.html、week.html、week2.js、week2-core.mjs、teacher-week2.js 與三份 Week 2 教材全部 HTTP 200，逐位元組比對與本機發布檔完全一致。
+- 公開 Week 2 頁面已在瀏覽器確認藍圖、影片摘要、三個教材按鈕與登入前提示；實際後端互動由本機新版＋正式 Supabase 合成測試完成。
+- 最後部署的 AI review 再以一筆合成資料確認 HTTP 200，directions 空陣列。
+- 教師登入頁已開啟，待使用者自行輸入密碼完成剩餘端到端驗收。請勿在對話提供密碼。
+- 下一個最小里程碑：教師實際抽查一份測試卡、確認登入續期，再規劃 Week 3 訪談紀錄與證據回扣；不要直接擴建通用課程編輯器。
