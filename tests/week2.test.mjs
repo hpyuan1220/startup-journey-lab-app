@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyCard,normalize,check,fields,aiInput,readiness,priority} from '../week2-core.mjs';
-const complete=()=>{const d=emptyCard();d.candidates.forEach((c,i)=>fields.forEach(([k])=>c[k]=`候選 ${i+1} 的具體觀察`));d.reason='較容易接觸使用者';d.reconsider='多數人沒有遇到此問題';d.statement='午休很短的學生排隊後來不及用餐';d.interviewees=['角色甲、課後詢問','角色乙、社團詢問','角色丙、午休詢問'];d.questions=['上一次何時發生？','當時怎麼處理？'];return d;};
+const complete=()=>{const d=emptyCard();d.candidates.forEach((c,i)=>fields.forEach(([k])=>c[k]=`候選 ${i+1} 的具體觀察`));d.reason='較容易接觸使用者';d.reconsider='多數人沒有遇到此問題';d.statement='午休很短的學生排隊後來不及用餐';d.interviewees=['角色甲、課後詢問','角色乙、社團詢問','角色丙、午休詢問'];d.questions=['上一次何時發生？','當時怎麼處理？'];d.contact_confirmed=true;d.questions_checked=true;return d;};
 test('空卡列出缺項，完整卡可交',()=>{assert.equal(check(emptyCard()).ok,false);assert.equal(check(complete()).ok,true);});
 test('三種路徑同一最低成果',()=>{for(const mode of ['guided','standard','challenge']){const d=complete();d.mode=mode;assert.equal(check(normalize(d)).ok,true);}});
 test('關鍵字只提示，不錯誤擋下',()=>{const d=complete();d.candidates[0].problem='我想做 App';const c=check(d);assert.equal(c.ok,true);assert.ok(c.warnings.length);});

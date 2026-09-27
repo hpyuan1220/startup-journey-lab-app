@@ -80,7 +80,7 @@ $('week1-form').onsubmit=(e)=>{e.preventDefault();save('submitted',e.submitter||
 $('clear-form').onclick=async()=>{
   const button=$('clear-form');
   if(savedStatus==='submitted'){
-    message('form-message','這份起點卡已正式提交，為保留提交紀錄，無法從學生端清除。若需修改，請聯絡老師。',true);
+    message('form-message','這份起點卡已正式提交，為保留提交紀錄，無法從學生端清除。若需修改，可直接編輯後重新提交，原版本會保留。',true);
     finishAction(button,'無法清除',true);
     return;
   }
@@ -113,24 +113,24 @@ function storeTeacherSession(session){
     localStorage.removeItem('sjl-teacher-token');
   }
 }
+let teacherRefreshPromise=null;
 async function refreshTeacherSession(){
-  if(!teacherSession?.refresh_token)return false;
-  try{
-    const refreshed=await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:teacherSession.refresh_token})});
-    storeTeacherSession(refreshed);
-    return true;
-  }catch(e){
-    storeTeacherSession(null);
-    return false;
-  }
+ if(teacherRefreshPromise)return teacherRefreshPromise;
+ if(!teacherSession?.refresh_token)return false;
+ teacherRefreshPromise=(async()=>{
+  try{const fresh=await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:teacherSession.refresh_token})});storeTeacherSession(fresh);return true;}
+  catch(e){if(e.status===400||e.status===401){storeTeacherSession(null);return false;}throw e;}
+  finally{teacherRefreshPromise=null;}
+ })();return teacherRefreshPromise;
 }
+window.addEventListener('storage',e=>{if(e.key==='sjl-teacher-session'){try{teacherSession=JSON.parse(e.newValue||'null');teacherToken=teacherSession?.access_token||'';}catch{} }});
 async function loadTeacher(canRefresh=true){
   if(!teacherToken)return;
   try{
     const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});
     teacherRows=rows;renderTeacher();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;
   }catch(e){
-    if(canRefresh&&(e.status===401||/jwt|token|expired/i.test(e.message))&&await refreshTeacherSession())return loadTeacher(false);
+    if(canRefresh&&(e.status===401||/jwt|token|expired/i.test(e.message))){try{if(await refreshTeacherSession())return loadTeacher(false);}catch{message('teacher-message','目前網路無法更新登入，請稍後按教師頁重新載入；登入資料已保留。',true);return;}}
     if(e.status===401||/jwt|token|expired/i.test(e.message))storeTeacherSession(null);
     $('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;
     message('teacher-message',e.status===401||/jwt|token|expired/i.test(e.message)?'教師登入已過期，請重新登入一次。之後系統會自動續期。':`載入教師資料失敗：${e.message}`,true);
@@ -138,7 +138,8 @@ async function loadTeacher(canRefresh=true){
 }
 $('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});storeTeacherSession(r);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
 $('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
-function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;const rows=teacherRows.filter(r=>`${r.student_name} ${r.student_id}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?r.needs_follow_up:r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需追問',teacherRows.filter(r=>r.needs_follow_up).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article><h3>${r.student_name||'未填姓名'} <small>${r.student_id}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${r.observed_problem||'尚未填寫問題'}</p><p>原句：${r.verbatim_complaint||'—'}<br>現場：${r.observed_context||'—'}<br>下週問題：${r.interview_next_question||'—'}</p><p>事實：${r.known_fact||'—'}<br>假設：${r.unverified_assumption||'—'}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
+function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;const rows=teacherRows.filter(r=>`${escapeHTML(r.student_name)} ${escapeHTML(r.student_id)}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?r.needs_follow_up:r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需追問',teacherRows.filter(r=>r.needs_follow_up).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article data-class-id="${escapeHTML(r.class_id)}"><h3>${escapeHTML(r.student_name||'未填姓名')} <small>${escapeHTML(r.student_id)}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${escapeHTML(r.observed_problem||'尚未填寫問題')}</p><p>原句：${escapeHTML(r.verbatim_complaint||'—')}<br>現場：${escapeHTML(r.observed_context||'—')}<br>下週問題：${escapeHTML(r.interview_next_question||'—')}</p><p>事實：${escapeHTML(r.known_fact||'—')}<br>假設：${escapeHTML(r.unverified_assumption||'—')}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};
 restoreStudent();loadTeacher();

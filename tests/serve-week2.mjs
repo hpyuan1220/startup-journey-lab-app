@@ -1,0 +1,11 @@
+// Local-only fixture: never connects to Supabase or OpenAI.
+import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';import {harness,demoCard} from './support/week2-harness.mjs';
+const h=await harness(),token=await h.student('LOCAL-TEST'),root=process.cwd();
+const server=http.createServer(async(req,res)=>{try{const url=new URL(req.url,'http://127.0.0.1:4174');
+ if(url.pathname==='/functions/v1/week2-api'){let raw='';for await(const c of req)raw+=c;const r=await h.handler(new Request(url,{method:req.method,headers:req.headers,body:raw}));res.writeHead(r.status,{'Content-Type':'application/json'});return res.end(await r.text());}
+ if(url.pathname==='/config.js'){res.setHeader('Content-Type','text/javascript');return res.end("window.STARTUP_JOURNEY_CONFIG={supabaseUrl:'http://127.0.0.1:4174',supabaseAnonKey:'local-fixture'};");}
+ if(url.pathname==='/_fixture'){res.setHeader('Content-Type','text/html;charset=utf-8');return res.end(`<html lang="zh-Hant"><meta charset="utf-8"><h1>Week 2 本機測試，沒有真實學生資料</h1><button id="enter">載入測試學生</button><a href="week.html?week=2">前往 Week 2</a><script>document.getElementById('enter').onclick=()=>{localStorage.setItem('sjl-student-session',JSON.stringify(${JSON.stringify({token,class_id:'class-a',student_id:'LOCAL-TEST'})}));document.getElementById('enter').textContent='測試學生已就緒';};</script></html>`);}
+ if(url.pathname==='/_fixture-complete'&&req.method==='POST'){await h.call({action:'save',token,status:'draft',card:demoCard(),version:h.tables.week2_submissions[0]?.version});return res.end('ok');}
+ let filename=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!filename.startsWith(root+path.sep)||filename.includes('/.git')){res.writeHead(403);return res.end();}
+ const mime={'.html':'text/html;charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.pdf':'application/pdf'};res.setHeader('Content-Type',mime[path.extname(filename)]||'application/octet-stream');res.end(await fs.readFile(filename));
+ }catch{res.writeHead(404);res.end('Not found');}});server.listen(4174,'127.0.0.1',()=>console.log('Local fixture at http://127.0.0.1:4174/_fixture'));

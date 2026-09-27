@@ -38,19 +38,27 @@
     };
   }
 
+  async function teacherFetch(url, options, retry) {
+    var response = await fetch(url, Object.assign({}, options, {headers:Object.assign(headers(), options && options.headers)}));
+    if (response.status === 401 && retry !== false && typeof refreshTeacherSession === 'function' && await refreshTeacherSession()) {
+      return teacherFetch(url, Object.assign({}, options, {headers:Object.assign({}, options && options.headers, {Authorization:'Bearer '+token()})}), false);
+    }
+    return response;
+  }
+
   // 共用同一個進行中的請求，避免兩個 observer 同時觸發時，
   // 後到的那個拿到空 Promise 就用空資料去渲染。
   function fetchFeedback() {
     if (!configured() || !token()) return Promise.resolve();
     if (inflight) return inflight;
-    inflight = fetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback_latest?select=*', { headers: headers() })
+    inflight = teacherFetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback_latest?select=*', { headers: headers() })
       .then(function (res) {
         if (!res.ok) throw new Error('http-' + res.status);
         return res.json();
       })
       .then(function (rows) {
         byStudent = {};
-        (rows || []).forEach(function (row) { byStudent[row.student_id] = row; });
+        (rows || []).forEach(function (row) { byStudent[row.class_id + ':' + row.student_id] = row; });
         loaded = true;
       })
       .catch(function () {
@@ -69,7 +77,7 @@
   function hideFeedback(id, button) {
     button.disabled = true;
     button.textContent = '隱藏中…';
-    fetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback?id=eq.' + encodeURIComponent(id), {
+    teacherFetch(cfg.supabaseUrl + '/rest/v1/week1_ai_feedback?id=eq.' + encodeURIComponent(id), {
       method: 'PATCH',
       headers: Object.assign(headers(), { Prefer: 'return=minimal' }),
       body: JSON.stringify({ teacher_hidden: true })
@@ -190,7 +198,7 @@
         if (article.querySelector('.tai-block')) shown += 1;
         continue;
       }
-      var row = byStudent[studentIdOf(article)];
+      var row = byStudent[article.dataset.classId + ':' + studentIdOf(article)];
       if (row) {
         article.appendChild(block(row));
         shown += 1;

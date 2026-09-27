@@ -26,18 +26,23 @@ create table public.learning_versions (
 );
 alter table public.week1_submissions add column if not exists version integer not null default 1;
 insert into public.learning_versions(class_id,student_id,week,version,snapshot) select class_id,student_id,1,version,to_jsonb(s) from public.week1_submissions s on conflict do nothing;
+-- A separate BEFORE UPDATE trigger is required: upsert also fires BEFORE INSERT,
+-- which must not create a duplicate version before ON CONFLICT resolves.
+create function public.bump_learning_version() returns trigger language plpgsql set search_path=public as $$
+begin
+ new.version=old.version+1;
+ if old.submitted_at is not null then new.submitted_at=old.submitted_at;end if;
+ new.updated_at=now();return new;
+end $$;
 create function public.snapshot_learning() returns trigger language plpgsql security definer set search_path=public as $$
 begin
- if TG_OP='UPDATE' then
-  new.version=old.version+1;
-  if old.submitted_at is not null then new.submitted_at=old.submitted_at; end if;
- end if;
- new.updated_at=now();
  insert into public.learning_versions(class_id,student_id,week,version,snapshot) values(new.class_id,new.student_id,TG_ARGV[0]::integer,new.version,to_jsonb(new));
  return new;
 end $$;
-create trigger week1_snapshot before insert or update on public.week1_submissions for each row execute function public.snapshot_learning('1');
-create trigger week2_snapshot before insert or update on public.week2_submissions for each row execute function public.snapshot_learning('2');
+create trigger week1_version before update on public.week1_submissions for each row execute function public.bump_learning_version();
+create trigger week2_version before update on public.week2_submissions for each row execute function public.bump_learning_version();
+create trigger week1_snapshot after insert or update on public.week1_submissions for each row execute function public.snapshot_learning('1');
+create trigger week2_snapshot after insert or update on public.week2_submissions for each row execute function public.snapshot_learning('2');
 create table public.week2_ai_requests (
  id uuid primary key default gen_random_uuid(), class_id uuid not null references public.classes(id), student_id text not null,week integer not null default 2,
  content_hash text not null,kind text not null check(kind in ('explore','review')),model text not null,prompt_version text not null,submission_version integer,
@@ -48,11 +53,13 @@ do $$ declare t text; begin foreach t in array array['week2_settings','week2_sub
  execute format('alter table public.%I enable row level security',t);
  execute format('revoke all on public.%I from anon, authenticated',t);
  execute format('grant select on public.%I to authenticated',t);
+ execute format('grant all on public.%I to service_role',t);
  execute format('create policy teacher_scope on public.%I for select to authenticated using(public.teaches_class(class_id))',t);
 end loop;end $$;
 -- Writes use the authenticated edge endpoint with explicit class checks and allowlists.
 create function public.reserve_week2_ai(cid uuid,sid text,h text,k text,m text,p text,v integer,lim integer) returns uuid language plpgsql security definer set search_path=public as $$
 declare rid uuid;begin
+ if lim is null or lim<0 or lim>10 then raise exception 'invalid limit';end if;
  perform pg_advisory_xact_lock(hashtextextended(cid::text||':'||sid,0));
  if exists(select 1 from week2_ai_requests where class_id=cid and student_id=sid and content_hash=h) then return null;end if;
  if (select count(*) from week2_ai_requests where class_id=cid and student_id=sid)>=lim then return null;end if;

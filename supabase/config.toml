@@ -1,0 +1,15 @@
+project_id = "startup-journey-lab"
+
+# Each endpoint performs its own opaque student-session / teacher JWT validation.
+[functions.week2-api]
+verify_jwt = false
+entrypoint = "./functions/week2-api/index.ts"
+
+# Preserve the existing case-sensitive production route.
+[functions.Student-api]
+verify_jwt = false
+entrypoint = "./functions/student-api/index.ts"
+
+[functions.ai-feedback]
+verify_jwt = false
+entrypoint = "./functions/ai-feedback/index.ts"

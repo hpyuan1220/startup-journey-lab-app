@@ -1,4 +1,4 @@
-// Deploy: supabase functions deploy student-api --no-verify-jwt
+// Production route is case-sensitive: Student-api. Deploy this source to that existing route.
 // This function keeps student records behind a short-lived opaque session token.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -8,24 +8,28 @@ const hash = async (value: string) => Array.from(new Uint8Array(await crypto.sub
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers });
-  const body = await request.json().catch(() => null);
+  if(request.method!=='POST')return reply({error:'請使用 POST。'},405);
+  const raw=await request.text();if(raw.length>20000)return reply({error:'資料過長。'},413);
+  let body;try{body=JSON.parse(raw);}catch{return reply({error:'格式不正確。'},400);}
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   if (!body) return reply({ error: '格式不正確。' }, 400);
   if (body.action === 'login') {
     const studentId = String(body.student_id || '').trim();
     const inviteCode = String(body.invite_code || '');
+    if(!studentId||studentId.length>60||inviteCode.length>200)return reply({error:'學號或邀請碼格式不正確。'},422);
     const { data: classId } = await db.rpc('validate_class_invite', { p_invite_code: inviteCode });
     if (!studentId || !classId) return reply({ error: '學號或班級邀請碼不正確。' }, 401);
     const token = crypto.randomUUID() + crypto.randomUUID();
-    await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + 1209600000).toISOString() }, { onConflict: 'class_id,student_id' });
+    const {error:sessionError}=await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + 1209600000).toISOString() }, { onConflict: 'class_id,student_id' });
+    if(sessionError)return reply({error:'登入暫時無法完成，請稍後重試。'},503);
     return reply({ token, class_id: classId, student_id: studentId });
   }
   const token = String(body.token || '');
   const { data: session } = await db.from('student_sessions').select('class_id,student_id,expires_at').eq('token_hash', await hash(token)).maybeSingle();
   if (!session || new Date(session.expires_at) < new Date()) return reply({ error: '工作階段已過期，請重新進入。' }, 401);
   if (body.action === 'load') {
-    const { data } = await db.from('week1_submissions').select('*').eq('class_id', session.class_id).eq('student_id', session.student_id).maybeSingle();
-    return reply({ submission: data || null });
+    const { data,error } = await db.from('week1_submissions').select('*').eq('class_id', session.class_id).eq('student_id', session.student_id).maybeSingle();
+    return error?reply({error:'資料暫時無法讀取，請稍後重試。'},503):reply({ submission: data || null });
   }
   if (body.action === 'save') {
     const allowed = ['student_name','team_preference','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern'];
