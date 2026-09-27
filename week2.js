@@ -19,7 +19,10 @@ async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/we
 function button(label,fn,parent=actions){const b=el('button',label,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){msg.textContent=e.message;}finally{b.disabled=false;}};return b;}
 function confirmAnonymous(content){return new Promise(resolve=>{
  const panel=el('section');panel.className='video-learning-card';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','確認交給 AI 的內容');
- el('h3','確認交給 AI 的匿名內容',panel);el('p','以下文字將交給外部模型。若仍有可識別個資，請取消並修改。',panel);el('pre',content,panel);
+ el('h3','確認交給 AI 的匿名內容',panel);el('p','以下文字將傳送至 OpenAI API 取得建議。若仍有可識別個資，請取消並修改。',panel);const preview=JSON.parse(content);
+ const names=Object.fromEntries([...fields,...challengeFields]);Object.assign(names,{candidates:'候選痛點',selected:'暫定選題（從 1 起算）',reason:'選擇理由',reconsider:'重新選題的條件',statement:'痛點描述',questions:'訪談問題',challenge:'進階挑戰'});
+ const translated=value=>Array.isArray(value)?value.map(translated):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([key,v])=>[names[key]||key,key==='selected'?Number(v)+1:translated(v)])):value;
+ el('pre',JSON.stringify(translated(preview),null,2),panel);
  const end=value=>{panel.remove();resolve(value);};button('確認內容，取得 AI 建議',()=>end(true),panel);button('取消，回去修改',()=>end(false),panel);
  root.insertBefore(panel,workspace);panel.querySelector('button').focus();panel.scrollIntoView({block:'center'});
 });}

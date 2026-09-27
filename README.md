@@ -37,9 +37,9 @@
 模型 API Key 只存在 Supabase Function Secrets，不在前端檔案或本 Repository 中。
 AI 回饋不寫入成績，正式評分由教師決定。
 
-## Week 2 適應式學習（功能分支，待正式部署）
+## Week 2 適應式學習
 
-2026-09-27：已建立 Week 2 前端、Edge Function、SQL migration 及教材。**尚未套用正式資料庫／發布此分支**，不能把本機測試當成已上線。部署門檻與回復方式：[Week 2 部署文件](docs/WEEK2_DEPLOYMENT.md)；實測範圍：[驗收紀錄](docs/REVIEW.md)。
+2026-09-27：Week 2 前端、教材、資料庫遷移及 Edge Functions 已完成；正式後端與 50 位合成學生驗收通過。詳細證據及尚待真人登入驗證事項見 [正式驗收](docs/WEEK2_LIVE_ACCEPTANCE.md)。部署門檻與回復方式：[Week 2 部署文件](docs/WEEK2_DEPLOYMENT.md)；實測範圍：[驗收紀錄](docs/REVIEW.md)。
 
 - [Week 2 教師完整教案](docs/WEEK2_LESSON_PLAN.md)
 - [Week 2 PPT，20 頁](materials/Week2_教學簡報.pptx)
@@ -51,4 +51,4 @@ AI 回饋不寫入成績，正式評分由教師決定。
 
 本機測試（Node 24）：`node --test tests/*.test.mjs`。瀏覽器測試伺服器：`node tests/serve-week2.mjs`，只使用合成資料，不連正式服務。`/_fixture` 可建立測試登入。
 
-AI 比較：`node scripts/eval-week2.mjs` 預設只列測試計畫；加 `--run` 才會以本機環境的 OPENAI_API_KEY 執行 6 個合成案例 × 2 模型。尚未實際比較 gpt-5.4-mini，不自動更換正式模型。
+AI 比較：`node scripts/eval-week2.mjs` 預設只列測試計畫；加 `--run` 才會以本機環境的 OPENAI_API_KEY 執行 6 個合成案例 × 2 模型。已透過正式端點完成六案例 × 兩模型比較，Week 2 使用 gpt-5.4-mini；詳見正式驗收紀錄。

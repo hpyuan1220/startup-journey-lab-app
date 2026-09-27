@@ -2,7 +2,7 @@
 
 ## 目前狀態
 
-功能分支 `feature/week2-adaptive`；正式基線 `4bb805d`。本機規則與記憶體 adapter 測試通過，不等於正式 Supabase RLS、SQL trigger 或負載驗證。2026-09-27 已完成資料庫遷移、指定教師授權及初步正式 RLS 驗證；函式部署被自動核准審查暫停，等待使用者明確授權匿名學習內容傳送至 OpenAI API。詳見 PROJECT_STATE。不得在後端未就緒時直接把分支合併到 main。
+功能分支 `feature/week2-adaptive`；正式基線 `4bb805d`。2026-09-27 使用者同意部署與 OpenAI API 匿名內容傳送後，資料庫、教師範圍與兩端點均已部署。50 人真實保存／讀取及模型比較完成，詳見 WEEK2_LIVE_ACCEPTANCE.md。
 
 唯一指定正式專案：`lyrggicbsuynsjtsfwed`。不得使用其他 Supabase 專案。
 

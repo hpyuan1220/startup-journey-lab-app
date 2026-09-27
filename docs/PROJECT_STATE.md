@@ -1,6 +1,6 @@
 # PROJECT_STATE
 
-最後更新：2026-09-17
+最後更新：2026-09-27
 
 ## 目前狀態
 
@@ -9,7 +9,8 @@
 | Week 1 學生起點卡 | 已上線 |
 | Week 1 教師洞察 | 已上線 |
 | Week 1 AI 學習建議 | 已部署，12 項驗收全數通過（2026-09-17） |
-| Week 2–10 | 僅有學習藍圖頁面 |
+| Week 2 | 互動卡、教材、正式後端已驗收，發布狀態見文末 |
+| Week 3–10 | 僅有學習藍圖頁面 |
 
 ## 架構
 
@@ -93,3 +94,7 @@
 - 正式 PostgreSQL transaction 驗證通過：Week 1 全部欄位（新增 version 除外）與部署前快照完全一致；35 份初始版本；61 筆回饋；現用教師可讀取；未授權教師讀不到 Week 1、AI latest view、版本；anon 不能讀 Week 1、Week 2，不能存取快照 schema。
 - `week2-api` 已在 Dashboard 編輯器準備好完整 bundled 程式，尚未部署。自動核准審查拒絕部署，要求明確確認匿名學習文字傳送至 api.openai.com 的授權。不得繞過拒絕部署。
 - Student-api 尚未更新；正式端點測試、50 人端點測試、AI 評估與 Pages 發布仍未完成。main 未變更。
+
+## 2026-09-27 授權後部署與驗收
+
+使用者已明確同意部署及匿名文字傳送至 OpenAI API，解除上節所述阻礙。week2-api 與 Student-api 均已部署；50 人正式 Supabase 同時保存全部成功，模型比較完成，Week 2 選用 gpt-5.4-mini。27 項本機測試及真實端點／匿名預覽驗證詳見 [WEEK2_LIVE_ACCEPTANCE.md](WEEK2_LIVE_ACCEPTANCE.md)。原正式班資料仍保留。教師真實登入與續期尚待驗證，不能視同已通過。

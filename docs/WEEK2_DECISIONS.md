@@ -1,3 +1,5 @@
+> 本文早期「未部署／待授權」段落是歷史紀錄。2026-09-27 最新驗收請以 [正式驗收紀錄](WEEK2_LIVE_ACCEPTANCE.md) 及 PROJECT_STATE 文末為準。
+
 # Week 2 實作決策
 
 2026-09-27，基準 4bb805d。正式 Supabase：lyrggicbsuynsjtsfwed。
