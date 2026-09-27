@@ -2,7 +2,8 @@ const cfg = window.STARTUP_JOURNEY_CONFIG || {};
 const required = ['student_name','team_preference','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern'];
 const $ = (id) => document.getElementById(id);
 let studentSession = JSON.parse(localStorage.getItem('sjl-student-session') || 'null');
-let teacherToken = localStorage.getItem('sjl-teacher-token') || '';
+let teacherSession = JSON.parse(localStorage.getItem('sjl-teacher-session') || 'null');
+let teacherToken = teacherSession?.access_token || localStorage.getItem('sjl-teacher-token') || '';
 let teacherRows = [];
 let savedStatus = '';
 
@@ -30,7 +31,7 @@ function finishAction(button, label, failed=false){
 function formData(){ const data=Object.fromEntries(new FormData($('week1-form')).entries()); data.consent_to_share_in_class=$('week1-form').consent_to_share_in_class.checked; data.student_id=studentSession?.student_id || ''; return data; }
 function fill(data={}){ savedStatus=data.status || ''; Object.entries(data).forEach(([k,v])=>{const el=$('week1-form').elements[k]; if(el) el.type==='checkbox' ? el.checked=Boolean(v) : el.value=v || '';}); renderCard(); }
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }
-async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok) throw new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`); return body; }
+async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok){const error=new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`);error.status=res.status;throw error;} return body; }
 async function studentApi(body){ return api('/functions/v1/Student-api',{method:'POST',body:JSON.stringify(body)}); }
 function showStudent(){ $('student-gate').hidden=Boolean(studentSession); $('student-workspace').hidden=!studentSession; if(studentSession) $('student-label').textContent=`學號：${studentSession.student_id}`; }
 async function restoreStudent(){
@@ -101,9 +102,42 @@ $('export-text').onclick=()=>{
   message('form-message','文字檔已下載；仍請依老師指定方式提交。');
   finishAction(button,'已下載 ✓');
 };
-async function loadTeacher(){if(!teacherToken)return; try{const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});teacherRows=rows;renderTeacher();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;}catch(e){$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;message('teacher-message',`載入教師資料失敗：${e.message}`,true);}}
-$('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});teacherToken=r.access_token;localStorage.setItem('sjl-teacher-token',teacherToken);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
-$('teacher-logout').onclick=()=>{teacherToken='';localStorage.removeItem('sjl-teacher-token');$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
+function storeTeacherSession(session){
+  teacherSession=session;
+  teacherToken=session?.access_token||'';
+  if(session){
+    localStorage.setItem('sjl-teacher-session',JSON.stringify(session));
+    localStorage.setItem('sjl-teacher-token',teacherToken);
+  }else{
+    localStorage.removeItem('sjl-teacher-session');
+    localStorage.removeItem('sjl-teacher-token');
+  }
+}
+async function refreshTeacherSession(){
+  if(!teacherSession?.refresh_token)return false;
+  try{
+    const refreshed=await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:JSON.stringify({refresh_token:teacherSession.refresh_token})});
+    storeTeacherSession(refreshed);
+    return true;
+  }catch(e){
+    storeTeacherSession(null);
+    return false;
+  }
+}
+async function loadTeacher(canRefresh=true){
+  if(!teacherToken)return;
+  try{
+    const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});
+    teacherRows=rows;renderTeacher();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;
+  }catch(e){
+    if(canRefresh&&(e.status===401||/jwt|token|expired/i.test(e.message))&&await refreshTeacherSession())return loadTeacher(false);
+    if(e.status===401||/jwt|token|expired/i.test(e.message))storeTeacherSession(null);
+    $('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;
+    message('teacher-message',e.status===401||/jwt|token|expired/i.test(e.message)?'教師登入已過期，請重新登入一次。之後系統會自動續期。':`載入教師資料失敗：${e.message}`,true);
+  }
+}
+$('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});storeTeacherSession(r);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
+$('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
 function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;const rows=teacherRows.filter(r=>`${r.student_name} ${r.student_id}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?r.needs_follow_up:r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需追問',teacherRows.filter(r=>r.needs_follow_up).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article><h3>${r.student_name||'未填姓名'} <small>${r.student_id}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${r.observed_problem||'尚未填寫問題'}</p><p>原句：${r.verbatim_complaint||'—'}<br>現場：${r.observed_context||'—'}<br>下週問題：${r.interview_next_question||'—'}</p><p>事實：${r.known_fact||'—'}<br>假設：${r.unverified_assumption||'—'}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};
