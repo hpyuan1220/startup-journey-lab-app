@@ -172,3 +172,5 @@ if (recoveryToken && recovery.get('type') === 'recovery') {
     } catch (e) { message('recovery-message', e.message, true); }
   };
 }
+
+if(location.hash==="#student"){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$("student").classList.add("active");}

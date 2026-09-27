@@ -28,7 +28,17 @@ Deno.serve(async (request) => {
     return reply({ submission: data || null });
   }
   if (body.action === 'save') {
-    const fields = body.submission || {};
+    const allowed = ['student_name','team_preference','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern'];
+    const input = body.submission || {};
+    const fields: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (typeof input[key] !== 'string' || input[key].length > 600) return reply({error:'欄位格式不正確或超過長度限制。'},422);
+      fields[key] = input[key].trim();
+    }
+    if (!['draft','submitted'].includes(input.status)) return reply({error:'狀態不正確。'},422);
+    if (input.status === 'submitted' && allowed.some(key => !fields[key])) return reply({error:'請先補齊 Week 1 必填欄位。'},422);
+    fields.status = input.status;
+    fields.consent_to_share_in_class = input.consent_to_share_in_class === true;
     const submission = { ...fields, class_id: session.class_id, student_id: session.student_id, updated_at: new Date().toISOString() };
     if (submission.status === 'submitted') submission.submitted_at = new Date().toISOString();
     const { data, error } = await db.from('week1_submissions').upsert(submission, { onConflict: 'class_id,student_id' }).select().single();
