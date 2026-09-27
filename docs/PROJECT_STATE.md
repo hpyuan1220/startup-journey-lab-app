@@ -84,3 +84,12 @@
 - Week 2 PPT / PDF 各 20 頁，兩份檔案分開保存；學習單維持獨立檔案。逐頁文字一致，全部教材文字已核對；PPT 20 頁渲染檢查、PDF 轉檔檢查及套件／版面檢查通過。
 - `docs/WEEK2_SLIDES_SOURCE.json` 為每頁文字依版型文字框順序排列；第 1–19 頁使用 Week 1 同頁版型，第 20 頁使用 Week 1 第 9 頁版型。不含固定品牌／頁碼／週次標頭。
 - 更新僅在 Week 2 開發分支；正式網站與後端部署狀態不變，仍需依部署清單完成驗證。
+
+## 2026-09-27 正式資料庫部署進度
+
+- Codex 內建瀏覽器已成功登入指定 Supabase 專案。正式資料為 35 份 Week 1 卡、61 筆 AI 回饋。
+- 在非公開 schema `sjl_backup_20260927` 保存 Week 1 卡、回饋、班級、教師資料與原 policies 快照；撤銷 public / anon / authenticated 存取且所有快照表開啟 RLS。此為同資料庫部署前快照，不是異地備份；未匯出學生內容至 Git。
+- 已成功執行 `20260927_week2.sql`；使用者確認現用教師 Email 後，核對 auth.users 並建立唯一指定班級對應，執行 `20260927b_teacher_scope.sql`。舊教師帳號未授權。
+- 正式 PostgreSQL transaction 驗證通過：Week 1 全部欄位（新增 version 除外）與部署前快照完全一致；35 份初始版本；61 筆回饋；現用教師可讀取；未授權教師讀不到 Week 1、AI latest view、版本；anon 不能讀 Week 1、Week 2，不能存取快照 schema。
+- `week2-api` 已在 Dashboard 編輯器準備好完整 bundled 程式，尚未部署。自動核准審查拒絕部署，要求明確確認匿名學習文字傳送至 api.openai.com 的授權。不得繞過拒絕部署。
+- Student-api 尚未更新；正式端點測試、50 人端點測試、AI 評估與 Pages 發布仍未完成。main 未變更。
