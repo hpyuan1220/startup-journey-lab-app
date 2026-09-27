@@ -66,3 +66,14 @@
 
 - `app.js` 呼叫的 Edge Function 路徑為 `/functions/v1/Student-api`（大寫 S），與資料夾名稱不一致，目前運作中，暫不更動。
 - 專案資料夾內的 `Claude.dmg`（約 369MB）已列入 `.gitignore`，不進版控。
+
+
+## 2026-09-27 Week 2 開發狀態
+
+- 開發 worktree：`startup-journey-week2`，分支 `feature/week2-adaptive`，起點 `4bb805d`。原本 `startup-journey-lab-app` 未提交修改未覆蓋。
+- 程式初稿、三路徑、版本衝突、後端權限、AI 限额／快取、教師抽查及教材已建立。
+- 26 項本機測試通過，其中整合測試使用真實 handler + 記憶體資料 adapter／假模型，並非 PostgreSQL 或真實模型。
+- 瀏覽器通過逐題、切換模式、缺項攔截、保存／重新整理、正式提交、挑戰欄位、390/768/1440 寬度及一次 Tab 焦點檢查；原生 AI 確認框造成瀏覽器阻塞，已改成頁內確認，尚待瀏覽器解除後重測。
+- PPT 20 頁／PDF 20 頁逐頁文字相符，5 頁學習單已產生；中文字型轉檔問題已修復並渲染檢查。
+- **正式 SQL、教師班級對應、端點部署、RLS、50 人真實 Supabase 負載、真實 AI 模型比較、公開 Pages 新版驗證未完成。** Chrome 擴充功能視窗阻擋操作，已請使用者關閉。
+- 不合併 main、不發布依賴尚未部署後端的功能。下一步依 WEEK2_DEPLOYMENT.md 完成管理員檢查及部署，沒有另建第二套網站。
