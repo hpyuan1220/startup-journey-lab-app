@@ -19,10 +19,28 @@ let removedCandidate=null;
 const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修改紀錄',prior);const priorBody=el('div','',prior);
 const actions=el('div','',workspace);actions.className='actions';
 const form=el('form','',workspace);form.noValidate=true;
+const liveCheck=el('section','',workspace);liveCheck.setAttribute('aria-live','polite');liveCheck.className='video-learning-card';
 const report=el('section','',workspace);report.setAttribute('aria-live','polite');
 const aiStep=el('section','',workspace);aiStep.className='video-learning-card';
 el('h3','填答後：是否需要 AI 建議？（選用）',aiStep);
 el('p','先完成痛點與訪談規劃，再決定是否請 AI 協助。未使用 AI 不需填寫回應，也不影響正式提交。',aiStep);
+let autoBusy=false,autoAuthorized=false,lastAutoContent='',lastAutoFeedback=null,rulesTimer;
+const autoLabel=el('label','',aiStep),autoToggle=el('input','',autoLabel);autoToggle.type='checkbox';
+autoLabel.append(document.createTextNode('儲存草稿後，自動將匿名學習內容送至 OpenAI API 取得建議（可隨時關閉）'));
+const autoStatus=el('p','尚未啟用自動 AI；完整度會在填寫後自動檢查。',aiStep);autoStatus.setAttribute('role','status');
+const autoKey=()=>`sjl-week2-auto-ai-${session?.class_id}-${session?.student_id}`;
+function disableAuto(){autoAuthorized=false;autoToggle.checked=false;try{localStorage.removeItem(autoKey());}catch{}autoStatus.textContent='自動 AI 已關閉，仍可手動取得建議或直接提交。';}
+autoToggle.onchange=async()=>{
+ if(!autoToggle.checked){disableAuto();return;}
+ autoToggle.disabled=true;
+ try{
+  const content=aiInput(normalize(card),'review',week1Identity);
+  if(privacyRisk(content))throw Error('內容可能含個資，請先改成角色代稱再啟用。');
+  if(!await confirmAnonymous(content,true)){disableAuto();return;}
+  autoAuthorized=true;try{localStorage.setItem(autoKey(),'enabled');}catch{}
+  autoStatus.textContent='已啟用：必要欄位填齊後，按儲存草稿會自動取得建議；相同內容沿用結果。';
+ }catch(e){disableAuto();autoStatus.textContent=e.message;}finally{autoToggle.disabled=false;}
+};
 const aiChoices=el('div','',aiStep);aiChoices.className='actions';
 const aiControls=el('section','',aiStep);aiControls.hidden=true;aiControls.id='week2-ai-options';
 el('h4','下一步：確認匿名內容，再選擇 AI 協助方式',aiControls);
@@ -73,29 +91,53 @@ button('幫我草擬修改',()=>revisionAction(()=>{
  button('取消，保留原答案',()=>{revisionPreview.hidden=true;revisionStatus.textContent='已取消，原答案沒有改動。';},revisionPreview);
  revisionPreview.scrollIntoView({block:'start'});
 }),revisionArea);
-button('儲存修改後的草稿',()=>save('draft'),revisionArea);
+button('儲存修改後的草稿',()=>saveWithAuto(),revisionArea);
 button('檢查修改後的完整度',()=>checks(true),revisionArea);
 const previousResponse=el('details','',aiStep);previousResponse.hidden=true;el('summary','查看先前填寫的 AI 回應',previousResponse);const previousResponseText=el('p','',previousResponse);
 const openAiButton=button('我要使用 AI：展開選項',()=>{aiControls.hidden=false;openAiButton.textContent='AI 選項已展開，請在下方選擇';openAiButton.setAttribute('aria-expanded','true');aiControls.scrollIntoView({block:'center'});privacyCheckbox.focus({preventScroll:true});},aiChoices);openAiButton.setAttribute('aria-expanded','false');openAiButton.setAttribute('aria-controls','week2-ai-options');
-button('暫不使用 AI，繼續提交',()=>{aiControls.hidden=true;openAiButton.textContent='我要使用 AI：展開選項';openAiButton.setAttribute('aria-expanded','false');msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
+button('暫不使用 AI，繼續提交',()=>{disableAuto();aiControls.hidden=true;openAiButton.textContent='我要使用 AI：展開選項';openAiButton.setAttribute('aria-expanded','false');msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
 const historyBox=el('details','',workspace);el('summary','歷次保存與提交',historyBox);const historyList=el('div','',historyBox);
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||`連線失敗 ${r.status}`);return b;}
 function button(label,fn,parent=actions){const b=el('button',label,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){msg.textContent=e.message;}finally{b.disabled=false;}};return b;}
-function confirmAnonymous(content){return new Promise(resolve=>{
+function confirmAnonymous(content,automatic=false){return new Promise(resolve=>{
  const panel=el('section');panel.className='video-learning-card';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','確認交給 AI 的內容');
- el('h3','確認交給 AI 的匿名內容',panel);el('p','以下文字將傳送至 OpenAI API 取得建議。若仍有可識別個資，請取消並修改。',panel);const preview=JSON.parse(content);
+ el('h3','確認交給 AI 的匿名內容',panel);if(automatic)el('p','啟用後，本卡日後儲存完整草稿時會自動傳送更新後的匿名痛點、選題理由與訪談題至 OpenAI API，不會每次再預覽。請勿填入個資，可隨時取消勾選關閉。啟用本身不會呼叫 AI。',panel);el('p','以下文字將傳送至 OpenAI API 取得建議。若仍有可識別個資，請取消並修改。',panel);const preview=JSON.parse(content);
  const names=Object.fromEntries([...fields,...challengeFields]);Object.assign(names,{candidates:'候選痛點',selected:'暫定選題（從 1 起算）',reason:'選擇理由',reconsider:'重新選題的條件',statement:'痛點描述',questions:'訪談問題',challenge:'進階挑戰'});
  const translated=value=>Array.isArray(value)?value.map(translated):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([key,v])=>[names[key]||key,key==='selected'?Number(v)+1:translated(v)])):value;
  el('pre',JSON.stringify(translated(preview),null,2),panel);
- const end=value=>{panel.remove();resolve(value);};button('確認內容，取得 AI 建議',()=>end(true),panel);button('取消，回去修改',()=>end(false),panel);
+ const end=value=>{panel.remove();resolve(value);};button(automatic?'同意，啟用儲存後自動 AI':'確認內容，取得 AI 建議',()=>end(true),panel);button('取消，回去修改',()=>end(false),panel);
  root.insertBefore(panel,workspace);panel.querySelector('button').focus();panel.scrollIntoView({block:'center'});
 });}
-function localSave(){editGeneration++;dirty=true;try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
+function localSave(){clearTimeout(rulesTimer);rulesTimer=setTimeout(updateLiveCheck,450);editGeneration++;dirty=true;try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
 function input(label,value,set,parent,placeholder=''){
  const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};return t;
 }
+function updateLiveCheck(){
+ liveCheck.replaceChildren();
+ try{const result=check(normalize(card));el('h3',result.ok?'自動檢查：必要內容已填齊':`自動檢查：還有 ${result.errors.length} 項需確認`,liveCheck);
+ el('p','這是完整度檢查，不是 AI 評分；不耗 AI 額度。',liveCheck);
+ if(result.errors.length){const list=el('ul','',liveCheck);result.errors.slice(0,3).forEach(t=>el('li',t,list));if(result.errors.length>3)el('p','其餘缺項可按「檢查目前進度」查看。',liveCheck);}
+ if(result.warnings.length)el('p',`改善提醒：${result.warnings[0]}`,liveCheck);
+ }catch(e){el('p',e.message,liveCheck);}
+}
+async function saveWithAuto(){
+ const snapshot=normalize(card),generation=editGeneration;
+ await save('draft',snapshot);
+ if(!autoToggle.checked||!autoAuthorized)return;
+ if(autoBusy){autoStatus.textContent='已有 AI 請求處理中，草稿已保存，沒有重複送出。';return;}
+ if(generation!==editGeneration){autoStatus.textContent='草稿已保存；你又修改了內容，請完成後再儲存，這次不送 AI。';return;}
+ if(!check(snapshot).ok){autoStatus.textContent='草稿已保存；必要內容尚未填齊，暫不呼叫 AI。';return;}
+ const content=aiInput(snapshot,'review',week1Identity);
+ if(privacyRisk(content)){autoStatus.textContent='草稿已保存；內容可能含個資，請改成角色代稱，這次沒有送 AI。';return;}
+ if(content===lastAutoContent){if(lastAutoFeedback)showFeedback(lastAutoFeedback,true);autoStatus.textContent='草稿已保存；分析內容未變，沿用已有 AI 建議。';return;}
+ autoBusy=true;autoStatus.textContent='草稿已保存，正在取得 AI 建議…';
+ try{const r=await api({action:'ai',kind:'review',card:snapshot,privacy_confirmed:true});lastAutoContent=content;lastAutoFeedback=r.feedback;showFeedback(r.feedback,r.cached);autoStatus.textContent=r.cached?'草稿已保存，已取回相同內容的 AI 建議。':'草稿已保存，AI 建議已顯示在下方。';if(generation!==editGeneration)el('p','取得建議期間你又修改了答案；此建議針對先前儲存的內容。',feedback);}
+ catch(e){autoStatus.textContent=`草稿已保存；AI 暫時無法提供建議：${e.message}。仍可修改與提交。`;}
+ finally{autoBusy=false;}
+}
 function render(){
+ updateLiveCheck();
  form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
  const label=el('label','今天需要哪一種協助？',form),mode=el('select','',label);
  for(const [v,t]of [['guided','一步一步引導'],['standard','檢查我的想法'],['challenge','進階挑戰']]){const o=el('option',t,mode);o.value=v;}
@@ -171,16 +213,18 @@ async function save(status,snapshot=normalize(card)){
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }finally{saving=false;}
 }
-button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>save('draft'));const submitButton=button('正式提交',()=>save('submitted'));
+button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>saveWithAuto());const submitButton=button('正式提交',()=>save('submitted'));
 button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
 for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點，取得 AI 建議']])button(title,async()=>{
+ if(autoBusy)throw Error('已有 AI 請求處理中，請稍候。');
  const requestCard=normalize(card),anonymous=aiInput(requestCard,kind,week1Identity);if(privacyRisk(anonymous))throw Error('文字可能含個資，請改成角色代稱後再請 AI 協助。');
  if(!document.querySelector('#week2-privacy').checked)throw Error('請先在 AI 選用區確認文字不含個資。');
  if(kind==='review'&&!checks(true).ok)return;
  if(!await confirmAnonymous(anonymous)){msg.textContent='已取消傳送，內容保持不變。';return;}
- await save('draft',requestCard);msg.textContent='正在取得 AI 建議…';
- const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});showFeedback(r.feedback,r.cached);feedback.scrollIntoView({block:'start'});msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';
-
+ if(autoBusy)throw Error('已有 AI 請求處理中，請稍候。');
+ autoBusy=true;try{await save('draft',requestCard);msg.textContent='正在取得 AI 建議…';
+ const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});if(kind==='review'){lastAutoContent=anonymous;lastAutoFeedback=r.feedback;}showFeedback(r.feedback,r.cached);feedback.scrollIntoView({block:'start'});msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';
+ }finally{autoBusy=false;}
 },aiControls);
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 (async()=>{
@@ -189,6 +233,8 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
  const data=await api({action:'load'});
  if(data.week1?.status!=='submitted'){msg.textContent='你尚未提交 Week 1。請先完成起點卡，提交後即可回來使用 Week 2。';const a=el('a','補交 Week 1');a.href='index.html#student';return;}
  week1Identity=[session.student_id,data.week1.student_name];
+ try{autoAuthorized=localStorage.getItem(autoKey())==='enabled';autoToggle.checked=autoAuthorized;}catch{}
+ if(autoToggle.checked)autoStatus.textContent='已啟用自動 AI：完整草稿儲存後取得建議，可隨時關閉。';
  row=data.row;version=row?.version??null;card=row?.card||emptyCard();
  if(!row){card.candidates[0].people=data.week1.affected_user||'';card.candidates[0].context=data.week1.observed_context||'';card.candidates[0].problem=data.week1.observed_problem||'';card.candidates[0].evidence=data.week1.known_fact||'';card.candidates[0].assumption=data.week1.unverified_assumption||'';}
  if(data.week1_feedback?.feedback_json)el('p','Week 1 AI 回饋：'+(data.week1_feedback.feedback_json.overall_feedback||'請返回 Week 1 查看'),priorBody);
