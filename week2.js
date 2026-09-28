@@ -23,7 +23,9 @@ const aiStep=el('section','',workspace);aiStep.className='video-learning-card';
 el('h3','填答後：是否需要 AI 建議？（選用）',aiStep);
 el('p','先完成痛點與訪談規劃，再決定是否請 AI 協助。未使用 AI 不需填寫回應，也不影響正式提交。',aiStep);
 const aiChoices=el('div','',aiStep);aiChoices.className='actions';
-const aiControls=el('section','',aiStep);aiControls.hidden=true;
+const aiControls=el('section','',aiStep);aiControls.hidden=true;aiControls.id='week2-ai-options';
+el('h4','下一步：確認匿名內容，再選擇 AI 協助方式',aiControls);
+el('p','想檢查已填好的卡片，請按「檢查我的痛點，取得 AI 建議」；還不知道如何開始，請按「我卡住了，給我探索方向」。接著會顯示送出前的內容確認。',aiControls);
 const privacyLabel=el('label','',aiControls),privacyCheckbox=el('input','',privacyLabel);privacyCheckbox.type='checkbox';privacyCheckbox.id='week2-privacy';
 privacyLabel.append(document.createTextNode('我已確認將送出的文字不含姓名、學號、聯絡資料或其他可識別個資。AI 建議會由 OpenAI API 處理。'));
 const feedback=el('section','',aiStep);feedback.hidden=true;
@@ -32,8 +34,8 @@ el('h3','看完建議後：我的判斷',responseBox);
 el('p','請說明採用、修改或不採用哪一項建議，以及原因。AI 建議不是事實，仍要用觀察或訪談驗證。',responseBox);
 const responseInput=input('我採用／修改／不採用什麼建議？為什麼？', '',v=>card.ai_response=v,responseBox,'例如：我採用先查明原因的建議，暫不決定產品，先訪談最近遇過這件事的人。');
 const previousResponse=el('details','',aiStep);previousResponse.hidden=true;el('summary','查看先前填寫的 AI 回應',previousResponse);const previousResponseText=el('p','',previousResponse);
-button('取得 AI 建議',()=>{aiControls.hidden=false;privacyCheckbox.focus();},aiChoices);
-button('暫不使用 AI，繼續提交',()=>{aiControls.hidden=true;msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
+const openAiButton=button('我要使用 AI：展開選項',()=>{aiControls.hidden=false;openAiButton.textContent='AI 選項已展開，請在下方選擇';openAiButton.setAttribute('aria-expanded','true');aiControls.scrollIntoView({block:'center'});privacyCheckbox.focus({preventScroll:true});},aiChoices);openAiButton.setAttribute('aria-expanded','false');openAiButton.setAttribute('aria-controls','week2-ai-options');
+button('暫不使用 AI，繼續提交',()=>{aiControls.hidden=true;openAiButton.textContent='我要使用 AI：展開選項';openAiButton.setAttribute('aria-expanded','false');msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
 const historyBox=el('details','',workspace);el('summary','歷次保存與提交',historyBox);const historyList=el('div','',historyBox);
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||`連線失敗 ${r.status}`);return b;}
@@ -129,7 +131,7 @@ async function save(status,snapshot=normalize(card)){
 }
 button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>save('draft'));const submitButton=button('正式提交',()=>save('submitted'));
 button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
-for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點']])button(title,async()=>{
+for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點，取得 AI 建議']])button(title,async()=>{
  const requestCard=normalize(card),anonymous=aiInput(requestCard,kind,week1Identity);if(privacyRisk(anonymous))throw Error('文字可能含個資，請改成角色代稱後再請 AI 協助。');
  if(!document.querySelector('#week2-privacy').checked)throw Error('請先在 AI 選用區確認文字不含個資。');
  if(kind==='review'&&!checks(true).ok)return;
