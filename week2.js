@@ -1,5 +1,5 @@
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,challengeFields,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs';
+import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260929-sources';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -164,12 +164,24 @@ function render(){
  card.interviewees.forEach((v,i)=>input(`受訪者 ${i+1}：角色與接觸方式`,v,x=>card.interviewees[i]=x,interview));
  card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,'請問上一次發生時，你如何處理？'));
  if(card.mode==='challenge'){el('h3','進階挑戰',interview);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,interview));}
- input('內容來源與 AI 使用說明',card.source,v=>card.source=v,interview,'我的觀察／他人原話／資料來源／AI 探索方向（待驗證）');
+ const sources=el('section','內容從哪裡來？（勾選即可）',interview);sources.className='week2-question';
+ el('p','可複選，不用再寫一段說明。尚未觀察也可以如實選擇「目前是假設」。',sources);
+ const sourceBoxes=[];
+ for(const [key,title]of sourceOptions){const label=el('label','',sources),box=el('input','',label);box.type='checkbox';box.checked=(card.source_types||[]).includes(key);sourceBoxes.push([key,box]);label.append(document.createTextNode(title));box.onchange=()=>{
+  if(box.checked){for(const [other,control]of sourceBoxes){if(other!==key&&(key==='hypothesis'||other==='hypothesis'))control.checked=false;}}
+  card.source_types=sourceBoxes.filter(([,control])=>control.checked).map(([k])=>k);localSave();
+ };}
+ const optional=(label,key,placeholder)=>{const l=el('label',label,sources),t=el('textarea','',l);t.maxLength=200;t.placeholder=placeholder;t.value=card[key]||'';t.oninput=()=>{card[key]=t.value;localSave();};};
+ optional('資料來源（選填）','source_reference','例如：文章名稱或網址；沒有就留白。');
+ optional('其他 AI 工具（選填）','external_ai','只有使用系統以外的 AI 才需補充，例如：ChatGPT 協助整理訪談題；沒有就留白。');
+ const aiRecord=el('p',latestFeedback?'系統內 AI：已取得建議（系統自動記錄，不需重填）。':'系統內 AI：目前尚無已載入的建議紀錄，不需自行填寫。',sources);aiRecord.dataset.systemAi='true';
+ if(card.source){const previous=el('details','',sources);el('summary','先前填寫的來源說明（已保留）',previous);el('p',card.source,previous);}
+
 
  for(const [k,t]of [['contact_confirmed','我確認三位受訪者符合暫定對象，而且可以實際接觸。'],['questions_checked','我確認兩題問題詢問過去的真實經驗，不暗示答案或推銷產品。']]){const l=el('label','',interview),c=el('input','',l);c.type='checkbox';c.checked=card[k];c.onchange=()=>{card[k]=c.checked;localSave();};l.append(document.createTextNode(t));}
 
  const questions=[...form.querySelectorAll('.week2-question')];
- const jump=index=>{step=index;render();form.querySelector('.week2-question:not([hidden]) textarea')?.focus();};
+ const jump=index=>{step=index;render();form.querySelector('.week2-question:not([hidden]) input, .week2-question:not([hidden]) textarea')?.focus();};
  if(card.mode==='guided'){
   step=Math.max(0,Math.min(step,questions.length-1));questions.forEach((q,i)=>q.hidden=i!==step);
   const activeStage=questions[step].closest('[data-stage]');
@@ -178,7 +190,7 @@ function render(){
   const stages=[...card.candidates.map((_,i)=>[String(i),`痛點 ${i+1}${i===2?'（選填）':''}`]),['choice','比較選題'],['interview','準備訪談']];
   for(const [key,title] of stages){const group=form.querySelector(`[data-stage="${key}"]`),index=questions.findIndex(q=>group.contains(q));const b=button(title,()=>jump(index),nav);if(group===activeStage)b.setAttribute('aria-current','step');}
   const inStage=questions.filter(q=>activeStage.contains(q));
-  el('p',`目前：${stages.find(([key])=>key===activeStage.dataset.stage)[1]} · 第 ${inStage.indexOf(questions[step])+1}/${inStage.length} 題。請在下方文字框填答。`,nav);
+  el('p',`目前：${stages.find(([key])=>key===activeStage.dataset.stage)[1]} · 第 ${inStage.indexOf(questions[step])+1}/${inStage.length} 題。${questions[step]===sources?'請在下方勾選來源；補充說明可留白。':'請在下方文字框填答。'}`,nav);
   const choose=el('label','跳到本步驟的問題',nav),select=el('select','',choose);
   inStage.forEach(q=>{const o=el('option',q.childNodes[0].textContent,select);o.value=questions.indexOf(q);});select.value=step;select.onchange=()=>jump(Number(select.value));
   button('上一題',()=>jump(step-1),nav).disabled=step===0;
@@ -203,7 +215,7 @@ function checks(full=false){
  if(full){for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
  report.scrollIntoView({block:'nearest'});return c;
 }
-function showFeedback(fb,cached=false){latestFeedback=fb;feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
+function showFeedback(fb,cached=false){latestFeedback=fb;const aiRecord=form.querySelector('[data-system-ai]');if(aiRecord)aiRecord.textContent='系統內 AI：已取得建議（系統自動記錄，不需重填）。';feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
 async function save(status,snapshot=normalize(card)){
  if(saving)throw Error('正在保存，請等完成再操作。');
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}

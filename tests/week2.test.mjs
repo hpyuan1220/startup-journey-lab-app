@@ -11,3 +11,5 @@ test('AI 移除身分欄位與已知識別資訊',()=>{const d=complete();d.cand
 test('待教師抽查可準備訪談，教師 hold 阻擋',()=>{assert.match(readiness({status:'submitted',review_status:'pending'}),/可準備/);assert.match(readiness({status:'submitted',review_status:'hold'}),/先與老師/);});
 test('重複受訪者不能通過',()=>{const d=complete();d.interviewees=['同學','同學','同學'];assert.equal(check(d).ok,false);});
 test('教師優先看到 hold',()=>assert.ok(priority({review_status:'hold'})<priority({status:'submitted',review_status:'pending'})));
+
+test('來源勾選與外部 AI 保存，保留舊文字且排除未知選項',()=>{const c=complete();Object.assign(c,{source:'舊的觀察說明',source_types:['observation','reference','unknown'],source_reference:'文章名稱',external_ai:'ChatGPT 協助整理'});const n=normalize(c);assert.equal(n.source,c.source);assert.deepEqual(n.source_types,['observation','reference']);assert.equal(n.source_reference,c.source_reference);assert.equal(n.external_ai,c.external_ai);assert.equal(check(n).ok,true);assert.ok(!aiInput(n,'review').includes('ChatGPT'));});
