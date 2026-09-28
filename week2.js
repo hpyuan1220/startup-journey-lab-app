@@ -1,3 +1,4 @@
+import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
 import {emptyCard,fields,challengeFields,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
@@ -33,6 +34,47 @@ const responseBox=el('section','',aiStep);responseBox.hidden=true;
 el('h3','看完建議後：我的判斷',responseBox);
 el('p','請說明採用、修改或不採用哪一項建議，以及原因。AI 建議不是事實，仍要用觀察或訪談驗證。',responseBox);
 const responseInput=input('我採用／修改／不採用什麼建議？為什麼？', '',v=>card.ai_response=v,responseBox,'例如：我採用先查明原因的建議，暫不決定產品，先訪談最近遇過這件事的人。');
+let latestFeedback=null,revisionUndo=null;
+const revisionArea=el('section','',responseBox);revisionArea.className='revision-area';
+el('h3','把建議改成可編輯草稿',revisionArea);
+el('p','選擇欄位後預覽，再確認套用。痛點陳述依目前填答整理；訪談題沿用已取得的 AI 追問，不增加 AI 呼叫，也不新增觀察事實。',revisionArea);
+const revisionOptions=el('div','',revisionArea);
+const revisionChecks=revisionFields.map(([key,label])=>{const l=el('label','',revisionOptions),c=el('input','',l);c.type='checkbox';c.value=key;l.append(document.createTextNode(label));return c;});
+const revisionStatus=el('p','',revisionArea);revisionStatus.setAttribute('role','status');
+const revisionPreview=el('section','',revisionArea);revisionPreview.hidden=true;
+const revisionAction=fn=>{try{fn();}catch(e){revisionStatus.textContent=e.message;}};
+const undoKey=()=>`sjl-week2-revision-${session?.class_id}-${session?.student_id}`;
+const undoButton=button('復原上次套用',()=>revisionAction(()=>{
+ if(!revisionUndo)throw Error('目前沒有可復原的套用紀錄。');
+ card=applyRevision(card,revisionUndo,true);revisionUndo=null;try{localStorage.removeItem(undoKey());}catch{}
+ localSave();render();revisionPreview.hidden=true;undoButton.hidden=true;revisionStatus.textContent='已復原上次套用的欄位，請儲存草稿同步雲端。';
+}),revisionArea);undoButton.hidden=true;
+button('幫我草擬修改',()=>revisionAction(()=>{
+ const keys=revisionChecks.filter(c=>c.checked).map(c=>c.value);if(!keys.length)throw Error('請先勾選想修改的欄位。');
+ const patches=draftRevision(card,latestFeedback,keys),selectedTopic=card.selected,sourceSnapshot=JSON.stringify(card.candidates[card.selected]);
+ revisionPreview.replaceChildren();revisionPreview.hidden=false;revisionStatus.textContent='草稿已準備好；原答案尚未改動。請逐欄檢查並勾選要套用的內容。';
+ el('h4','預覽差異：原答案／建議修改',revisionPreview);
+ const editors=patches.map(p=>{
+ const item=el('section','',revisionPreview);item.className='revision-item';
+ const l=el('label','',item),choose=el('input','',l);choose.type='checkbox';choose.checked=true;l.append(document.createTextNode(`套用：${p.label}`));
+ el('p',p.source,item);const columns=el('div','',item);columns.className='revision-columns';
+ const original=el('section','',columns);el('h4','原答案',original);el('pre',p.before||'（尚未填寫）',original);
+ const proposed=el('label',`建議修改：${p.label}`,columns),text=el('textarea','',proposed);text.value=p.after;text.maxLength=p.max;
+ el('p',`最多 ${p.max} 字；可先修改草稿，再確認套用。`,proposed);
+ return {p,choose,text};
+ });
+ button('確認套用已勾選欄位',()=>revisionAction(()=>{
+ if(card.selected!==selectedTopic||JSON.stringify(card.candidates[card.selected])!==sourceSnapshot)throw Error('暫定選題或原始觀察已改變，請重新草擬，避免套用過時內容。');
+ const chosen=editors.filter(e=>e.choose.checked).map(e=>({...e.p,after:e.text.value}));
+ const next=applyRevision(card,chosen);card=next;revisionUndo=chosen;let stored=true;try{localStorage.setItem(undoKey(),JSON.stringify(chosen));}catch{stored=false;}
+ localSave();render();undoButton.hidden=false;revisionPreview.hidden=true;
+ revisionStatus.textContent=`已套用 ${chosen.length} 個欄位；尚未正式提交。請檢查並儲存草稿。${stored?'可用「復原上次套用」回復原答案。':'本機無法保存復原紀錄，僅此頁開啟期間可復原。'}`;
+ }),revisionPreview);
+ button('取消，保留原答案',()=>{revisionPreview.hidden=true;revisionStatus.textContent='已取消，原答案沒有改動。';},revisionPreview);
+ revisionPreview.scrollIntoView({block:'start'});
+}),revisionArea);
+button('儲存修改後的草稿',()=>save('draft'),revisionArea);
+button('檢查修改後的完整度',()=>checks(true),revisionArea);
 const previousResponse=el('details','',aiStep);previousResponse.hidden=true;el('summary','查看先前填寫的 AI 回應',previousResponse);const previousResponseText=el('p','',previousResponse);
 const openAiButton=button('我要使用 AI：展開選項',()=>{aiControls.hidden=false;openAiButton.textContent='AI 選項已展開，請在下方選擇';openAiButton.setAttribute('aria-expanded','true');aiControls.scrollIntoView({block:'center'});privacyCheckbox.focus({preventScroll:true});},aiChoices);openAiButton.setAttribute('aria-expanded','false');openAiButton.setAttribute('aria-controls','week2-ai-options');
 button('暫不使用 AI，繼續提交',()=>{aiControls.hidden=true;openAiButton.textContent='我要使用 AI：展開選項';openAiButton.setAttribute('aria-expanded','false');msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
@@ -119,7 +161,7 @@ function checks(full=false){
  if(full){for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
  report.scrollIntoView({block:'nearest'});return c;
 }
-function showFeedback(fb,cached=false){feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
+function showFeedback(fb,cached=false){latestFeedback=fb;feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
 async function save(status,snapshot=normalize(card)){
  if(saving)throw Error('正在保存，請等完成再操作。');
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
@@ -153,6 +195,7 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
  for(const [k,t]of [['observed_problem','問題'],['known_fact','事實'],['unverified_assumption','假設']])el('p',`${t}：${data.week1[k]||'尚未填寫'}`,priorBody);
  const a=el('a','修改 Week 1（保留原版本）',priorBody);a.href='index.html#student';
  for(const v of data.versions||[]){const d=el('details','',historyList);el('summary',`Week ${v.week} · 版本 ${v.version} · ${new Date(v.created_at).toLocaleString('zh-TW')}`,d);el('pre',JSON.stringify(v.snapshot,null,2),d);}
+ try{const savedUndo=JSON.parse(localStorage.getItem(undoKey())||'null');if(Array.isArray(savedUndo)&&savedUndo.length){revisionUndo=savedUndo;undoButton.hidden=false;}}catch{}
  workspace.hidden=false;render();msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local)button('恢復此裝置尚未同步的草稿',()=>{card=normalize(local.card);dirty=true;render();msg.textContent='已恢復本機草稿，請確認後儲存到雲端。';});

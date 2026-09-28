@@ -72,3 +72,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .workspace-navigation a[aria-current="page"]{background:var(--green);color:#fff}
 .workspace-navigation a:focus-visible{outline:3px solid #e46f50;outline-offset:4px}
 @media(max-width:600px){.workspace-navigation a{flex:1 1 100%}.topbar nav{flex-wrap:wrap}}
+
+.revision-area{margin-top:24px;border-top:2px solid var(--green);padding-top:16px}.revision-item{border:1px solid #999;padding:16px;margin:16px 0}.revision-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.revision-columns>*{min-width:0}.revision-columns textarea{width:100%;min-height:180px}@media(max-width:700px){.revision-columns{grid-template-columns:1fr}}
