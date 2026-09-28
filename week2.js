@@ -19,7 +19,21 @@ const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修�
 const actions=el('div','',workspace);actions.className='actions';
 const form=el('form','',workspace);form.noValidate=true;
 const report=el('section','',workspace);report.setAttribute('aria-live','polite');
-const feedback=el('section','',workspace);feedback.className='video-learning-card';
+const aiStep=el('section','',workspace);aiStep.className='video-learning-card';
+el('h3','填答後：是否需要 AI 建議？（選用）',aiStep);
+el('p','先完成痛點與訪談規劃，再決定是否請 AI 協助。未使用 AI 不需填寫回應，也不影響正式提交。',aiStep);
+const aiChoices=el('div','',aiStep);aiChoices.className='actions';
+const aiControls=el('section','',aiStep);aiControls.hidden=true;
+const privacyLabel=el('label','',aiControls),privacyCheckbox=el('input','',privacyLabel);privacyCheckbox.type='checkbox';privacyCheckbox.id='week2-privacy';
+privacyLabel.append(document.createTextNode('我已確認將送出的文字不含姓名、學號、聯絡資料或其他可識別個資。AI 建議會由 OpenAI API 處理。'));
+const feedback=el('section','',aiStep);feedback.hidden=true;
+const responseBox=el('section','',aiStep);responseBox.hidden=true;
+el('h3','看完建議後：我的判斷',responseBox);
+el('p','請說明採用、修改或不採用哪一項建議，以及原因。AI 建議不是事實，仍要用觀察或訪談驗證。',responseBox);
+const responseInput=input('我採用／修改／不採用什麼建議？為什麼？', '',v=>card.ai_response=v,responseBox,'例如：我採用先查明原因的建議，暫不決定產品，先訪談最近遇過這件事的人。');
+const previousResponse=el('details','',aiStep);previousResponse.hidden=true;el('summary','查看先前填寫的 AI 回應',previousResponse);const previousResponseText=el('p','',previousResponse);
+button('取得 AI 建議',()=>{aiControls.hidden=false;privacyCheckbox.focus();},aiChoices);
+button('暫不使用 AI，繼續提交',()=>{aiControls.hidden=true;msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';submitButton.focus();submitButton.scrollIntoView({block:'center'});},aiChoices);
 const historyBox=el('details','',workspace);el('summary','歷次保存與提交',historyBox);const historyList=el('div','',historyBox);
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||`連線失敗 ${r.status}`);return b;}
@@ -38,7 +52,7 @@ function input(label,value,set,parent,placeholder=''){
  const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};return t;
 }
 function render(){
- form.replaceChildren();report.replaceChildren();el('h3','開始填答',form);
+ form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
  const label=el('label','今天需要哪一種協助？',form),mode=el('select','',label);
  for(const [v,t]of [['guided','一步一步引導'],['standard','檢查我的想法'],['challenge','進階挑戰']]){const o=el('option',t,mode);o.value=v;}
  mode.value=card.mode;mode.onchange=()=>{card.mode=mode.value;localSave();render();};
@@ -65,9 +79,9 @@ function render(){
  card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,'請問上一次發生時，你如何處理？'));
  if(card.mode==='challenge'){el('h3','進階挑戰',interview);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,interview));}
  input('內容來源與 AI 使用說明',card.source,v=>card.source=v,interview,'我的觀察／他人原話／資料來源／AI 探索方向（待驗證）');
- input('我如何回應 AI 建議？（未使用 AI 可留白）',card.ai_response,v=>card.ai_response=v,interview);
+
  for(const [k,t]of [['contact_confirmed','我確認三位受訪者符合暫定對象，而且可以實際接觸。'],['questions_checked','我確認兩題問題詢問過去的真實經驗，不暗示答案或推銷產品。']]){const l=el('label','',interview),c=el('input','',l);c.type='checkbox';c.checked=card[k];c.onchange=()=>{card[k]=c.checked;localSave();};l.append(document.createTextNode(t));}
- const note=el('label','',form),cb=el('input','',note);cb.type='checkbox';cb.id='week2-privacy';note.append(document.createTextNode('我已確認將送出的文字不含姓名、學號、聯絡資料或其他可識別個資。AI 建議會由外部模型處理。'));
+
  const questions=[...form.querySelectorAll('.week2-question')];
  const jump=index=>{step=index;render();form.querySelector('.week2-question:not([hidden]) textarea')?.focus();};
  if(card.mode==='guided'){
@@ -82,7 +96,7 @@ function render(){
   const choose=el('label','跳到本步驟的問題',nav),select=el('select','',choose);
   inStage.forEach(q=>{const o=el('option',q.childNodes[0].textContent,select);o.value=questions.indexOf(q);});select.value=step;select.onchange=()=>jump(Number(select.value));
   button('上一題',()=>jump(step-1),nav).disabled=step===0;
-  button(step===questions.length-1?'已到最後一題':'下一題',()=>jump(step+1),nav).disabled=step===questions.length-1;
+  button(step===questions.length-1?'完成填答，選擇是否使用 AI':'下一題',()=>{if(step===questions.length-1){aiStep.scrollIntoView({block:'start'});aiChoices.querySelector('button').focus();}else jump(step+1);},nav);
   form.insertBefore(nav,form.querySelector('.candidate'));
  }
  form.onsubmit=e=>{e.preventDefault();};
@@ -103,7 +117,7 @@ function checks(full=false){
  if(full){for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
  report.scrollIntoView({block:'nearest'});return c;
 }
-function showFeedback(fb,cached=false){feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
+function showFeedback(fb,cached=false){feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
 async function save(status,snapshot=normalize(card)){
  if(saving)throw Error('正在保存，請等完成再操作。');
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
@@ -113,17 +127,17 @@ async function save(status,snapshot=normalize(card)){
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }finally{saving=false;}
 }
-button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>save('draft'));button('正式提交',()=>save('submitted'));
+button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>save('draft'));const submitButton=button('正式提交',()=>save('submitted'));
 button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
 for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點']])button(title,async()=>{
  const requestCard=normalize(card),anonymous=aiInput(requestCard,kind,week1Identity);if(privacyRisk(anonymous))throw Error('文字可能含個資，請改成角色代稱後再請 AI 協助。');
- if(!document.querySelector('#week2-privacy').checked)throw Error('請先在表單下方確認文字不含個資。');
+ if(!document.querySelector('#week2-privacy').checked)throw Error('請先在 AI 選用區確認文字不含個資。');
  if(kind==='review'&&!checks(true).ok)return;
  if(!await confirmAnonymous(anonymous)){msg.textContent='已取消傳送，內容保持不變。';return;}
  await save('draft',requestCard);msg.textContent='正在取得 AI 建議…';
- const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});showFeedback(r.feedback,r.cached);msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';
+ const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});showFeedback(r.feedback,r.cached);feedback.scrollIntoView({block:'start'});msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';
 
-});
+},aiControls);
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 (async()=>{
  if(!session){msg.textContent='請先到學生起點卡輸入學號與班級邀請碼，再回來此頁。';const a=el('a','進入 Week 1 起點卡');a.href='index.html#student';return;}
