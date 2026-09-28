@@ -1,7 +1,7 @@
 import {emptyCard,fields,challengeFields,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
-root.hidden=false;
+root.hidden=!['#card','#week-two'].includes(location.hash);
 let card=emptyCard(),version=null,row=null,step=0,dirty=false,session,week1Identity=[],editGeneration=0,saving=false;
 try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};

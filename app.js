@@ -49,7 +49,12 @@ async function restoreStudent(){
   }
 }
 
-document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); $(btn.dataset.view).classList.add('active');}));
+function showMainView(name){
+ if(!['home','student','teacher'].includes(name))return;
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));
+}
+document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{location.hash=btn.dataset.view;showMainView(btn.dataset.view);}));
+window.addEventListener('hashchange',()=>showMainView(location.hash.slice(1)));
 $('student-enter').onclick=async()=>{ if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true); try{message('access-message','正在確認班級…'); studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value}); localStorage.setItem('sjl-student-session',JSON.stringify(studentSession)); showStudent(); const loaded=await studentApi({action:'load',token:studentSession.token}); fill(loaded.submission||{}); message('form-message','已進入起點卡，可先儲存草稿。');}catch(e){message('access-message',e.message,true);}};
 $('student-exit').onclick=()=>{localStorage.removeItem('sjl-student-session');studentSession=null;showStudent();};
 $('week1-form').addEventListener('input',renderCard);
@@ -174,4 +179,4 @@ if (recoveryToken && recovery.get('type') === 'recovery') {
   };
 }
 
-if(location.hash==="#student"){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));$("student").classList.add("active");}
+showMainView(location.hash.slice(1));

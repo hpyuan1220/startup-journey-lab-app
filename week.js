@@ -15,3 +15,21 @@ const n=Math.min(10,Math.max(1,Number(new URLSearchParams(location.search).get('
 document.title=`Startup Journey Lab｜Week ${n}`;const h=highlights[n-1];document.querySelector('#video-title').textContent=h[0];document.querySelector('#video-takeaway').textContent=h[1];document.querySelector('#week-number').textContent=`WEEK ${String(n).padStart(2,'0')}`;document.querySelector('#week-title').textContent=w[0];document.querySelector('#week-summary').textContent=w[1];document.querySelector('#week-output').textContent=`本週提交：${w[2]}`;document.querySelector('#week-status').textContent=w[3];document.querySelector('#week-steps').innerHTML=w[4].map(x=>`<li>${x}</li>`).join('');document.querySelector('#week-one').hidden=n!==1;
 
 document.querySelector("#week-two-materials").hidden=n!==2;
+
+// Switch views without rebuilding the form: unsaved answers remain in memory.
+if(n===2){
+ const navigation=document.querySelector('#week-two-navigation');
+ navigation.hidden=false;
+ function showWeekView(){
+  const cardView=['#card','#week-two'].includes(location.hash);
+  document.querySelector('#week-blueprint').hidden=cardView;
+  document.querySelector('#week-two-materials').hidden=cardView;
+  document.querySelector('#week-two').hidden=!cardView;
+  navigation.querySelectorAll('[data-week-view]').forEach(link=>{
+   if(link.dataset.weekView===(cardView?'card':'learning'))link.setAttribute('aria-current','page');
+   else link.removeAttribute('aria-current');
+  });
+ }
+ window.addEventListener('hashchange',showWeekView);
+ showWeekView();
+}

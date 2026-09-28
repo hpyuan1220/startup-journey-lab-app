@@ -65,3 +65,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two [data-stage]{min-width:0}
 #week-two form>*,#week-two .guided-nav label{min-width:0}
 #week-two .guided-nav select{width:100%}
+
+/* Shared learning workspace navigation; never hides the navigation itself. */
+.workspace-navigation{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0;padding:16px;border:1px solid var(--green);background:#fffdf8}
+.workspace-navigation a{display:block;padding:12px 18px;border:2px solid var(--green);color:var(--green);font-weight:700;text-decoration:none}
+.workspace-navigation a[aria-current="page"]{background:var(--green);color:#fff}
+.workspace-navigation a:focus-visible{outline:3px solid #e46f50;outline-offset:4px}
+@media(max-width:600px){.workspace-navigation a{flex:1 1 100%}.topbar nav{flex-wrap:wrap}}
