@@ -8,6 +8,13 @@ const cfg=window.STARTUP_JOURNEY_CONFIG||{};
 const el=(tag,text,parent=root)=>{const e=document.createElement(tag);if(text)e.textContent=text;parent.append(e);return e;};
 const msg=el('p','正在載入你的學習卡…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const workspace=el('section');workspace.hidden=true;
+const intro=el('section','',workspace);intro.className='video-learning-card';root.insertBefore(intro,workspace);
+el('h3','先理解：這張卡要做什麼？',intro);
+el('p','本週先比較兩個你親身觀察到的不同困擾，再暫選一個，下週找真人訪談。現在不用想產品，也不用證明創業會成功。',intro);
+const explanation=el('ol','',intro);for(const text of ['痛點 1：延續 Week 1 的觀察，補充還不清楚的地方。','痛點 2：再找另一個不同困擾；可以是同一場景，但阻礙要不同。','比較選題：從兩個困擾選一個，說明理由。兩個不是都要做成產品。','準備訪談：為選中的一題，找三位可接觸的人、準備兩個問題。'])el('li',text,explanation);
+el('p','「候選痛點」就是尚未決定要深入研究的困擾。例如痛點 1 是午餐排隊等太久；痛點 2 是分組時找不到大家都有空的時間。這只是說明用例子，請填自己的事件。第三個痛點完全選填。',intro);
+el('p','填答位置在下方「開始填答」。引導模式一次一題，按「下一題」繼續；也可用步驟按鈕跳到要修改的地方。',intro);
+let removedCandidate=null;
 const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修改紀錄',prior);const priorBody=el('div','',prior);
 const actions=el('div','',workspace);actions.className='actions';
 const form=el('form','',workspace);form.noValidate=true;
@@ -31,57 +38,87 @@ function input(label,value,set,parent,placeholder=''){
  const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};return t;
 }
 function render(){
- form.replaceChildren();
+ form.replaceChildren();report.replaceChildren();el('h3','開始填答',form);
  const label=el('label','今天需要哪一種協助？',form),mode=el('select','',label);
  for(const [v,t]of [['guided','一步一步引導'],['standard','檢查我的想法'],['challenge','進階挑戰']]){const o=el('option',t,mode);o.value=v;}
  mode.value=card.mode;mode.onchange=()=>{card.mode=mode.value;localSave();render();};
  el('p','三種路徑都完成兩個候選痛點、三位受訪者與兩題訪談問題。切換路徑不會清除內容。',form);
  card.candidates.forEach((c,i)=>{
-  const box=el('details','',form);box.className='candidate';box.open=card.mode==='guided'||i===card.selected;el('summary',`候選痛點 ${i+1}${i===card.selected?'（暫定選題）':''}`,box);
+  const box=el('details','',form);box.className='candidate';box.dataset.stage=String(i);box.open=true;el('summary',`痛點 ${i+1}${i===2?'（選填）':''}：${i===0?'延續 Week 1 的困擾':i===1?'另一個不同困擾':'額外比較的困擾'}`,box);
+  el('p',i===0?'已帶入可用的 Week 1 內容；請在下面的文字框確認並補充。':'請在下面的文字框填寫另一個困擾，不是上一題的解決方法。',box);
   if(card.mode==='guided'){
-   const q=el('label','先從生活場景選擇（可自行填寫）',box),s=el('select','',q);for(const text of ['請選擇','吃飯','通勤','上課','租屋','打工','分組','行政流程']){el('option',text,s);}s.onchange=()=>{if(s.selectedIndex){c.context=s.value;localSave();render();}};
+   const q=el('label','先從生活場景選擇（可自行填寫）',box),s=el('select','',q);for(const text of ['請選擇','吃飯','通勤','上課','租屋','打工','分組','行政流程']){el('option',text,s);}s.onchange=()=>{if(s.selectedIndex){const hint=el('p',`你選了「${s.value}」。請在「何時何地發生」補充自己的時間、地點與事件；不會覆蓋原答案。`,box);hint.setAttribute('role','status');}};
   }
-  fields.forEach(([k,t])=>input(t,c[k],v=>c[k]=v,box,k==='evidence'?'請寫真實事件、時間與觀察來源；不寫真實姓名':k==='frequency'||k==='cost'?'不確定可寫「待驗證」及如何確認':''));
-  button('選這一題作為訪談方向',()=>{card.selected=i;localSave();render();},box);
+  const examples={people:'例如：午休只有 50 分鐘、下午要換教室的同學',context:'例如：週二中午 12 點，在學校餐廳；請填自己的事件',job:'例如：下一堂課開始前，買到並吃完午餐（不是開發 App）',problem:'例如：排隊時間不確定，無法判斷是否來得及吃完',frequency:'不確定可寫：待驗證，訪談最近一週發生幾次',cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',evidence:'請寫自己真的看過的事件、時間與來源；例子不能當成證據',assumption:'例如：我猜其他同學也困擾，但尚未問過他們'};
+  fields.forEach(([k,t])=>input(t,c[k],v=>c[k]=v,box,examples[k]));
+  if(i===2)button('不需要第三題，移除並保留復原',()=>{removedCandidate={candidate:card.candidates[2],selected:card.selected};card.candidates.pop();if(card.selected===2)card.selected=0;step=0;localSave();render();msg.textContent='已移除第三題，可按「復原第三題」找回剛才的內容。請確認暫定選題。';},box);
  });
- if(card.candidates.length<3)button('增加第三個候選題（選填）',()=>{card.candidates.push(Object.fromEntries(fields.map(([k])=>[k,''])));localSave();render();},form);
- input('為什麼先選這一題？其他題目為什麼暫緩？',card.reason,v=>card.reason=v,form);
- input('什麼證據會讓我改變選擇？',card.reconsider,v=>card.reconsider=v,form);
- input('修訂後的痛點陳述',card.statement,v=>card.statement=v,form,'在＿＿情境中，＿＿的人想要＿＿，但遇到＿＿，目前用＿＿處理；仍需驗證＿＿。');
- el('h3','三位可接觸的受訪者',form);el('p','使用角色代稱，例如「通勤同學 A，課後詢問」。不要寫姓名、電話或 Email。',form);
- card.interviewees.forEach((v,i)=>input(`受訪者 ${i+1}：角色與接觸方式`,v,x=>card.interviewees[i]=x,form));
- card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,form,'請問上一次發生時，你如何處理？'));
- if(card.mode==='challenge'){el('h3','進階挑戰',form);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,form));}
- input('內容來源與 AI 使用說明',card.source,v=>card.source=v,form,'我的觀察／他人原話／資料來源／AI 探索方向（待驗證）');
- input('我如何回應 AI 建議？（未使用 AI 可留白）',card.ai_response,v=>card.ai_response=v,form);
- for(const [k,t]of [['contact_confirmed','我確認三位受訪者符合暫定對象，而且可以實際接觸。'],['questions_checked','我確認兩題問題詢問過去的真實經驗，不暗示答案或推銷產品。']]){const l=el('label','',form),c=el('input','',l);c.type='checkbox';c.checked=card[k];c.onchange=()=>{card[k]=c.checked;localSave();};l.append(document.createTextNode(t));}
+ if(card.candidates.length<3)button('增加第三個候選題（選填）',()=>{card.candidates.push(Object.fromEntries(fields.map(([k])=>[k,''])));step=18;localSave();render();},form);
+ if(removedCandidate&&card.candidates.length===2)button('復原第三題',()=>{card.candidates.push(removedCandidate.candidate);card.selected=removedCandidate.selected;removedCandidate=null;step=18;localSave();render();},form);
+ const choice=el('section','',form);choice.dataset.stage='choice';el('h3','比較選題：先選一個要訪談的方向',choice);
+ const pickLabel=el('label','我暫時選擇',choice),pick=el('select','',pickLabel);card.candidates.forEach((c,i)=>{const o=el('option',`痛點 ${i+1}：${c.problem||'尚未填寫阻礙'}`,pick);o.value=i;});pick.value=card.selected;pick.onchange=()=>{card.selected=Number(pick.value);localSave();};
+ input('為什麼先選這一題？其他題目為什麼暫緩？',card.reason,v=>card.reason=v,choice);
+ input('什麼證據會讓我改變選擇？',card.reconsider,v=>card.reconsider=v,choice);
+ input('修訂後的痛點陳述',card.statement,v=>card.statement=v,choice,'在＿＿情境中，＿＿的人想要＿＿，但遇到＿＿，目前用＿＿處理；仍需驗證＿＿。');
+ const interview=el('section','',form);interview.dataset.stage='interview';el('h3','準備訪談：只針對剛才選中的一題',interview);el('h3','三位可接觸的受訪者',interview);el('p','使用角色代稱，例如「通勤同學 A，課後詢問」。不要寫姓名、電話或 Email。',interview);
+ card.interviewees.forEach((v,i)=>input(`受訪者 ${i+1}：角色與接觸方式`,v,x=>card.interviewees[i]=x,interview));
+ card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,'請問上一次發生時，你如何處理？'));
+ if(card.mode==='challenge'){el('h3','進階挑戰',interview);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,interview));}
+ input('內容來源與 AI 使用說明',card.source,v=>card.source=v,interview,'我的觀察／他人原話／資料來源／AI 探索方向（待驗證）');
+ input('我如何回應 AI 建議？（未使用 AI 可留白）',card.ai_response,v=>card.ai_response=v,interview);
+ for(const [k,t]of [['contact_confirmed','我確認三位受訪者符合暫定對象，而且可以實際接觸。'],['questions_checked','我確認兩題問題詢問過去的真實經驗，不暗示答案或推銷產品。']]){const l=el('label','',interview),c=el('input','',l);c.type='checkbox';c.checked=card[k];c.onchange=()=>{card[k]=c.checked;localSave();};l.append(document.createTextNode(t));}
  const note=el('label','',form),cb=el('input','',note);cb.type='checkbox';cb.id='week2-privacy';note.append(document.createTextNode('我已確認將送出的文字不含姓名、學號、聯絡資料或其他可識別個資。AI 建議會由外部模型處理。'));
+ const questions=[...form.querySelectorAll('.week2-question')];
+ const jump=index=>{step=index;render();form.querySelector('.week2-question:not([hidden]) textarea')?.focus();};
  if(card.mode==='guided'){
-  const questions=[...form.querySelectorAll('.week2-question')];step=Math.max(0,Math.min(step,questions.length-1));questions.forEach((q,i)=>q.hidden=i!==step);
-  form.querySelectorAll('.candidate').forEach(box=>box.hidden=![...box.querySelectorAll('.week2-question')].some(q=>!q.hidden));
-  const nav=el('div','',form);nav.className='guided-nav';el('p',`一步一步 ${step+1}/${questions.length}：每次先回答一題，隨時可切換「檢查我的想法」看完整卡片。`,nav);
-  button('上一題',()=>{step--;render();form.querySelector('.week2-question:not([hidden]) textarea')?.focus();},nav).disabled=step===0;
-  button('下一題',()=>{step++;render();form.querySelector('.week2-question:not([hidden]) textarea')?.focus();},nav).disabled=step===questions.length-1;form.insertBefore(nav,form.children[2]);
+  step=Math.max(0,Math.min(step,questions.length-1));questions.forEach((q,i)=>q.hidden=i!==step);
+  const activeStage=questions[step].closest('[data-stage]');
+  form.querySelectorAll('[data-stage]').forEach(box=>box.hidden=box!==activeStage);
+  const nav=el('nav','',form);nav.className='guided-nav';nav.setAttribute('aria-label','填答步驟');
+  const stages=[...card.candidates.map((_,i)=>[String(i),`痛點 ${i+1}${i===2?'（選填）':''}`]),['choice','比較選題'],['interview','準備訪談']];
+  for(const [key,title] of stages){const group=form.querySelector(`[data-stage="${key}"]`),index=questions.findIndex(q=>group.contains(q));const b=button(title,()=>jump(index),nav);if(group===activeStage)b.setAttribute('aria-current','step');}
+  const inStage=questions.filter(q=>activeStage.contains(q));
+  el('p',`目前：${stages.find(([key])=>key===activeStage.dataset.stage)[1]} · 第 ${inStage.indexOf(questions[step])+1}/${inStage.length} 題。請在下方文字框填答。`,nav);
+  const choose=el('label','跳到本步驟的問題',nav),select=el('select','',choose);
+  inStage.forEach(q=>{const o=el('option',q.childNodes[0].textContent,select);o.value=questions.indexOf(q);});select.value=step;select.onchange=()=>jump(Number(select.value));
+  button('上一題',()=>jump(step-1),nav).disabled=step===0;
+  button(step===questions.length-1?'已到最後一題':'下一題',()=>jump(step+1),nav).disabled=step===questions.length-1;
+  form.insertBefore(nav,form.querySelector('.candidate'));
  }
  form.onsubmit=e=>{e.preventDefault();};
 }
-function checks(){report.replaceChildren();const c=check(normalize(card));el('h3',c.ok?'必要內容已填齊':'請補充以下內容',report);for(const t of [...c.errors,...c.warnings])el('p',t,report);return c;}
+function checks(full=false){
+ report.replaceChildren();const c=check(normalize(card));
+ const targets=[];
+ card.candidates.forEach((candidate,i)=>fields.forEach(([k,label])=>{if(!candidate[k])targets.push({label:`痛點 ${i+1}：${label}`,index:i*fields.length+fields.findIndex(([key])=>key===k)});}));
+ const base=card.candidates.length*fields.length;
+ [['reason','選題理由'],['reconsider','會改變選擇的證據'],['statement','修訂後的痛點陳述']].forEach(([k,label],i)=>{if(!card[k])targets.push({label,index:base+i});});
+ card.interviewees.forEach((v,i)=>{if(!v)targets.push({label:`受訪者 ${i+1} 的角色與接觸方式`,index:base+3+i});});
+ card.questions.forEach((v,i)=>{if(!v)targets.push({label:`訪談問題 ${i+1}`,index:base+6+i});});
+ const shown=full||card.mode!=='guided'?targets:targets.filter(t=>t.index===step);
+ el('h3',c.ok?'必要內容已填齊':full?'提交前：還有哪些內容需要補充？':'目前填答進度',report);
+ el('p',`尚有 ${targets.length} 個文字欄位待填。可先保存草稿，不必一次完成。${!full&&card.mode==='guided'?'這裡先顯示目前這一題；完整檢查可按下方按鈕。':''}`,report);
+ shown.forEach(t=>button(`前往填寫：${t.label}`,()=>{step=t.index;render();const q=[...form.querySelectorAll('.week2-question')][t.index];const box=q.closest('details');if(box)box.open=true;q.querySelector('textarea').focus();q.scrollIntoView({block:'center'});},report));
+ if(!full&&card.mode==='guided')button('查看整張卡還缺什麼',()=>checks(true),report);
+ if(full){for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
+ report.scrollIntoView({block:'nearest'});return c;
+}
 function showFeedback(fb,cached=false){feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
 async function save(status,snapshot=normalize(card)){
  if(saving)throw Error('正在保存，請等完成再操作。');
- if(status==='submitted'&&!checks().ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
+ if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
  const generation=editGeneration;saving=true;msg.textContent='正在同步…';
  try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;
  if(generation===editGeneration){dirty=false;localStorage.removeItem(cacheKey());msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'} · 版本 ${version} · ${readiness(row)}`;}
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }finally{saving=false;}
 }
-button('檢查完整度',checks);button('儲存草稿',()=>save('draft'));button('正式提交',()=>save('submitted'));
+button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>save('draft'));button('正式提交',()=>save('submitted'));
 button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
 for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點']])button(title,async()=>{
  const requestCard=normalize(card),anonymous=aiInput(requestCard,kind,week1Identity);if(privacyRisk(anonymous))throw Error('文字可能含個資，請改成角色代稱後再請 AI 協助。');
  if(!document.querySelector('#week2-privacy').checked)throw Error('請先在表單下方確認文字不含個資。');
- if(kind==='review'&&!checks().ok)return;
+ if(kind==='review'&&!checks(true).ok)return;
  if(!await confirmAnonymous(anonymous)){msg.textContent='已取消傳送，內容保持不變。';return;}
  await save('draft',requestCard);msg.textContent='正在取得 AI 建議…';
  const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});showFeedback(r.feedback,r.cached);msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';

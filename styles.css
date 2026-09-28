@@ -54,3 +54,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .actions button.action-failed{background:#fff2ef;border-color:#9e362a;color:#9e362a}
 
 #week-two textarea{min-height:90px} #week-two details{margin:1rem 0;padding:1rem;border:1px solid #bbb} #week-two pre{white-space:pre-wrap;overflow-wrap:anywhere} #week-two .actions{position:static;flex-wrap:wrap} #week-two label{display:block;margin:1rem 0} #week-two input[type=checkbox]{width:auto} #week-two button{margin:0.3rem} #week-two summary{cursor:pointer;font-weight:700} #week-two [role=status]{padding:1rem;background:#e6efc2}
+
+/* Week 2: show where the learner is and where to answer. */
+#week-two .guided-nav{padding:18px;border:2px solid var(--green);background:#fffdf8;display:flex;flex-wrap:wrap;gap:6px}
+#week-two .guided-nav p,#week-two .guided-nav label{flex-basis:100%;margin:6px 0}
+#week-two .guided-nav [aria-current=step]{background:var(--green);color:white}
+#week-two select{max-width:100%;padding:10px;font:inherit;background:#fffdf8;color:var(--ink);border:1px solid var(--ink)}
+#week-two .week2-question{border-left:4px solid var(--coral);padding-left:14px}
+#week-two textarea::placeholder{color:#59615c;opacity:1}
+#week-two [data-stage]{min-width:0}
+#week-two form>*,#week-two .guided-nav label{min-width:0}
+#week-two .guided-nav select{width:100%}
