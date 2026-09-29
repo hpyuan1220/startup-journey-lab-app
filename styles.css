@@ -53,7 +53,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .actions button.action-success{background:var(--green);border-color:var(--green);color:#fff}
 .actions button.action-failed{background:#fff2ef;border-color:#9e362a;color:#9e362a}
 
-#week-two textarea{min-height:90px} #week-two details{margin:1rem 0;padding:1rem;border:1px solid #bbb} #week-two pre{white-space:pre-wrap;overflow-wrap:anywhere} #week-two .actions{position:static;flex-wrap:wrap} #week-two label{display:block;margin:1rem 0} #week-two input[type=checkbox]{width:auto} #week-two button{margin:0.3rem} #week-two summary{cursor:pointer;font-weight:700} #week-two [role=status]{padding:1rem;background:#e6efc2}
+#week-two textarea{min-height:90px} #week-two details{margin:1rem 0;padding:1rem;border:1px solid #bbb} #week-two pre{white-space:pre-wrap;overflow-wrap:anywhere} #week-two .workspace-actions{position:static;flex-wrap:wrap} #week-two label{display:block;margin:1rem 0} #week-two input[type=checkbox]{width:auto} #week-two button{margin:0.3rem} #week-two summary{cursor:pointer;font-weight:700} #week-two [role=status]{padding:1rem;background:#e6efc2}
 
 /* Week 2: show where the learner is and where to answer. */
 #week-two .guided-nav{padding:18px;border:2px solid var(--green);background:#fffdf8;display:flex;flex-wrap:wrap;gap:6px}
@@ -76,3 +76,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .revision-area{margin-top:24px;border-top:2px solid var(--green);padding-top:16px}.revision-item{border:1px solid #999;padding:16px;margin:16px 0}.revision-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.revision-columns>*{min-width:0}.revision-columns textarea{width:100%;min-height:180px}@media(max-width:700px){.revision-columns{grid-template-columns:1fr}}
 
 .submission-result{margin:20px 0;padding:24px;border:3px solid #28694b;background:#eff9ec;scroll-margin-top:24px}.submission-result h3{margin-top:0}.submission-result[data-state="error"],.submission-result[data-state="incomplete"]{border-color:#a53c20;background:#fff3eb}.submission-result[data-state="pending"]{border-color:#446078;background:#eef5ff}.submission-result:focus{outline:3px solid #e46f50;outline-offset:4px}
+/* Seven-step workspace navigation */
+#week-two .journey{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin:20px 0}
+#week-two .journey button{margin:0;text-align:left;background:#eee;color:#343a37;border:2px solid #777;line-height:1.5}
+#week-two .journey button[data-state="complete"],#week-two .journey button[data-state="submitted"]{background:#e9f7ec;border-color:#27633b;color:#184424}
+#week-two .journey button[data-state="incomplete"]{background:#fff2e0;border-color:#995818;color:#704011}
+#week-two .journey button[aria-current="step"]{background:#e9f2ff;border-color:#245b9b;color:#153e70;box-shadow:0 0 0 2px #245b9b}
+#week-two .journey-info{padding:16px;border-left:5px solid #245b9b;background:#f0f5fb;scroll-margin-top:24px}
+#week-two .journey-controls{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}
+#week-two .workspace-actions{position:sticky;top:0;z-index:3;padding:8px;background:#fffdf8;border-bottom:1px solid #bbb}
+#week-two button{background:#fffdf8;color:#183d2b;border:1px solid #446451}
+#week-two .primary-action{background:#183d2b;color:white;font-weight:700;border:2px solid #183d2b}
+#week-two button:focus-visible{outline:3px solid #d45032;outline-offset:3px}
+#week-two .week2-question{scroll-margin-top:100px}
+@media(max-width:600px){#week-two .journey{grid-template-columns:1fr 1fr}#week-two .workspace-actions{position:static}#week-two .journey button{font-size:15px;padding:10px}}

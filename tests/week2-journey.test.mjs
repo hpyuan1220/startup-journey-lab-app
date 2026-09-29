@@ -1,0 +1,8 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {steps,stepState,sameCard,progressKey,cardDifferences} from '../week2-journey.mjs';
+import {emptyCard} from '../week2-core.mjs';import {demoCard} from './support/week2-harness.mjs';
+test('七步固定，空卡、半完成與完成狀態依答案計算',()=>{assert.equal(steps.length,7);const c=emptyCard();assert.equal(stepState(c,null)['0'].state,'empty');c.candidates[0].people='同學';assert.equal(stepState(c,null)['0'].state,'incomplete');const d=demoCard();assert.equal(stepState(d,null)['0'].state,'complete');d.candidates[0].people='';assert.equal(stepState(d,null)['0'].state,'incomplete');});
+test('AI 可略過，提交以伺服器版本及目前內容一致為準',()=>{const d=demoCard();assert.equal(stepState(d,null,{skipped:true}).ai.state,'skipped');assert.equal(stepState(d,null).submit.state,'ready');const row={card:structuredClone(d),status:'submitted'};assert.equal(stepState(d,row).submit.state,'submitted');d.reason+='修改';assert.equal(stepState(d,row).submit.state,'ready');});
+test('不同班級學生的續作 key 隔離，舊卡 normalize 後可比較',()=>{assert.notEqual(progressKey({class_id:'a',student_id:'1'}),progressKey({class_id:'b',student_id:'1'}));assert.notEqual(progressKey({class_id:'a',student_id:'1'}),progressKey({class_id:'a',student_id:'2'}));assert.ok(sameCard(demoCard(),structuredClone(demoCard())));assert.equal(sameCard(null,demoCard()),false);});
+
+test('來源預設值不冒充確認，衝突差異包含舊來源與第三題',()=>{const a=demoCard(),b=structuredClone(a);assert.equal(stepState(emptyCard(),null).source.state,'optional');a.candidates[1].workaround='群組';a.source='舊來源';assert.deepEqual(cardDifferences(a,b).map(x=>x.label),['痛點 2：目前處理方法','原來源說明']);});
