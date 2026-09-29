@@ -1,4 +1,4 @@
-import {steps,stepState,progressKey,sameCard,cardDifferences} from './week2-journey.mjs';
+import {steps,stepState,progressKey,sameAnswers,cardDifferences} from './week2-journey.mjs?v=20260929-modefix';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
 import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260929-sources';
 const root=document.querySelector('#week-two');
@@ -138,7 +138,7 @@ function moveStage(delta){let index=steps.findIndex(x=>x[0]===activeStage);if(ac
 function helpNext(){
  journeyHelp.replaceChildren();
  if(dirty){el('p','有修改尚未保存。請先儲存草稿。',journeyHelp);button('儲存草稿',()=>saveWithAuto(),journeyHelp);}
- else if(row?.status==='submitted'&&sameCard(card,row.card)){el('p',`已提交版本 ${version}，不必重複提交。${readiness(row)}`,journeyHelp);}
+ else if(row?.status==='submitted'&&sameAnswers(card,row.card)){el('p',`已提交版本 ${version}，不必重複提交。${readiness(row)}`,journeyHelp);}
  else {const states=stepState(card,row);const missing=steps.slice(0,4).find(([k])=>states[k].missing.length);
  if(missing){const key=missing[0];el('p',`${missing[1]}還需補充：${states[key].missing[0]}。`,journeyHelp);button('前往補充',()=>{goStage(key);const group=form.querySelector(`[data-stage="${key}"]`);const qs=[...form.querySelectorAll('.week2-question')];const q=qs.find(q=>group.contains(q)&&q.querySelector('textarea')&&!q.querySelector('textarea').value.trim());if(q){goStage(key,qs.indexOf(q));qFocus();}else group.querySelector('input[type="checkbox"]:not(:checked)')?.focus();},journeyHelp);}
  else{el('p',aiSkipped||latestFeedback?'可前往最後檢查，正式提交。':'核心填答已完成，可選擇 AI 建議或略過後提交。',journeyHelp);button('前往下一步',()=>goStage(aiSkipped||latestFeedback?'submit':'ai'),journeyHelp);}}
@@ -275,7 +275,7 @@ async function submitCard(){
  try{
   const snapshot=normalize(card);
   if(!check(snapshot).ok){checks(true);submissionNotice('尚未提交：請先補齊內容','你的答案仍保留。按下方「查看缺項」完成必要內容；也可以先儲存草稿。','incomplete');return;}
-  if(row?.status==='submitted'&&JSON.stringify(normalize(row.card))===JSON.stringify(snapshot)){
+  if(row?.status==='submitted'&&sameAnswers(row.card,snapshot)){
    submissionNotice('這份內容已提交，不需要重複送出',`版本 ${version} · ${readiness(row)}。若修改答案，請再提交新版。`);return;
   }
   submissionNotice('正在提交…','正在保存至雲端，請稍候。','pending');
@@ -327,18 +327,21 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&card.mode!=='challenge'&&!Object.values(card.challenge||{}).some(Boolean))activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
  workspace.hidden=false;render();msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
- if(local&&!sameCard(local.card,card)){
+ if(local&&sameAnswers(local.card,card)){card.mode=normalize(local.card).mode;render();}
+ if(local&&!sameAnswers(local.card,card)){
   pendingLocal=local;workspace.inert=true;refreshJourney();
-  const conflict=el('section');conflict.className='video-learning-card';root.insertBefore(conflict,workspace);
+  const conflict=el('section');conflict.className='video-learning-card';conflict.tabIndex=-1;conflict.setAttribute('role','region');conflict.setAttribute('aria-label','選擇要繼續的草稿');root.insertBefore(conflict,workspace);workspace.hidden=true;
+ msg.textContent='答案有兩個版本，請在下方選擇後繼續填寫。原答案均保留。';
   el('h3','本機草稿與雲端不同，請先選擇要接續的版本',conflict);el('p',`本機：${local.savedAt||'時間未記錄'}；雲端：版本 ${version??'尚未保存'}。選擇前不會覆蓋任一份。`,conflict);
   for(const diff of cardDifferences(local.card,card)){const d=el('details','',conflict);el('summary',diff.label,d);el('p','本機：'+(typeof diff.local==='string'?diff.local:JSON.stringify(diff.local)),d);el('p','雲端：'+(typeof diff.cloud==='string'?diff.cloud:JSON.stringify(diff.cloud)),d);}
   const choose=useLocal=>{
    if(!useLocal){try{localStorage.setItem(cacheKey()+'-backup',JSON.stringify(local));localStorage.removeItem(cacheKey());}catch{msg.textContent='無法保留本機備份，請先下載本機草稿再選擇。';return;}}
    if(useLocal){card=normalize(local.card);dirty=true;}
-   pendingLocal=null;workspace.inert=false;conflict.remove();render();
+   pendingLocal=null;workspace.inert=false;workspace.hidden=false;conflict.remove();render();
    if(useLocal)localSave();else{msg.textContent='已選用雲端內容；原本機草稿另留本裝置備份。';addBackupDownload();}
   };
   button('繼續本機草稿',()=>choose(true),conflict);button('使用雲端內容，保留本機備份',()=>choose(false),conflict);
+ conflict.focus({preventScroll:true});conflict.scrollIntoView({block:'start'});
  }
  addBackupDownload();
  if(remembered){welcome.hidden=false;el('h3','歡迎回來',welcome);el('p',`你上次停在「${steps.find(x=>x[0]===activeStage)?.[1]||'選填探索'}」。${pendingLocal?'請先比較本機與雲端內容。':dirty?'有本機修改未同步。':row?`雲端版本 ${version} · ${readiness(row)}`:'尚未保存至雲端。'} 下一步可繼續上次進度，或查看步驟缺項。位置僅在同裝置、同瀏覽器恢復。`,welcome);
