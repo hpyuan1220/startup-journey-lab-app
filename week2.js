@@ -1,4 +1,4 @@
-import {steps,stepState,progressKey,sameAnswers,cardDifferences} from './week2-journey.mjs?v=20260929-modefix';
+import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
 import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260929-sources';
 const root=document.querySelector('#week-two');
@@ -114,7 +114,7 @@ const stageButtons=new Map(steps.map(([key,title],i)=>[key,button(`${i+1}. ${tit
 function remember(){if(!session)return;try{localStorage.setItem(progressKey(session),JSON.stringify({stage:activeStage,question:step,mode:card.mode,skipped:aiSkipped}));}catch{}}
 function refreshJourney(){
  const states=stepState(card,row,{ai:!!latestFeedback,skipped:aiSkipped});
- const labels={empty:'尚未開始',incomplete:'需要補充',complete:'✓ 必要內容已填齊',optional:'選用',reviewed:'已有 AI 建議',skipped:'已略過',ready:'可提交',submitted:'✓ 已提交'};
+ const labels=stateLabels;
  for(const [key,b]of stageButtons){const st=states[key];b.dataset.state=st.state;b.textContent=`${steps.findIndex(x=>x[0]===key)+1}. ${steps.find(x=>x[0]===key)[1]} · ${labels[st.state]}${st.missing.length?'（'+st.missing.length+'項）':''}${key===activeStage?' · 目前步驟':''}`;if(key===activeStage)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');}
  const index=steps.findIndex(x=>x[0]===activeStage),info=steps[index];
  const welcomeText=welcome.querySelector('p');if(welcomeText){const missing=steps.slice(0,4).find(([key])=>states[key].missing.length);welcomeText.textContent=`歡迎回來，你上次停在「${steps.find(x=>x[0]===remembered?.stage)?.[1]||'選填探索'}」。目前${pendingLocal?'本機與雲端不同，請先選擇版本':dirty?'有本機修改未同步':row?`雲端版本 ${version} · ${readiness(row)}`:'尚未保存至雲端'}。下一步建議：${pendingLocal?'比較差異後接續':dirty?'儲存草稿':states.submit.state==='submitted'?'準備訪談，不必重複提交':missing?`補充${missing[1]}的「${states[missing[0]].missing[0]}」`:'前往提交檢查，AI 為選用'}。位置僅在同裝置、同瀏覽器恢復。`;}

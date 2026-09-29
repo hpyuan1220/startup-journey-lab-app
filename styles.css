@@ -81,6 +81,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .journey button{margin:0;text-align:left;background:#eee;color:#343a37;border:2px solid #777;line-height:1.5}
 #week-two .journey button[data-state="complete"],#week-two .journey button[data-state="submitted"]{background:#e9f7ec;border-color:#27633b;color:#184424}
 #week-two .journey button[data-state="incomplete"]{background:#fff2e0;border-color:#995818;color:#704011}
+#week-two .journey button[data-state="optional"],#week-two .journey button[data-state="skipped"]{background:#f3f0e9;border-color:#8c8578;color:#4a443c;border-style:dashed}
+#week-two .journey button[data-state="reviewed"]{background:#f0ecfa;border-color:#5a4a96;color:#382c66}
+#week-two .journey button[data-state="ready"]{background:#e3f2ef;border-color:#1f6f63;color:#10453d}
+#week-two .journey button[data-state="submitted"]{background:#d9eee0;border-color:#1c5330;color:#123722}
 #week-two .journey button[aria-current="step"]{background:#e9f2ff;border-color:#245b9b;color:#153e70;box-shadow:0 0 0 2px #245b9b}
 #week-two .journey-info{padding:16px;border-left:5px solid #245b9b;background:#f0f5fb;scroll-margin-top:24px}
 #week-two .journey-controls{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}
