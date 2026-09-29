@@ -18,6 +18,7 @@ el('p','填答位置在下方「開始填答」。引導模式一次一題，按
 let removedCandidate=null;
 const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修改紀錄',prior);const priorBody=el('div','',prior);
 const actions=el('div','',workspace);actions.className='actions';
+const submitResult=el('section','',workspace);submitResult.hidden=true;submitResult.tabIndex=-1;submitResult.setAttribute('role','status');submitResult.setAttribute('aria-live','polite');submitResult.className='submission-result';
 const form=el('form','',workspace);form.noValidate=true;
 const liveCheck=el('section','',workspace);liveCheck.setAttribute('aria-live','polite');liveCheck.className='video-learning-card';
 const report=el('section','',workspace);report.setAttribute('aria-live','polite');
@@ -109,7 +110,7 @@ function confirmAnonymous(content,automatic=false){return new Promise(resolve=>{
  const end=value=>{panel.remove();resolve(value);};button(automatic?'同意，啟用儲存後自動 AI':'確認內容，取得 AI 建議',()=>end(true),panel);button('取消，回去修改',()=>end(false),panel);
  root.insertBefore(panel,workspace);panel.querySelector('button').focus();panel.scrollIntoView({block:'center'});
 });}
-function localSave(){clearTimeout(rulesTimer);rulesTimer=setTimeout(updateLiveCheck,450);editGeneration++;dirty=true;try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
+function localSave(){submitResult.hidden=true;clearTimeout(rulesTimer);rulesTimer=setTimeout(updateLiveCheck,450);editGeneration++;dirty=true;try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
 function input(label,value,set,parent,placeholder=''){
  const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};return t;
 }
@@ -216,8 +217,29 @@ function checks(full=false){
  report.scrollIntoView({block:'nearest'});return c;
 }
 function showFeedback(fb,cached=false){latestFeedback=fb;const aiRecord=form.querySelector('[data-system-ai]');if(aiRecord)aiRecord.textContent='系統內 AI：已取得建議（系統自動記錄，不需重填）。';feedback.hidden=false;responseBox.hidden=false;previousResponse.hidden=true;responseInput.value=card.ai_response||'';feedback.replaceChildren();el('h3',cached?'已保存的 AI 建議':'AI 學習建議',feedback);el('p',({ready:'內容完整，可準備訪談',revise:'請修訂後再次檢查',help:'建議尋求教師協助'})[fb.status],feedback);el('p',fb.strength,feedback);for(const [key,title]of [['directions','探索方向（待驗證）'],['gaps','建議補充'],['assumptions','仍是推測'],['questions','可以追問']]){if(fb[key]?.length){el('h4',title,feedback);const ul=el('ul','',feedback);fb[key].forEach(t=>el('li',t,ul));}}el('p',`最小行動：${fb.next_action}`,feedback);el('p','AI 建議不是使用者證據，也不是成績。請自行確認、補充觀察，不可直接當成事實。',feedback);}
+function submissionNotice(title,text,state='success'){
+ submitResult.replaceChildren();submitResult.hidden=false;submitResult.dataset.state=state;
+ el('h3',title,submitResult);el('p',text,submitResult);
+ if(state==='incomplete')button('查看缺項，繼續補充',()=>checks(true),submitResult);
+ submitResult.focus({preventScroll:true});submitResult.scrollIntoView({block:'center'});
+}
+async function submitCard(){
+ const label=submitButton.textContent;submitButton.textContent='正在提交，請稍候…';
+ try{
+  const snapshot=normalize(card);
+  if(!check(snapshot).ok){checks(true);submissionNotice('尚未提交：請先補齊內容','你的答案仍保留。按下方「查看缺項」完成必要內容；也可以先儲存草稿。','incomplete');return;}
+  if(row?.status==='submitted'&&JSON.stringify(normalize(row.card))===JSON.stringify(snapshot)){
+   submissionNotice('這份內容已提交，不需要重複送出',`版本 ${version} · ${readiness(row)}。若修改答案，請再提交新版。`);return;
+  }
+  submissionNotice('正在提交…','正在保存至雲端，請稍候。','pending');
+  await save('submitted',snapshot);
+  submissionNotice('Week 2 提交成功！',`已保存至雲端 · 版本 ${version} · ${readiness(row)}。${dirty?'提交期間新增的修改尚未提交，請檢查後再送新版。':'這次交件已完成。AI 額度或 AI 檢查失敗不影響本次提交。'}`);
+ }catch(e){submissionNotice('提交未完成',`${e.message} 目前答案仍在頁面，請先下載備份；確認原因後再試。`,'error');}
+ finally{submitButton.textContent=label;}
+}
 async function save(status,snapshot=normalize(card)){
  if(saving)throw Error('正在保存，請等完成再操作。');
+ if(status==='draft')submitResult.hidden=true;
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
  const generation=editGeneration;saving=true;msg.textContent='正在同步…';
  try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;
@@ -225,7 +247,7 @@ async function save(status,snapshot=normalize(card)){
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }finally{saving=false;}
 }
-button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>saveWithAuto());const submitButton=button('正式提交',()=>save('submitted'));
+button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>saveWithAuto());const submitButton=button('正式提交',submitCard);
 button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
 for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點，取得 AI 建議']])button(title,async()=>{
  if(autoBusy)throw Error('已有 AI 請求處理中，請稍候。');
