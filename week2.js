@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260929-sources';
+import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-pacing';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -185,13 +185,29 @@ async function saveWithAuto(){
  catch(e){autoStatus.textContent=`草稿已保存；AI 暫時無法提供建議：${e.message}。仍可修改與提交。`;}
  finally{autoBusy=false;}
 }
+// 進階探索的開關：有填過內容就永遠顯示；否則看本機偏好（與步驟位置同樣按班級＋學生區分）。
+const challengeKey=()=>session?`sjl-week2-extra-${session.class_id}-${session.student_id}`:'';
+function hasChallengeContent(){return Object.values(card.challenge||{}).some(Boolean);}
+function challengeOptIn(){try{return localStorage.getItem(challengeKey())==='1';}catch{return false;}}
+function setChallengeOptIn(on){try{on?localStorage.setItem(challengeKey(),'1'):localStorage.removeItem(challengeKey());}catch{}}
+function showChallenge(){return hasChallengeContent()||challengeOptIn();}
+// 舊資料相容：'challenge' 已不再是填答節奏，轉為 standard 並保留進階題入口。
+function adoptPacing(mode){if(mode==='challenge'){setChallengeOptIn(true);return 'standard';}return mode==='guided'?'guided':'standard';}
 function render(){
  updateLiveCheck();
  form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
- const label=el('label','今天需要哪一種協助？',form),mode=el('select','',label);
- for(const [v,t]of [['guided','逐題引導'],['standard','完整填答'],['challenge','進階探索']]){const o=el('option',t,mode);o.value=v;}
- mode.value=card.mode;mode.onchange=()=>{card.mode=mode.value;localSave();render();remember();};
- el('p','三種路徑都完成兩個候選痛點、三位受訪者與兩題訪談問題。切換路徑不會清除內容。',form);
+ // 填答節奏：只影響一次顯示幾題，不影響必填內容。仍沿用既有的 mode 欄位（guided／standard），不需要資料遷移。
+ const pacingLabel=el('label','',form),pacing=el('input','',pacingLabel);
+ pacing.type='checkbox';pacing.checked=card.mode==='guided';
+ pacingLabel.append(document.createTextNode('一次只顯示一題（第一次填建議打開）'));
+ pacing.onchange=()=>{card.mode=pacing.checked?'guided':'standard';localSave();render();remember();};
+ // 進階探索：獨立選填，與填答節奏無關。已填過內容者一律保持開啟。
+ const extraLabel=el('label','',form),extraToggle=el('input','',extraLabel);
+ extraToggle.type='checkbox';extraToggle.checked=showChallenge();
+ extraToggle.disabled=hasChallengeContent();
+ extraLabel.append(document.createTextNode(hasChallengeContent()?'進階探索已開啟（已有填寫內容）':'我想多挑戰 5 個進階問題（選填，不影響提交）'));
+ extraToggle.onchange=()=>{setChallengeOptIn(extraToggle.checked);render();remember();};
+ el('p','不論勾選與否，必填內容完全相同：兩個候選痛點、三位受訪者與兩題訪談問題。隨時可以切換，答案不會消失。',form);
  if(card.candidates.length===3)button('前往第三個痛點（選填）',()=>goStage('2'),form);
  card.candidates.forEach((c,i)=>{
   const box=el('details','',form);box.className='candidate';box.dataset.stage=String(i);box.open=true;el('summary',`痛點 ${i+1}${i===2?'（選填）':''}：${i===0?'延續 Week 1 的困擾':i===1?'另一個不同困擾':'額外比較的困擾'}`,box);
@@ -213,7 +229,7 @@ function render(){
  const interview=el('section','',form);interview.dataset.stage='interview';el('h3','準備訪談：只針對剛才選中的一題',interview);el('h3','三位可接觸的受訪者',interview);el('p','使用角色代稱，例如「通勤同學 A，課後詢問」。不要寫姓名、電話或 Email。',interview);
  card.interviewees.forEach((v,i)=>input(`受訪者 ${i+1}：角色與接觸方式`,v,x=>card.interviewees[i]=x,interview));
  card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,'請問上一次發生時，你如何處理？'));
- if(card.mode==='challenge'||Object.values(card.challenge||{}).some(Boolean)){button('前往進階探索（選填）',()=>goStage('challenge'),form);const extra=el('section','',form);extra.dataset.stage='challenge';el('h3','進階探索（選填）',extra);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,extra));}
+ if(showChallenge()){button('前往進階探索（選填）',()=>goStage('challenge'),form);const extra=el('section','',form);extra.dataset.stage='challenge';el('h3','進階探索（選填）',extra);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,extra));}
  const sourceStage=el('section','',form);sourceStage.dataset.stage='source';const sources=el('section','內容從哪裡來？（勾選即可）',sourceStage);sources.className='week2-question';
  el('p','可複選，不用再寫一段說明。尚未觀察也可以如實選擇「目前是假設」。',sources);
  const sourceBoxes=[];
@@ -323,11 +339,12 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  const a=el('a','修改 Week 1（保留原版本）',priorBody);a.href='index.html#student';
  for(const v of data.versions||[]){const d=el('details','',historyList);el('summary',`Week ${v.week} · 版本 ${v.version} · ${new Date(v.created_at).toLocaleString('zh-TW')}`,d);el('pre',JSON.stringify(v.snapshot,null,2),d);}
  try{const savedUndo=JSON.parse(localStorage.getItem(undoKey())||'null');if(Array.isArray(savedUndo)&&savedUndo.length){revisionUndo=savedUndo;undoButton.hidden=false;}}catch{}
+ card.mode=adoptPacing(card.mode);
  try{remembered=JSON.parse(localStorage.getItem(progressKey(session))||'null');}catch{}
- if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&card.mode!=='challenge'&&!Object.values(card.challenge||{}).some(Boolean))activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
+ if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
  workspace.hidden=false;render();msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
- if(local&&sameAnswers(local.card,card)){card.mode=normalize(local.card).mode;render();}
+ if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}
  if(local&&!sameAnswers(local.card,card)){
   pendingLocal=local;workspace.inert=true;refreshJourney();
   const conflict=el('section');conflict.className='video-learning-card';conflict.tabIndex=-1;conflict.setAttribute('role','region');conflict.setAttribute('aria-label','選擇要繼續的草稿');root.insertBefore(conflict,workspace);workspace.hidden=true;
@@ -345,7 +362,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  }
  addBackupDownload();
  if(remembered){welcome.hidden=false;el('h3','歡迎回來',welcome);el('p',`你上次停在「${steps.find(x=>x[0]===activeStage)?.[1]||'選填探索'}」。${pendingLocal?'請先比較本機與雲端內容。':dirty?'有本機修改未同步。':row?`雲端版本 ${version} · ${readiness(row)}`:'尚未保存至雲端。'} 下一步可繼續上次進度，或查看步驟缺項。位置僅在同裝置、同瀏覽器恢復。`,welcome);
-  button('繼續上次進度',()=>{welcome.hidden=true;if(['guided','standard','challenge'].includes(remembered.mode)&&card.mode!==remembered.mode){card.mode=remembered.mode;localSave();}goStage(activeStage);qFocus();},welcome);button('查看全部步驟',()=>{journey.scrollIntoView({block:'center'});stageButtons.get('0').focus();},welcome);
+  button('繼續上次進度',()=>{welcome.hidden=true;if(['guided','standard','challenge'].includes(remembered.mode)){const next=adoptPacing(remembered.mode);if(card.mode!==next){card.mode=next;localSave();}}goStage(activeStage);qFocus();},welcome);button('查看全部步驟',()=>{journey.scrollIntoView({block:'center'});stageButtons.get('0').focus();},welcome);
  }
  refreshJourney();
  const fb=data.feedback?.find(x=>x.state==='complete');if(fb){showFeedback(fb.feedback,true);if(fb.submission_version!==version)el('p','此建議來自較早版本，請依目前內容重新判讀。',feedback);}

@@ -27,13 +27,14 @@ export function check(d){
  if(d.questions.every(Boolean)&&d.questions[0]===d.questions[1])errors.push('兩個訪談問題請勿重複。');
  if(d.candidates.some(c=>/我要做|想做|開發.*(App|平台|系統)/i.test(c.problem)))warnings.push('問題可能直接描述產品，請確認具體阻礙。這項提示不會阻擋提交。');
  if(d.candidates[0].problem&&d.candidates[0].problem===d.candidates[1].problem)errors.push('兩個候選痛點請描述不同問題。');
- if(d.mode==='challenge'&&challengeFields.some(([k])=>!d.challenge[k]))warnings.push('進階挑戰尚未全部完成，可繼續補充；不影響共同最低成果。');
+ const extraFilled=challengeFields.filter(([k])=>d.challenge[k]).length;
+ if(extraFilled&&extraFilled<challengeFields.length)warnings.push('進階探索填了一部分尚未完成，可繼續補充；不影響共同最低成果。');
  return {ok:!errors.length,errors,warnings,rules_version:RULES_VERSION};
 }
 export function aiInput(d,kind,identifiers=[]){
  // Allowlist excludes identity, interviewee contact descriptions and previous AI prose.
  const selected=d.candidates[d.selected];
- const value=kind==='explore'?{context:selected.context,problem:selected.problem,evidence:selected.evidence}: {candidates:d.candidates,selected:d.selected,reason:d.reason,reconsider:d.reconsider,statement:d.statement,questions:d.questions,challenge:d.mode==='challenge'?d.challenge:{}};
+ const value=kind==='explore'?{context:selected.context,problem:selected.problem,evidence:selected.evidence}: {candidates:d.candidates,selected:d.selected,reason:d.reason,reconsider:d.reconsider,statement:d.statement,questions:d.questions,challenge:challengeFields.some(([k])=>d.challenge[k])?d.challenge:{}};
  let text=JSON.stringify(value).normalize('NFKC').replace(/\s+/g,' ');
  for(const id of identifiers.filter(x=>typeof x==='string'&&x.length>1))text=text.split(id).join('[已移除身分資訊]');
  return text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[Email 已移除]').replace(/(?:\+?886[-\s]?)?09\d{2}[-\s]?\d{3}[-\s]?\d{3}/g,'[電話已移除]').replace(/https?:\/\/[^\s"\\]+/g,'[連結已移除]');
