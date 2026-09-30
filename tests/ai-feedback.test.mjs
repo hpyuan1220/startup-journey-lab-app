@@ -139,7 +139,7 @@ test('五個維度都有 0 到 4 的分級描述', () => {
 
 // 送進模型的內容一改，版本就要動，否則新舊 prompt 會共用同一個快取鍵。
 test('rubric 版本已更新，快取會重新計分', () => {
-  assert.equal(PROMPT_VERSION, 'w1-2026-09-30c');
+  assert.equal(PROMPT_VERSION, 'w1-2026-09-30d');
 });
 
 test('合成評測卡不含真實學生內容，且每張都有預期分數', async () => {
@@ -279,4 +279,15 @@ test('假設欄同時問猜測與確認方式，且 rubric 知道行動寫在那
   assert.match(html, /placeholder="例：我猜是付款流程慢/, '表單缺少具體範例');
   assert.deepEqual([...ACTION_FIELDS], ['unverified_assumption']);
   assert.match(SYSTEM_PROMPT, /寫在 unverified_assumption 欄的後半段/);
+});
+
+// 指路的理由寫死過 Week 2 的欄位名，Week 1 沒有那一欄，學生照著找會找不到。
+test('歸零理由指的欄位，必須是 Week 1 表單上真的有的那一個', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const { NO_ACTION_REASON, FIELD_LABELS } = await import('../supabase/functions/ai-feedback/validate.ts');
+  const named = (NO_ACTION_REASON.match(/「([^」]+)」/) || [])[1];
+  assert.ok(named, '理由裡沒有指名任何欄位');
+  assert.equal(named, FIELD_LABELS.unverified_assumption);
+  assert.ok(html.includes('<label>' + named + ' <em>'), `理由指向「${named}」，但表單上沒有這個欄位`);
 });

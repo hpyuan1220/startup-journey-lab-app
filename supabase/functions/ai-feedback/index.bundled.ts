@@ -5,7 +5,7 @@
 // 純函式模組：不依賴 Deno 或網路，方便單獨測試。
 // Startup Journey Lab — Week 1 AI 學習建議
 
-export const PROMPT_VERSION = 'w1-2026-09-30c';
+export const PROMPT_VERSION = 'w1-2026-09-30d';
 export const WEEK_NUMBER = 1;
 
 export const REQUIRED_FIELDS = [
@@ -281,8 +281,10 @@ export function hasActionVerb(fields: Record<string, string> | undefined): boole
   return ACTION_FIELDS.some((key) => ACTION_PATTERN.test(fields[key] || ''));
 }
 
+// 欄位名直接取自 FIELD_LABELS：理由裡指路的欄位，必須是表單上真的存在的那一個。
+// 先前寫死成 Week 2 的欄位名「還不確定、需要驗證的事」，Week 1 根本沒有那一欄。
 export const NO_ACTION_REASON =
-  '還沒寫出要做的動作。請在「還不確定、需要驗證的事」裡寫出你要問誰、要問什麼，或要去看什麼。';
+  `還沒寫出要做的動作。請在「${FIELD_LABELS.unverified_assumption}」裡寫出你要問誰、要問什麼，或要去看什麼。`;
 
 /**
  * 驗證模型回傳內容。

@@ -25,17 +25,41 @@ test('每個實際出現的狀態都有專屬符號與文字，不依賴顏色',
 });
 
 // 空卡的學生需要的是一條路，不是「繼續下一步」。
-// 門檻 24 與 week2.js 的 STUCK_THRESHOLD 一致；邊界就是學生自己寫了四欄還是五欄。
+// 門檻 20 與 week2.js 的 STUCK_THRESHOLD 一致；邊界是學生自己寫了四欄還是五欄。
 test('卡住門檻的邊界：自己填四欄仍算卡住，填五欄就不算',()=>{
- const STUCK=24;
+ const STUCK=20;
  const missingTotal=card=>steps.slice(0,4)
   .reduce((n,[key])=>n+stepState(card,null)[key].missing.length,0);
- assert.equal(missingTotal(emptyCard()),28,'全空卡的缺項總數若改變，門檻要跟著重算');
+ assert.equal(missingTotal(emptyCard()),24,'全空卡的缺項總數若改變，門檻要跟著重算');
  assert.equal(missingTotal(demoCard()),0,'完整卡不該有缺項');
  const fill=n=>{const c=emptyCard();
   ['people','context','job','problem','frequency'].slice(0,n).forEach(k=>{c.candidates[0][k]='已填';});
   return c;};
  assert.ok(missingTotal(fill(4))>=STUCK,`填四欄應仍算卡住，實得 ${missingTotal(fill(4))}`);
  assert.ok(missingTotal(fill(5))<STUCK,`填五欄不該算卡住，實得 ${missingTotal(fill(5))}`);
- assert.ok(missingTotal(demoCard())<STUCK);
 });
+
+// 這次改動的重點：決定點從第 19 格移到第 11 格。
+test('兩個候選只問篩選五欄，深入四欄只屬於選中的那一個',()=>{
+ const c=emptyCard();
+ const st=stepState(c,null);
+ assert.equal(st['0'].missing.length,5,'痛點 1 應只問篩選五欄');
+ assert.equal(st['1'].missing.length,5,'痛點 2 應只問篩選五欄');
+ assert.equal(st.choice.missing.length,7,'選題三題＋深入四題');
+ assert.ok(st.choice.missing.some(m=>/選中的痛點/.test(m)),'深入的缺項要標明是選中的那一題');
+ // 決定點：走到「選題與深入」之前只需填 10 格
+ assert.equal(st['0'].missing.length+st['1'].missing.length,10);
+});
+
+test('換選另一個候選，深入四欄跟著換人',()=>{
+ const c=emptyCard();
+ depthKeys().forEach(k=>{c.candidates[0][k]='第一個候選的深入答案';});
+ assert.equal(stepState(c,null).choice.missing.filter(m=>/選中的痛點/.test(m)).length,0,
+  '選中候選 1 時，它的深入四欄已填齊');
+ c.selected=1;
+ assert.equal(stepState(c,null).choice.missing.filter(m=>/選中的痛點/.test(m)).length,4,
+  '改選候選 2 後，應改問候選 2 的深入四欄');
+ assert.equal(c.candidates[0].cost,'第一個候選的深入答案','換選不該清掉原本的答案');
+});
+
+function depthKeys(){return ['cost','workaround','evidence','assumption'];}

@@ -102,3 +102,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .week2-honest{margin:0 0 14px 18px;padding:6px 12px;font-size:14px;background:#f3f0e9;border:1px dashed #8c8578;color:#4a443c;border-radius:6px;cursor:pointer;width:max-content}
 @media(max-width:600px){#week-two .journey{grid-template-columns:1fr 1fr}#week-two .workspace-actions{position:static}#week-two .journey button{font-size:15px;padding:10px}}
 @media(max-width:600px){#week-two .week2-hint,#week-two .week2-honest{margin-left:0}}
+
+/* 引導模式的上一題／下一題：窄螢幕吸附底部。
+   原本這組按鈕和跳題選單一起放在題目上方，手機捲到題目時按鈕已離開畫面。 */
+#week-two .guided-nav-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px;padding:10px 0}
+#week-two .guided-nav-bar p{margin:0;font-size:14px;color:#5b5548}
+#week-two .guided-nav-bar button{padding:10px 18px}
+@media(max-height:820px),(max-width:820px){
+ #week-two .guided-nav-bar{position:sticky;bottom:0;z-index:20;background:#faf8f4;border-top:2px solid #d8d2c4;padding:10px 12px;margin-left:-12px;margin-right:-12px;box-shadow:0 -4px 12px rgba(0,0,0,.06)}
+ #week-two .guided-nav-bar button{flex:1;min-width:0}
+ #week-two form{padding-bottom:8px}
+}
+
+/* 選用步驟預設收起：步驟列只留真正要做的五步。 */
+#week-two .journey-optional{grid-column:1/-1;margin-top:6px;border:1px dashed #b9b2a2;border-radius:8px;padding:8px 12px;background:#fbfaf7}
+#week-two .journey-optional>summary{cursor:pointer;font-size:14px;color:#5b5548}
+#week-two .journey-optional button{margin-top:8px;width:100%}
