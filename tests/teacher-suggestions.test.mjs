@@ -119,3 +119,33 @@ test('死掉的 needs_follow_up 不再是統計與篩選的依據',async()=>{
  // 仍保留作為 fallback，但不能是唯一依據
  assert.ok(!/\['需追問',teacherRows\.filter\(r=>r\.needs_follow_up\)/.test(app));
 });
+
+// 老師在教室電腦登入後沒登出，下一個開網頁的人就看得到全班名單與學號。
+// 原本存 localStorage 又帶 refresh_token 自動續期，等於永久有效。
+test('教師登入狀態不得存在 localStorage',async()=>{
+ const fs=await import('node:fs/promises');
+ for(const file of ['../app.js','../teacher-ai-feedback.js','../teacher-note.js','../teacher-week2.js']){
+  const src=await fs.readFile(new URL(file,import.meta.url),'utf8');
+  const bad=src.match(/localStorage\.(get|set)Item\('sjl-teacher-(token|session)'/g)||[];
+  assert.deepEqual(bad,[],`${file} 仍在用 localStorage 存取教師權杖：${bad.join('、')}`);
+  assert.ok(!/sessionStorage\.getItem\('sjl-student-session'\)/.test(src),`${file} 不該把學生 session 一起改掉`);
+ }
+});
+
+test('教師端有閒置逾時，學生端不受影響',async()=>{
+ const fs=await import('node:fs/promises');
+ const app=await fs.readFile(new URL('../app.js',import.meta.url),'utf8');
+ assert.match(app,/TEACHER_IDLE_MINUTES/);
+ assert.match(app,/touchTeacherActivity/);
+ // 活動事件要能重新計時，否則老師改到一半會被踢
+ for(const evt of ['click','keydown','scroll','pointerdown'])assert.ok(app.includes(`'${evt}'`),`缺少 ${evt} 活動事件`);
+ // 學生的登入仍走 localStorage
+ assert.match(app,/localStorage\.getItem\('sjl-student-session'\)|localStorage\.removeItem\('sjl-student-session'\)/);
+});
+
+test('升級後會清掉舊版留在 localStorage 的教師權杖',async()=>{
+ const fs=await import('node:fs/promises');
+ const app=await fs.readFile(new URL('../app.js',import.meta.url),'utf8');
+ assert.match(app,/localStorage\.removeItem\('sjl-teacher-session'\)/);
+ assert.match(app,/localStorage\.removeItem\('sjl-teacher-token'\)/);
+});

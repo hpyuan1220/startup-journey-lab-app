@@ -23,7 +23,7 @@
   var inflight = null;
 
   function token() {
-    try { return localStorage.getItem('sjl-teacher-token') || ''; } catch (e) { return ''; }
+    try { return sessionStorage.getItem('sjl-teacher-token') || ''; } catch (e) { return ''; }
   }
 
   function configured() {

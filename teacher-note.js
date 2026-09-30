@@ -9,7 +9,7 @@ const cfg = window.STARTUP_JOURNEY_CONFIG || {};
 const list = document.getElementById('submission-list');
 if (!list) throw new Error('no list');
 
-const token = () => { try { return localStorage.getItem('sjl-teacher-token') || ''; } catch { return ''; } };
+const token = () => { try { return sessionStorage.getItem('sjl-teacher-token') || ''; } catch { return ''; } };
 const headers = () => ({apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + token(), 'Content-Type': 'application/json'});
 const configured = () => cfg.supabaseUrl && String(cfg.supabaseUrl).indexOf('YOUR_') === -1;
 

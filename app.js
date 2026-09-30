@@ -2,8 +2,22 @@ const cfg = window.STARTUP_JOURNEY_CONFIG || {};
 const required = ['student_name','team_preference','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern'];
 const $ = (id) => document.getElementById(id);
 let studentSession = JSON.parse(localStorage.getItem('sjl-student-session') || 'null');
-let teacherSession = JSON.parse(localStorage.getItem('sjl-teacher-session') || 'null');
-let teacherToken = teacherSession?.access_token || localStorage.getItem('sjl-teacher-token') || '';
+// 教師登入狀態存在 sessionStorage 而不是 localStorage：關掉分頁或瀏覽器就失效。
+// 原本存 localStorage 而且帶 refresh_token 會自動續期，等於永久有效 ——
+// 老師在教室電腦登入後沒登出，下一個開網頁的人就看得到全班名單與學號。
+const teacherStore = {
+  get(key) { try { return sessionStorage.getItem(key); } catch { return null; } },
+  set(key, value) { try { sessionStorage.setItem(key, value); } catch { /* 無痕模式等情況略過 */ } },
+  remove(key) {
+    try { sessionStorage.removeItem(key); } catch {}
+    // 清掉舊版留在 localStorage 的殘留，否則升級前登入過的瀏覽器仍然帶著權杖。
+    try { localStorage.removeItem(key); } catch {}
+  },
+};
+// 升級後第一次載入：把舊版殘留的 localStorage 權杖清掉，不沿用。
+try { localStorage.removeItem('sjl-teacher-session'); localStorage.removeItem('sjl-teacher-token'); } catch {}
+let teacherSession = JSON.parse(teacherStore.get('sjl-teacher-session') || 'null');
+let teacherToken = teacherSession?.access_token || teacherStore.get('sjl-teacher-token') || '';
 let teacherRows = [];
 let savedStatus = '';
 
@@ -125,15 +139,36 @@ $('export-text').onclick=()=>{
   message('form-message','文字檔已下載；仍請依老師指定方式提交。');
   finishAction(button,'已下載 ✓');
 };
+// 閒置逾時：老師離開電腦但沒登出時的第二道防線。
+// 只要有點擊、按鍵或捲動就重新計時，所以改作業中途不會被踢出去。
+const TEACHER_IDLE_MINUTES = 30;
+let teacherIdleTimer = null;
+function touchTeacherActivity(){
+ if(teacherIdleTimer)clearTimeout(teacherIdleTimer);
+ if(!teacherToken)return;
+ teacherIdleTimer=setTimeout(()=>{
+  if(!teacherToken)return;
+  storeTeacherSession(null);
+  const gate=$('teacher-gate'),dash=$('teacher-dashboard');
+  if(gate)gate.hidden=false;
+  if(dash)dash.hidden=true;
+  message('teacher-message',`閒置超過 ${TEACHER_IDLE_MINUTES} 分鐘，已自動登出。這是為了避免在共用電腦上留下班級資料。`);
+ },TEACHER_IDLE_MINUTES*60*1000);
+}
+for(const evt of ['click','keydown','scroll','pointerdown']){
+ window.addEventListener(evt,()=>{if(teacherToken)touchTeacherActivity();},{passive:true});
+}
+
 function storeTeacherSession(session){
   teacherSession=session;
   teacherToken=session?.access_token||'';
   if(session){
-    localStorage.setItem('sjl-teacher-session',JSON.stringify(session));
-    localStorage.setItem('sjl-teacher-token',teacherToken);
+    teacherStore.set('sjl-teacher-session',JSON.stringify(session));
+    teacherStore.set('sjl-teacher-token',teacherToken);
+    touchTeacherActivity();
   }else{
-    localStorage.removeItem('sjl-teacher-session');
-    localStorage.removeItem('sjl-teacher-token');
+    teacherStore.remove('sjl-teacher-session');
+    teacherStore.remove('sjl-teacher-token');
   }
 }
 let teacherRefreshPromise=null;
@@ -146,12 +181,13 @@ async function refreshTeacherSession(){
   finally{teacherRefreshPromise=null;}
  })();return teacherRefreshPromise;
 }
-window.addEventListener('storage',e=>{if(e.key==='sjl-teacher-session'){try{teacherSession=JSON.parse(e.newValue||'null');teacherToken=teacherSession?.access_token||'';}catch{} }});
+// 教師登入已改存 sessionStorage，分頁之間本來就不共用，storage 事件不再適用；
+// 保留對學生端沒有影響，移除以免誤以為還會跨分頁同步。
 async function loadTeacher(canRefresh=true){
   if(!teacherToken)return;
   try{
     const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});
-    teacherRows=rows;renderTeacher();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;
+    teacherRows=rows;renderTeacher();markTeacherSignedIn();touchTeacherActivity();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;
   }catch(e){
     if(canRefresh&&(e.status===401||/jwt|token|expired/i.test(e.message))){try{if(await refreshTeacherSession())return loadTeacher(false);}catch{message('teacher-message','目前網路無法更新登入，請稍後按教師頁重新載入；登入資料已保留。',true);return;}}
     if(e.status===401||/jwt|token|expired/i.test(e.message))storeTeacherSession(null);
@@ -160,7 +196,13 @@ async function loadTeacher(canRefresh=true){
   }
 }
 $('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});storeTeacherSession(r);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
-$('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
+$('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;message('teacher-message','已登出。');};
+// 提醒自己「現在是登入狀態」—— 不是安全機制，但成本極低，而且共用電腦上
+// 下一個人至少看得到這裡有人登入著。
+function markTeacherSignedIn(){
+ const label=$('teacher-name');
+ if(label)label.textContent=`目前以教師身分登入中 · 閒置 ${TEACHER_IDLE_MINUTES} 分鐘會自動登出`;
+}
 function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;// needs_follow_up 永遠是 false（沒有任何程式寫入過）。teacher-note.js 會用
 // 分數與是否已收過回饋算出真正需要老師看的名單，掛在 window.__sjlNeedsAttention。
