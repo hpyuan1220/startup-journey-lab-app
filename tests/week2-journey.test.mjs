@@ -63,3 +63,31 @@ test('換選另一個候選，深入四欄跟著換人',()=>{
 });
 
 function depthKeys(){return ['cost','workaround','evidence','assumption'];}
+
+// 修改區原本五顆按鈕分屬兩層，其中兩顆和卡片上方的按鈕是同一個函式。
+test('修改區不再有和卡片上方重複的按鈕',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.ok(!src.includes("button('儲存修改後的草稿'"),'儲存修改後的草稿與「儲存草稿」同為 saveWithAuto()');
+ assert.ok(!src.includes("button('檢查修改後的完整度'"),'檢查修改後的完整度與「查看整張卡還缺什麼」同為 checks(true)');
+});
+
+// 學生可能已經在預覽的文字框裡改過字，再按一次草擬會把他改的內容沖掉。
+test('草稿開著時「幫我草擬修改」要隱藏，套用或取消後放回來',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/draftButton\.hidden=true/,'草擬後要把按鈕藏起來');
+ const restored=(src.match(/draftButton\.hidden=false/g)||[]).length;
+ assert.ok(restored>=3,`套用、取消、復原三條路都要把按鈕放回來，目前只有 ${restored} 處`);
+});
+
+test('預覽有自己的容器，兩顆按鈕畫在框內',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ const css=await fs.readFile(new URL('../styles.css',import.meta.url),'utf8');
+ assert.match(src,/revisionPreview\.className='revision-preview'/);
+ assert.match(css,/\.revision-preview\{/);
+ // 兩顆按鈕的 parent 必須是 revisionPreview
+ assert.match(src,/button\('確認套用已勾選欄位'[\s\S]*?\}\),revisionPreview\)/);
+ assert.match(src,/button\('取消，保留原答案'[\s\S]*?,revisionPreview\)/);
+});

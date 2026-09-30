@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-disclose';
+import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-revision';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -126,15 +126,15 @@ el('p','選擇欄位後預覽，再確認套用。痛點陳述依目前填答整
 const revisionOptions=el('div','',revisionArea);
 const revisionChecks=revisionFields.map(([key,label])=>{const l=el('label','',revisionOptions),c=el('input','',l);c.type='checkbox';c.value=key;l.append(document.createTextNode(label));return c;});
 const revisionStatus=el('p','',revisionArea);revisionStatus.setAttribute('role','status');
-const revisionPreview=el('section','',revisionArea);revisionPreview.hidden=true;
+const revisionPreview=el('section','',revisionArea);revisionPreview.hidden=true;revisionPreview.className='revision-preview';
 const revisionAction=fn=>{try{fn();}catch(e){revisionStatus.textContent=e.message;}};
 const undoKey=()=>`sjl-week2-revision-${session?.class_id}-${session?.student_id}`;
 const undoButton=button('復原上次套用',()=>revisionAction(()=>{
  if(!revisionUndo)throw Error('目前沒有可復原的套用紀錄。');
  card=applyRevision(card,revisionUndo,true);revisionUndo=null;try{localStorage.removeItem(undoKey());}catch{}
- localSave();render();revisionPreview.hidden=true;undoButton.hidden=true;revisionStatus.textContent='已復原上次套用的欄位，請儲存草稿同步雲端。';
+ localSave();render();revisionPreview.hidden=true;undoButton.hidden=true;draftButton.hidden=false;revisionStatus.textContent='已復原上次套用的欄位，請儲存草稿同步雲端。';
 }),revisionArea);undoButton.hidden=true;
-button('幫我草擬修改',()=>revisionAction(()=>{
+const draftButton=button('幫我草擬修改',()=>revisionAction(()=>{
  const keys=revisionChecks.filter(c=>c.checked).map(c=>c.value);if(!keys.length)throw Error('請先勾選想修改的欄位。');
  const patches=draftRevision(card,latestFeedback,keys),selectedTopic=card.selected,sourceSnapshot=JSON.stringify(card.candidates[card.selected]);
  revisionPreview.replaceChildren();revisionPreview.hidden=false;revisionStatus.textContent='草稿已準備好；原答案尚未改動。請逐欄檢查並勾選要套用的內容。';
@@ -152,14 +152,19 @@ button('幫我草擬修改',()=>revisionAction(()=>{
  if(card.selected!==selectedTopic||JSON.stringify(card.candidates[card.selected])!==sourceSnapshot)throw Error('暫定選題或原始觀察已改變，請重新草擬，避免套用過時內容。');
  const chosen=editors.filter(e=>e.choose.checked).map(e=>({...e.p,after:e.text.value}));
  const next=applyRevision(card,chosen);card=next;revisionUndo=chosen;let stored=true;try{localStorage.setItem(undoKey(),JSON.stringify(chosen));}catch{stored=false;}
- localSave();render();undoButton.hidden=false;revisionPreview.hidden=true;
+ localSave();render();undoButton.hidden=false;revisionPreview.hidden=true;draftButton.hidden=false;
  revisionStatus.textContent=`已套用 ${chosen.length} 個欄位；尚未正式提交。請檢查並儲存草稿。${stored?'可用「復原上次套用」回復原答案。':'本機無法保存復原紀錄，僅此頁開啟期間可復原。'}`;
  }),revisionPreview).className='primary-action';
- button('取消，保留原答案',()=>{revisionPreview.hidden=true;revisionStatus.textContent='已取消，原答案沒有改動。';},revisionPreview);
+ button('取消，保留原答案',()=>{revisionPreview.hidden=true;draftButton.hidden=false;revisionStatus.textContent='已取消，原答案沒有改動。';},revisionPreview);
+ // 草稿開著時把這顆藏起來。學生可能已經在預覽的文字框裡改過字，
+ // 再按一次會重新產生、把他改的內容沖掉 —— 那不是複雜，是會掉資料。
+ draftButton.hidden=true;
  revisionPreview.scrollIntoView({block:'start'});
 }),revisionArea);
-button('儲存修改後的草稿',()=>saveWithAuto(),revisionArea);
-button('檢查修改後的完整度',()=>checks(true),revisionArea);
+// 原本這裡還有「儲存修改後的草稿」與「檢查修改後的完整度」，
+// 但它們呼叫的是 saveWithAuto() 與 checks(true) —— 和卡片上方的「儲存草稿」、
+// 「查看整張卡還缺什麼」完全同一個函式。同一件事兩個名字兩個位置，
+// 是這一區看起來有五顆按鈕的主因。
 const previousResponse=el('details','',aiStep);previousResponse.hidden=true;el('summary','查看先前填寫的 AI 回應',previousResponse);const previousResponseText=el('p','',previousResponse);
 const openAiButton=button('我要使用 AI：展開選項',()=>{aiControls.hidden=false;openAiButton.textContent='AI 選項已展開，請在下方選擇';openAiButton.setAttribute('aria-expanded','true');aiControls.scrollIntoView({block:'center'});privacyCheckbox.focus({preventScroll:true});},aiChoices);openAiButton.setAttribute('aria-expanded','false');openAiButton.setAttribute('aria-controls','week2-ai-options');
 button('暫不使用 AI，繼續提交',()=>{disableAuto();aiControls.hidden=true;openAiButton.textContent='我要使用 AI：展開選項';openAiButton.setAttribute('aria-expanded','false');msg.textContent='可以直接提交，不需要 AI 建議或 AI 回應。既有內容仍保留。';aiSkipped=true;goStage('submit');submitButton.focus();},aiChoices);

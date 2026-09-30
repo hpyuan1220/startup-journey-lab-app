@@ -151,3 +151,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .ai-disclosure-detail{margin-top:10px}
 #week-two .ai-disclosure-detail textarea{width:100%;box-sizing:border-box}
 #week-two .ai-disclosure-status{margin:8px 0 0;font-size:14px;color:#1f6f63;min-height:1.2em}
+
+/* 草擬修改的預覽：畫成一個框，讓「確認套用／取消」明顯屬於這個框，
+   而不是和外層的按鈕排成一片。 */
+#week-two .revision-preview{margin-top:14px;padding:14px;border:2px solid #1f6f63;border-radius:10px;background:#f2f8f6}
+#week-two .revision-preview>h4{margin:0 0 10px;font-size:16px}
+#week-two .revision-preview .revision-item{margin:0 0 14px;padding:12px;border:1px solid #cfd8d3;border-radius:8px;background:#fff}
+#week-two .revision-preview .revision-item:last-of-type{margin-bottom:16px}
+#week-two .revision-preview>button{margin-right:8px}
