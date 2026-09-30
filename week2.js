@@ -1,16 +1,16 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-nodiff';
+import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
 let card=emptyCard(),version=null,row=null,step=0,dirty=false,session,week1Identity=[],editGeneration=0,saving=false;
 try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
-// 前四步的缺項總數：改成篩選／深入兩段之後，全空是 24（原本 28）、填完 0。
-// 20 代表學生自己寫的不超過四欄 —— 這時「繼續下一步」只是換頁，
+// 前四步的缺項總數：全空 25（篩選 5+5、選題與深入 8、準備訪談 7）、填完 0。
+// 21 代表學生自己寫的不超過四欄 —— 這時「繼續下一步」只是換頁，
 // helpNext() 會直接指出缺哪一項並帶他過去，比較有用。
-const STUCK_THRESHOLD=20;
+const STUCK_THRESHOLD=21;
 let jumpedToFirstQuestion=false;
 // 第一次進卡片就把游標放在第一題。學生要的是「現在答這題」，
 // 不是先讀懂七個步驟、兩個勾選框和三個按鈕（實測要捲 3.1 個螢幕才看得到第一格）。
@@ -39,7 +39,12 @@ el('p','「候選痛點」就是尚未決定要深入研究的困擾。例如痛
 el('p','填答位置在下方「開始填答」。引導模式一次一題，按題目下方的「下一題」繼續；也可用步驟按鈕跳到要修改的地方。來源確認與 AI 建議是選用的，收在步驟列下方。',intro);
 let removedCandidate=null,activeStage='0',aiSkipped=false,remembered=null,pendingLocal=null;
 const welcome=el('section','',workspace);welcome.hidden=true;welcome.className='video-learning-card';
-const journey=el('nav','',workspace);journey.className='journey';journey.setAttribute('aria-label','Week 2 七個步驟');
+// 步驟列原本是七顆常駐按鈕。實測每一步畫面上有 16 顆按鈕，卻只有 1 題要答。
+// 收進可展開區之後，平常只剩「第 N/5 步：…」那一行標題；要跳步驟再展開。
+// 不移除步驟這個概念 —— 學生會分好幾天回來，「我在第幾步」對他有用。
+const journeyBox=el('details','',workspace);journeyBox.className='journey-box';
+el('summary','跳到其他步驟',journeyBox);
+const journey=el('nav','',journeyBox);journey.className='journey';journey.setAttribute('aria-label','Week 2 的步驟');
 const journeyInfo=el('section','',workspace);journeyInfo.className='journey-info';
 const journeyTitle=el('h3','',journeyInfo),journeyHint=el('p','',journeyInfo),journeyStorage=el('p','',journeyInfo);
 const journeyHelp=el('section','',workspace);journeyHelp.setAttribute('aria-live','polite');
@@ -351,11 +356,14 @@ function render(){
   triageFields.forEach(([k,t,q])=>input(q||t,c[k],v=>c[k]=v,box,examples[k],examplePairs[k],k==='evidence'?honestOption:null));
   if(i===2)button('不需要第三題，移除並保留復原',()=>{removedCandidate={candidate:card.candidates[2],selected:card.selected};card.candidates.pop();if(card.selected===2)card.selected=0;step=0;activeStage='0';localSave();render();msg.textContent='已移除第三題，可按「復原第三題」找回剛才的內容。請確認暫定選題。';},box);
  });
- if(card.candidates.length<3)button('增加第三個候選題（選填）',()=>{card.candidates.push(Object.fromEntries(fields.map(([k])=>[k,''])));step=triageFields.length*2;activeStage='2';localSave();render();},form);
+ // 痛點 2 的篩選五欄都填完才出現。還沒寫完第二個就看到「加第三個」，
+ // 只會讓畫面更滿，也讓學生以為第三個是必要的。
+ const secondReady=card.candidates[1]&&triageFields.every(([k])=>String(card.candidates[1][k]||'').trim());
+ if(card.candidates.length<3&&secondReady)button('增加第三個候選題（選填）',()=>{card.candidates.push(Object.fromEntries(fields.map(([k])=>[k,''])));step=triageFields.length*2;activeStage='2';localSave();render();},form);
  if(removedCandidate&&card.candidates.length===2)button('復原第三題',()=>{card.candidates.push(removedCandidate.candidate);card.selected=removedCandidate.selected;removedCandidate=null;step=18;activeStage='2';localSave();render();},form);
  const choice=el('section','',form);choice.dataset.stage='choice';el('h3','比較選題：先選一個要訪談的方向',choice);
  const pickLabel=el('label','我暫時選擇',choice),pick=el('select','',pickLabel);card.candidates.forEach((c,i)=>{const o=el('option',`痛點 ${i+1}：${c.problem||'尚未填寫阻礙'}`,pick);o.value=i;});pick.value=card.selected;pick.onchange=()=>{card.selected=Number(pick.value);localSave();};
- input('為什麼先選這一題？其他題目為什麼暫緩？',card.reason,v=>card.reason=v,choice);
+ input('為什麼先選這一題？其他題目為什麼暫緩？',card.reason,v=>card.reason=v,choice,'例如：這件事我每週都遇到，而且找得到人訪談；另一題我自己沒碰過，只是聽說。');
  input('什麼證據會讓我改變選擇？',card.reconsider,v=>card.reconsider=v,choice);
  input('修訂後的痛點陳述',card.statement,v=>card.statement=v,choice,'在＿＿情境中，＿＿的人想要＿＿，但遇到＿＿，目前用＿＿處理；仍需驗證＿＿。');
  // 選完才挖深，而且只挖選中的那一個。沒被選中的候選不必回答這四題 ——
@@ -365,12 +373,20 @@ function render(){
   const depthBox=el('section','',choice);depthBox.className='week2-depth';
   el('h3',`深入你選的這一題：痛點 ${pick+1}`,depthBox);
   el('p',`「${chosen.problem||'（尚未填寫阻礙）'}」—— 接下來四題只問這一個困擾。`,depthBox);
-  const depthHints={cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',evidence:'請寫自己真的看過的事件、時間與來源；例子不能當成證據',assumption:'例如：我猜其他同學也困擾，但尚未問過他們'};
+  const depthHints={cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',
+   // 選題的及格線：如果現在的方法其實夠用，這個題目做下去第五週會沒人在乎。
+   acceptance:'例如：便利商店買得到，但排隊一樣久，而且常常賣完；或：現在的方法其實還可以，我還不確定值不值得做',
+   evidence:'請寫自己真的看過的事件、時間與來源；例子不能當成證據',assumption:'例如：我猜其他同學也困擾，但尚未問過他們'};
   depthFields.forEach(([k,t,q])=>input(q||t,chosen[k],v=>{chosen[k]=v;},depthBox,depthHints[k],examplePairs[k],k==='evidence'?honestOption:null));
  }
  const interview=el('section','',form);interview.dataset.stage='interview';el('h3','準備訪談：只針對剛才選中的一題',interview);el('h3','三位可接觸的受訪者',interview);el('p','使用角色代稱，例如「通勤同學 A，課後詢問」。不要寫姓名、電話或 Email。',interview);
  card.interviewees.forEach((v,i)=>input(`受訪者 ${i+1}：角色與接觸方式`,v,x=>card.interviewees[i]=x,interview));
- card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,'請問上一次發生時，你如何處理？'));
+ // 這兩題原本共用同一個範例，而且畫面上唯一可見的說明是在講受訪者怎麼命名 ——
+ // 學生會合理地以為兩題要問一樣的東西。給各自的範例，並補一句屬於問題的說明。
+ el('p','問最近一次真實經驗，不要問「你會不會用」。兩題問不同的面向。',interview);
+ const questionHints=['例如：上一次遇到這件事是什麼時候？當下你怎麼處理？',
+                      '例如：那個做法哪裡讓你不滿意？你有想過換別的方式嗎？'];
+ card.questions.forEach((v,i)=>input(`訪談問題 ${i+1}`,v,x=>card.questions[i]=x,interview,questionHints[i]));
  if(showChallenge()){button('前往進階探索（選填）',()=>goStage('challenge'),form);const extra=el('section','',form);extra.dataset.stage='challenge';el('h3','進階探索（選填）',extra);challengeFields.forEach(([k,t])=>input(t,card.challenge[k],v=>card.challenge[k]=v,extra));}
  const sourceStage=el('section','',form);sourceStage.dataset.stage='source';const sources=el('section','內容從哪裡來？（勾選即可）',sourceStage);sources.className='week2-question';
  el('p','可複選，不用再寫一段說明。尚未觀察也可以如實選擇「目前是假設」。',sources);
@@ -465,8 +481,9 @@ async function save(status,snapshot=normalize(card)){
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }finally{saving=false;refreshJourney();}
 }
-button('檢查目前進度',()=>checks(false));button('儲存草稿',()=>saveWithAuto());const submitButton=button('正式提交',submitCard,finalStage);submitButton.className='primary-action';
-button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+const moreBox=el('details','',workspace);moreBox.className='card-more';el('summary','更多（檢查進度、下載內容）',moreBox);
+button('檢查目前進度',()=>checks(false),moreBox);button('儲存草稿',()=>saveWithAuto());const submitButton=button('正式提交',submitCard,finalStage);submitButton.className='primary-action';
+button('下載目前內容',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeffWeek 2 問題探索與選題\n更新時間：'+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));a.download='Week2-痛點卡.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);},moreBox);
 for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['review','檢查我的痛點，取得 AI 建議']])button(title,async()=>{
  if(autoBusy)throw Error('已有 AI 請求處理中，請稍候。');
  const requestCard=normalize(card),anonymous=aiInput(requestCard,kind,week1Identity);if(privacyRisk(anonymous))throw Error('文字可能含個資，請改成角色代稱後再請 AI 協助。');

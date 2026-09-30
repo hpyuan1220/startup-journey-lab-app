@@ -25,12 +25,12 @@ test('每個實際出現的狀態都有專屬符號與文字，不依賴顏色',
 });
 
 // 空卡的學生需要的是一條路，不是「繼續下一步」。
-// 門檻 20 與 week2.js 的 STUCK_THRESHOLD 一致；邊界是學生自己寫了四欄還是五欄。
+// 門檻 21 與 week2.js 的 STUCK_THRESHOLD 一致；邊界是學生自己寫了四欄還是五欄。
 test('卡住門檻的邊界：自己填四欄仍算卡住，填五欄就不算',()=>{
- const STUCK=20;
+ const STUCK=21;
  const missingTotal=card=>steps.slice(0,4)
   .reduce((n,[key])=>n+stepState(card,null)[key].missing.length,0);
- assert.equal(missingTotal(emptyCard()),24,'全空卡的缺項總數若改變，門檻要跟著重算');
+ assert.equal(missingTotal(emptyCard()),25,'全空卡的缺項總數若改變，門檻要跟著重算');
  assert.equal(missingTotal(demoCard()),0,'完整卡不該有缺項');
  const fill=n=>{const c=emptyCard();
   ['people','context','job','problem','frequency'].slice(0,n).forEach(k=>{c.candidates[0][k]='已填';});
@@ -45,7 +45,7 @@ test('兩個候選只問篩選五欄，深入四欄只屬於選中的那一個',
  const st=stepState(c,null);
  assert.equal(st['0'].missing.length,5,'痛點 1 應只問篩選五欄');
  assert.equal(st['1'].missing.length,5,'痛點 2 應只問篩選五欄');
- assert.equal(st.choice.missing.length,7,'選題三題＋深入四題');
+ assert.equal(st.choice.missing.length,8,'選題三題＋深入五題');
  assert.ok(st.choice.missing.some(m=>/選中的痛點/.test(m)),'深入的缺項要標明是選中的那一題');
  // 決定點：走到「選題與深入」之前只需填 10 格
  assert.equal(st['0'].missing.length+st['1'].missing.length,10);
@@ -57,12 +57,12 @@ test('換選另一個候選，深入四欄跟著換人',()=>{
  assert.equal(stepState(c,null).choice.missing.filter(m=>/選中的痛點/.test(m)).length,0,
   '選中候選 1 時，它的深入四欄已填齊');
  c.selected=1;
- assert.equal(stepState(c,null).choice.missing.filter(m=>/選中的痛點/.test(m)).length,4,
+ assert.equal(stepState(c,null).choice.missing.filter(m=>/選中的痛點/.test(m)).length,5,
   '改選候選 2 後，應改問候選 2 的深入四欄');
  assert.equal(c.candidates[0].cost,'第一個候選的深入答案','換選不該清掉原本的答案');
 });
 
-function depthKeys(){return ['cost','workaround','evidence','assumption'];}
+function depthKeys(){return ['cost','workaround','acceptance','evidence','assumption'];}
 
 // 修改區原本五顆按鈕分屬兩層，其中兩顆和卡片上方的按鈕是同一個函式。
 test('修改區不再有和卡片上方重複的按鈕',async()=>{
@@ -130,4 +130,35 @@ test('全部都沒有差異時不開預覽，直接說清楚',async()=>{
  assert.match(src,/all\.filter\(p=>p\.changed\)/,'要濾掉沒有差異的欄位');
  assert.match(src,/建議內容和你現在寫的完全一樣，沒有東西需要套用/);
  assert.match(src,/的建議和你現在寫的一樣，沒有列出來/,'有差異時也要交代被略過的欄位');
+});
+
+// 實測：改動前每一步畫面上有 16 顆按鈕，卻只有 1 題要答。
+// 這條釘住「常駐按鈕」的清單，之後再加東西要有人回來想一下值不值得。
+test('常駐按鈕維持在六顆以內，其餘收進可展開區',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ // 步驟列與卡片動作都要在 details 裡
+ assert.match(src,/journeyBox=el\('details'/,'步驟列要收進可展開區');
+ assert.match(src,/el\('summary','跳到其他步驟'/);
+ assert.match(src,/moreBox=el\('details'/,'檢查進度與下載要收進可展開區');
+ assert.match(src,/button\('檢查目前進度',\(\)=>checks\(false\),moreBox\)/);
+ assert.match(src,/button\('下載目前內容'[\s\S]{0,400}?,moreBox\)/);
+ // 儲存草稿留在外面：套用修改或填完一題之後最常按的就是它
+ assert.match(src,/button\('儲存草稿',\(\)=>saveWithAuto\(\)\);/);
+ // 第三個候選要等痛點 2 填完
+ assert.match(src,/card\.candidates\.length<3&&secondReady/,'第三個候選題應等痛點 2 的篩選欄填完才出現');
+ assert.match(src,/const secondReady=.*triageFields\.every/,'判斷依據要是痛點 2 的篩選五欄');
+});
+
+test('訪談兩題各有自己的範例，且說明屬於問題本身',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ const hints=(src.match(/const questionHints=\[([\s\S]*?)\];/)||[])[1]||'';
+ assert.ok(hints,'找不到訪談問題的範例');
+ const items=(hints.match(/'[^']+'/g)||[]);
+ assert.equal(items.length,2,'兩題要有各自的範例');
+ assert.notEqual(items[0],items[1],'兩題不可共用同一個範例');
+ assert.match(src,/問最近一次真實經驗，不要問「你會不會用」/,'問題欄位要有屬於自己的說明');
+ // 選題理由不再是唯一沒有範例的必填題
+ assert.match(src,/為什麼先選這一題[\s\S]{0,140}例如：這件事我每週都遇到/);
 });

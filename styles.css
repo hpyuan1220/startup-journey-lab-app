@@ -164,3 +164,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #submitted-state{margin:0 0 14px;padding:10px 14px;border-left:4px solid #1f6f63;border-radius:6px;background:#f2f8f6}
 #submitted-state p{margin:0;font-size:15px;line-height:1.6;color:#1f4a40}
 #week-two .revision-skipped{margin:0 0 12px;font-size:14px;color:#5b5548}
+
+/* 步驟列與卡片動作收進可展開區：平常畫面只留真正在做的事 */
+#week-two .journey-box,#week-two .card-more{margin:10px 0;border:1px dashed #b9b2a2;border-radius:8px;padding:8px 12px;background:#fbfaf7}
+#week-two .journey-box>summary,#week-two .card-more>summary{cursor:pointer;font-size:14px;color:#5b5548}
+#week-two .journey-box .journey{margin-top:10px}
+#week-two .card-more>button{margin:8px 8px 0 0}

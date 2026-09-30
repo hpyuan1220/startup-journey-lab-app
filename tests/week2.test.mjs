@@ -43,7 +43,9 @@ test('證據欄位改用問句呈現，短標籤仍保留給清單與提示訊�
   assert.equal(evidence[2], '你什麼時候、在哪裡，親眼看到這件事？');
   const names = Object.fromEntries(fields);
   assert.equal(names.evidence, '已有觀察與來源', '第三個元素不得污染 names 對照表');
-  assert.equal(fields.length, 9, '欄位數量不得改變');
+  // 2026-09-30：acceptance（現在的方法為什麼還不夠）從選填的進階區移進必填的深入欄位，
+  // 所以是 10 不是 9。這個數字刻意寫死，欄位再被改動時要有人回來看一眼。
+  assert.equal(fields.length, 10, '欄位數量不得意外改變');
 });
 
 // 防漂移：week2-core.mjs 改了但沒重新產生 Dashboard 單檔，正式服務會繼續用舊規則
@@ -72,4 +74,25 @@ test('提交前會問外部 AI，但不影響提交資格',async()=>{
  assert.equal(check(withAi).ok,true,'揭露了外部 AI 不該擋住提交');
  assert.equal(check(withoutAi).ok,true,'沒有揭露也不該擋住提交');
  assert.equal(withAi.external_ai,'ChatGPT 協助整理訪談題','揭露內容要保存下來');
+});
+
+// YC 的選題及格線：既然已經有現在的做法，為什麼還是有人不滿意？
+// 學生最常見的失敗是挑一個「有點煩但現在做法其實還行」的題目，
+// 到第五週訪談完才發現沒人在乎。這一題原本是選填，藏在進階區。
+test('現在的方法為什麼還不夠：必填，且只問選中的那一個候選',async()=>{
+ const {triageFields,depthFields,challengeFields,fields,check,normalize}=await import('../week2-core.mjs');
+ assert.ok(depthFields.some(([k])=>k==='acceptance'),'要在深入欄位裡');
+ assert.ok(!challengeFields.some(([k])=>k==='acceptance'),'不該還留在選填的進階區');
+ assert.ok(!triageFields.some(([k])=>k==='acceptance'),'篩選階段不問這題：還沒選題之前問了沒有意義');
+ assert.equal(fields.length,triageFields.length+depthFields.length);
+ const {demoCard}=await import('./support/week2-harness.mjs');
+ const card=normalize(demoCard());
+ card.candidates[card.selected].acceptance='';
+ const result=check(card);
+ assert.equal(result.ok,false,'選中的候選沒填這一題不該通過');
+ assert.ok(result.errors.some(e=>/現在的方法為什麼還不夠/.test(e)),result.errors.join('；'));
+ // 沒被選中的那個不必答
+ const other=normalize(demoCard());
+ other.candidates[1-other.selected].acceptance='';
+ assert.equal(check(other).ok,true,'沒被選中的候選不必回答深入題');
 });
