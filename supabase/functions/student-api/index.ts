@@ -40,8 +40,20 @@ Deno.serve(async (request) => {
       fields[key] = input[key].trim();
     }
     if (!['draft','submitted'].includes(input.status)) return reply({error:'狀態不正確。'},422);
-    if (input.status === 'submitted' && allowed.some(key => !fields[key])) return reply({error:'請先補齊 Week 1 必填欄位。'},422);
-    fields.status = input.status;
+    // 已提交的卡不可退回草稿，也不可被空白覆蓋。
+    // 先前只信任前端送來的 status：學生按一下「儲存草稿」就把 status 寫回 draft，
+    // 之後前端「清除內容」的守門（savedStatus==='submitted'）失效，
+    // reset() + save('draft') 會把 11 個必填欄位全部寫成空字串。
+    // 這個不變量必須由伺服器守，前端守不住。
+    const { data: current } = await db.from('week1_submissions')
+      .select('status').eq('class_id', session.class_id).eq('student_id', session.student_id).maybeSingle();
+    const locked = current?.status === 'submitted';
+    if ((input.status === 'submitted' || locked) && allowed.some(key => !fields[key])) {
+      return reply({error: locked
+        ? '這份起點卡已經提交，必填欄位不能清空。請修改內容後重新提交。'
+        : '請先補齊 Week 1 必填欄位。'},422);
+    }
+    fields.status = locked ? 'submitted' : input.status;
     fields.consent_to_share_in_class = input.consent_to_share_in_class === true;
     const submission = { ...fields, class_id: session.class_id, student_id: session.student_id, updated_at: new Date().toISOString() };
     if (submission.status === 'submitted') submission.submitted_at = new Date().toISOString();

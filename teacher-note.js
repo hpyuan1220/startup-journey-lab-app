@@ -13,8 +13,12 @@ const token = () => { try { return sessionStorage.getItem('sjl-teacher-token') |
 const headers = () => ({apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + token(), 'Content-Type': 'application/json'});
 const configured = () => cfg.supabaseUrl && String(cfg.supabaseUrl).indexOf('YOUR_') === -1;
 
-let submissions = {};   // student_id -> 作答
-let feedback = {};      // student_id -> 最新 AI 回饋
+// 索引一律用 class_id + ':' + student_id。
+// 只用學號當 key 時，同一個學號出現在兩個班，後讀到的那一列會覆蓋前一列，
+// 於是畫面顯示的是另一班學生的內容，PATCH 也會帶著錯的 class_id 寫進錯的班。
+const keyOf = (classId, studentId) => String(classId) + ':' + String(studentId);
+let submissions = {};   // class:student -> 作答
+let feedback = {};      // class:student -> 最新 AI 回饋
 let loaded = false;
 
 async function load() {
@@ -23,12 +27,12 @@ async function load() {
     .then((r) => (r.ok ? r.json() : []));
   const [subs, fbRows] = await Promise.all([
     get('week1_submissions?select=*'),
-    get('week1_ai_feedback?select=student_id,feedback_json,created_at&order=created_at.asc'),
+    get('week1_ai_feedback?select=class_id,student_id,feedback_json,created_at&teacher_hidden=eq.false&order=created_at.asc'),
   ]);
   submissions = {};
-  (subs || []).forEach((r) => { submissions[r.student_id] = r; });
+  (subs || []).forEach((r) => { submissions[keyOf(r.class_id, r.student_id)] = r; });
   feedback = {};
-  (fbRows || []).forEach((r) => { feedback[r.student_id] = r.feedback_json; });
+  (fbRows || []).forEach((r) => { feedback[keyOf(r.class_id, r.student_id)] = r.feedback_json; });
   loaded = true;
   publishAttention();
   return true;
@@ -47,14 +51,14 @@ function allDrafts() {
   return [...list.querySelectorAll('.tnote textarea')].map((t) => t.value);
 }
 
-async function save(studentId, note, statusEl, buttons) {
+async function save(key, studentId, classId, note, statusEl, buttons) {
   buttons.forEach((b) => { b.disabled = true; });
   statusEl.textContent = '儲存中…';
   try {
-    // 資料表的唯一鍵是 (class_id, student_id)。只用學號過濾的話，
-    // 同一個學號若出現在兩個班，兩邊都會被寫入。
-    const classId = submissions[studentId] && submissions[studentId].class_id;
-    if (!classId) throw new Error('missing-class');
+    // 資料表的唯一鍵是 (class_id, student_id)，兩個都要帶。
+    // class_id 取自畫面上那張卡（app.js 輸出的 data-class-id），
+    // 不是從只用學號建的索引裡撈 —— 那個索引本身就會被同學號覆蓋。
+    if (!classId || !studentId) throw new Error('missing-class');
     const res = await fetch(
       cfg.supabaseUrl + '/rest/v1/week1_submissions'
         + '?class_id=eq.' + encodeURIComponent(classId)
@@ -62,7 +66,7 @@ async function save(studentId, note, statusEl, buttons) {
       {method: 'PATCH', headers: Object.assign(headers(), {Prefer: 'return=minimal'}), body: JSON.stringify({teacher_note: note})},
     );
     if (!res.ok) throw new Error('failed');
-    if (submissions[studentId]) submissions[studentId].teacher_note = note;
+    if (submissions[key]) submissions[key].teacher_note = note;
     publishAttention();
     statusEl.textContent = note ? '已送出，學生下次打開卡片會看到。' : '已清除。';
     statusEl.dataset.tone = 'ok';
@@ -78,12 +82,14 @@ function decorate(article) {
   if (article.dataset.tnoteDone) return;
   const small = article.querySelector('h3 small');
   const studentId = small ? small.textContent.trim() : '';
-  const submission = submissions[studentId];
-  if (!studentId || !submission) return;
+  const classId = article.dataset.classId || '';
+  const key = keyOf(classId, studentId);
+  const submission = submissions[key];
+  if (!studentId || !classId || !submission) return;
   article.dataset.tnoteDone = '1';
 
   const box = el('div', '', article, 'tnote');
-  const result = suggest(submission, feedback[studentId]);
+  const result = suggest(submission, feedback[key]);
 
   // 證據摘要：直接顯示已存的分數，不生成任何文字。
   const ev = el('p', '', box, 'tnote-evidence');
@@ -129,10 +135,10 @@ function decorate(article) {
       return;
     }
     delete sendBtn.dataset.confirmed;
-    save(studentId, body, statusEl, [sendBtn, clearBtn]);
+    save(key, studentId, classId, body, statusEl, [sendBtn, clearBtn]);
   };
   area.oninput = () => { delete sendBtn.dataset.confirmed; };
-  clearBtn.onclick = () => { area.value = ''; save(studentId, '', statusEl, [sendBtn, clearBtn]); };
+  clearBtn.onclick = () => { area.value = ''; save(key, studentId, classId, '', statusEl, [sendBtn, clearBtn]); };
 }
 
 /**
@@ -141,11 +147,12 @@ function decorate(article) {
  * 結果掛在 window 上，app.js 的統計與篩選讀得到就用，讀不到就維持原樣。
  */
 function publishAttention() {
+  // Set 裡放的是 class:student，不是學號 —— app.js 的 needsAttention 必須用同一把鑰匙。
   const need = new Set();
-  Object.values(submissions).forEach((sub) => {
-    const r = suggest(sub, feedback[sub.student_id]);
+  Object.entries(submissions).forEach(([key, sub]) => {
+    const r = suggest(sub, feedback[key]);
     const answered = typeof sub.teacher_note === 'string' && sub.teacher_note.trim();
-    if (!answered && r.category !== 'no_gap') need.add(sub.student_id);
+    if (!answered && r.category !== 'no_gap') need.add(key);
   });
   window.__sjlNeedsAttention = need;
   document.dispatchEvent(new CustomEvent('sjl-attention-ready'));

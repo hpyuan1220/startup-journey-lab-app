@@ -61,8 +61,15 @@ function submittedSummary(){
 }
 function renderSubmittedState(){
  const box=$('submitted-state');
+ const submitted=savedStatus==='submitted';
+ // 提交之後，「儲存草稿」與「清除內容」只會造成傷害：
+ // 儲存草稿會把狀態退回草稿，清除內容接著就能把答案清空。
+ // 提交後只留一條路：改完再按「正式提交」，這也是提交狀態那一行寫的話。
+ const draftBtn=$('save-draft'),clearBtn=$('clear-form');
+ if(draftBtn)draftBtn.hidden=submitted;
+ if(clearBtn)clearBtn.hidden=submitted;
  if(!box)return;
- if(savedStatus!=='submitted'){box.hidden=true;return;}
+ if(!submitted){box.hidden=true;return;}
  box.hidden=false;
  $('submitted-state-text').textContent=`${submittedSummary()}可以直接修改後重新提交，先前版本會保留。`;
 }
@@ -244,7 +251,9 @@ function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;',
 function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;// needs_follow_up 永遠是 false（沒有任何程式寫入過）。teacher-note.js 會用
 // 分數與是否已收過回饋算出真正需要老師看的名單，掛在 window.__sjlNeedsAttention。
 const attention=window.__sjlNeedsAttention instanceof Set?window.__sjlNeedsAttention:null;
-const needsAttention=r=>attention?attention.has(r.student_id):r.needs_follow_up;
+// 鑰匙必須和 teacher-note.js 的 publishAttention() 一致（class_id + ':' + student_id）。
+// 只比學號的話，兩班同學號會互相影響統計與篩選。
+const needsAttention=r=>attention?attention.has(String(r.class_id)+':'+String(r.student_id)):r.needs_follow_up;
 const rows=teacherRows.filter(r=>`${escapeHTML(r.student_name)} ${escapeHTML(r.student_id)}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?needsAttention(r):r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需要你看',teacherRows.filter(needsAttention).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article data-class-id="${escapeHTML(r.class_id)}"><h3>${escapeHTML(r.student_name||'未填姓名')} <small>${escapeHTML(r.student_id)}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${escapeHTML(r.observed_problem||'尚未填寫問題')}</p><p>原句：${escapeHTML(r.verbatim_complaint||'—')}<br>現場：${escapeHTML(r.observed_context||'—')}<br>下週問題：${escapeHTML(r.interview_next_question||'—')}</p><p>事實：${escapeHTML(r.known_fact||'—')}<br>假設：${escapeHTML(r.unverified_assumption||'—')}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};

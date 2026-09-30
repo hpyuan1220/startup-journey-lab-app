@@ -204,3 +204,31 @@ test('教師欄位單獨更新時不進版、不留快照',async()=>{
  assert.match(sql,/if TG_OP = 'UPDATE' and new\.version = old\.version then\s*return new;/,'版本沒動就不該留快照');
  assert.match(sql,/if old\.submitted_at is not null then new\.submitted_at := old\.submitted_at/,'第一次提交時間仍要保護');
 });
+
+// 老師的回饋寫到別班學生身上：資料表唯一鍵是 (class_id, student_id)，
+// 但 teacher-note.js 的索引只用學號，兩班同學號時後讀到的會覆蓋前一列，
+// 於是畫面顯示別班的內容，PATCH 也帶著錯的 class_id。
+// 正確的 class_id 一直都在 DOM 上（app.js 輸出 data-class-id），只是沒被用。
+test('教師回饋：索引與 PATCH 都要用 class_id + student_id',async()=>{
+ const fsp=await import('node:fs/promises');
+ const note=await fsp.readFile(new URL('../teacher-note.js',import.meta.url),'utf8');
+ const app=await fsp.readFile(new URL('../app.js',import.meta.url),'utf8');
+
+ assert.match(note,/const keyOf = \(classId, studentId\) =>/,'要有一個明確的複合鍵函式');
+ assert.match(note,/submissions\[keyOf\(r\.class_id, r\.student_id\)\] = r/,'作答索引要用複合鍵');
+ assert.match(note,/feedback\[keyOf\(r\.class_id, r\.student_id\)\] = r\.feedback_json/,'AI 回饋索引也要用複合鍵');
+ assert.ok(!/submissions\[studentId\]/.test(note),'不可再用學號單鍵查作答');
+ assert.ok(!/feedback\[studentId\]/.test(note),'不可再用學號單鍵查回饋');
+ assert.ok(!/feedback\[sub\.student_id\]/.test(note),'publishAttention 也不可用學號單鍵');
+
+ assert.match(note,/const classId = article\.dataset\.classId/,'class_id 要取自畫面上那張卡，不是從索引回推');
+ assert.match(note,/class_id=eq\./,'PATCH 要帶 class_id');
+ assert.match(note,/student_id=eq\./,'PATCH 要帶 student_id');
+
+ // 跨檔不變量：Set 的鑰匙兩邊必須一致，否則統計與篩選會靜默失準。
+ assert.match(note,/need\.add\(key\)/,'attention Set 放的要是複合鍵');
+ assert.match(app,/attention\.has\(String\(r\.class_id\)\+':'\+String\(r\.student_id\)\)/,'app.js 要用同一把鑰匙');
+
+ // 老師按過「隱藏這則」的 AI 回饋，不該再拿來算建議稿。
+ assert.match(note,/teacher_hidden=eq\.false/,'查詢要排除已隱藏的回饋');
+});

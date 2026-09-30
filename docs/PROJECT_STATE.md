@@ -916,3 +916,58 @@ updated_at / version 之後的整列」，只有學生自己填的內容真的�
 每一步上方都重複出現「開始填答／一次只顯示一題／進階問題」約 370px 的節奏選項。
 捲動修好了症狀，但這段常駐內容在第二步之後其實沒有用。
 真正的解法是第一步之後收起來，下次一併處理。
+
+### 2026-09-30（修 A1、A2：稽核報告裡最嚴重的兩項）
+
+兩項都先自己重現過才動手，不是照 agent 的報告直接改。
+
+#### A1 已提交的卡可以被清空
+
+可達路徑只要兩次點擊：已提交的學生按「儲存草稿」→ 再按「清除內容」。
+
+- `student-api/index.ts:44` 無條件 `fields.status = input.status`，所以第一次點擊把
+  DB 的 `status` 寫回 `draft`。
+- 前端「清除內容」的守門是 `if(savedStatus==='submitted')`，用的是**前端狀態**，
+  狀態一被退回草稿就失效 → `form.reset()` + `save('draft')` →
+  伺服器對 draft 不檢查非空 → 11 個必填欄位全部寫成空字串。
+- 連帶：教師端該生從「已提交」掉回「草稿」；`week2-api` 的
+  `w1?.status!=='submitted'` 會把他鎖在 Week 2 之外。
+
+**修法（伺服器為主）**：save 前先讀目前狀態，`locked = current?.status === 'submitted'`。
+已鎖定時 `fields.status` 強制為 `'submitted'`，且必填欄位空值一律 422。
+**這個不變量只能由伺服器守** —— 前端守門用的是自己維護的狀態，被繞過就失效。
+
+**前端為輔**：提交之後把「儲存草稿」與「清除內容」藏起來。
+提交後只留一條路：改完再按「正式提交」，這也正是提交狀態那一行本來就寫的話。
+
+#### A2 老師的回饋可能寫到別班同學號的學生身上
+
+`teacher-note.js` 的 `submissions` / `feedback` 只用 `student_id` 當 key。
+RLS 會回傳該老師所有授權班級的列，兩班同學號時後讀到的覆蓋前一列，於是：
+畫面顯示的是另一班學生的內容，而 `:56` 取到的 `class_id` 也是錯的那一班 ——
+那個「看起來已經修好」的雙鍵 PATCH 會**正確地寫進錯誤的班級**。
+
+正確的 class_id 一直都在 DOM 上（`app.js:248` 輸出 `data-class-id`，
+`teacher-ai-feedback.js:201` 有正確使用），這個模組沒有用。
+
+**修法**：加 `keyOf(classId, studentId)`，索引、查詢、PATCH、attention Set 全部改用複合鍵；
+`class_id` 取自 `article.dataset.classId`，不是從索引回推。
+順手修掉同一次查詢的 `teacher_hidden`：老師按過「隱藏這則」的 AI 回饋不該再拿來算建議稿。
+
+**跨檔連動**：`window.__sjlNeedsAttention` 的鑰匙改成複合鍵，
+`app.js` 的 `needsAttention` 必須同步改，否則統計與篩選會靜默失準。
+測試直接比對兩個檔案的字串，不各自寫死。
+
+#### 測試
+
+新增 `tests/support/week1-harness.mjs`：用記憶體資料表跑**真正的** student-api handler。
+寫這個是因為「已提交的卡被清空」只能用行為測出來，讀原始碼測不到。
+
+**把修正退回後，這 4 項測試確實會紅**（23、24、25、28），放回後 105 項全綠。
+以前的做法是寫完測試看它綠就收工 —— 那證明不了測試抓得到那個 bug。
+
+#### 尚未處理
+
+`docs/AUDIT_20260930.md` 還有 21 項。下一個建議是 B1
+（Week 1 送 OpenAI 的文字完全沒有去識別化，Week 2 有三層防護），
+因為那是頁面上對學生的承諾。
