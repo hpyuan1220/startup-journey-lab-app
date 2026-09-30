@@ -247,14 +247,43 @@ function cleanList(value: unknown, max = 4): string[] {
 }
 
 export type FeedbackResult =
-  | { ok: true; feedback: Record<string, unknown>; total: number; corrected: boolean }
+  | { ok: true; feedback: Record<string, unknown>; total: number; corrected: boolean; clamped: boolean }
   | { ok: false; error: string };
+
+/**
+ * 「下一步驗證方向」只看行動，不看意圖。模型會把不存在的訪談計畫說成存在，
+ * 所以這一項改由程式判斷：找不到行動動詞就一律歸零。
+ * 只掃 unverified_assumption —— 那是唯一在問「還需要驗證什麼」的欄位，
+ * 學生真的有計畫就會寫在那裡。expected_learning 寫的是學習目標（「希望學會用訪談…」），
+ * known_fact 寫的是已經做過的事（「我到場計時三週」），兩者都不是下一步，掃了會誤判成有行動。
+ * 動詞表刻意保守 —— 只收真的在描述「我要去做什麼」的詞，
+ * 不收「去過」「填問卷」這種講別人或講過去的用法。
+ */
+export const ACTION_PATTERN = new RegExp(
+  [
+    '訪問', '訪談', '去訪', '詢問', '去問', '問問', '問一下', '問過', '問看看',
+    '觀察', '記錄', '紀錄', '計時', '調查', '統計',
+    '做問卷', '發問卷', '設計問卷', '問卷調查',
+    '實際去', '親自去', '去看看', '測量', '數一數',
+  ].join('|'),
+);
+
+export const ACTION_FIELDS = ['unverified_assumption'] as const;
+
+export function hasActionVerb(fields: Record<string, string> | undefined): boolean {
+  if (!fields) return true; // 沒有提供原文時不做判斷，維持模型分數。
+  return ACTION_FIELDS.some((key) => ACTION_PATTERN.test(fields[key] || ''));
+}
+
+export const NO_ACTION_REASON =
+  '還沒寫出要做的動作。請在「還不確定、需要驗證的事」裡寫出你要問誰、要問什麼，或要去看什麼。';
 
 /**
  * 驗證模型回傳內容。
  * 每項分數只接受 0–4 的整數；total_readiness 一律以五項加總為準。
+ * 傳入 fields 時，會再套用上面的行動閘門。
  */
-export function validateFeedback(raw: unknown): FeedbackResult {
+export function validateFeedback(raw: unknown, fields?: Record<string, string>): FeedbackResult {
   if (!raw || typeof raw !== 'object') return { ok: false, error: 'not-an-object' };
   const data = raw as Record<string, unknown>;
 
@@ -266,7 +295,8 @@ export function validateFeedback(raw: unknown): FeedbackResult {
   const strengths = cleanList(data.strengths);
   const missingEvidence = cleanList(data.missing_evidence);
   const followUps = cleanList(data.follow_up_questions);
-  if (!strengths.length) return { ok: false, error: 'missing-strengths' };
+  // 一張全空的卡本來就沒有優點可講。強迫模型掰一個等於製造假回饋，
+  // 而且會讓最需要幫助的學生收到 502。空陣列是合法的，前端本來就會略過空區塊。
   if (!missingEvidence.length) return { ok: false, error: 'missing-missing_evidence' };
   if (!followUps.length) return { ok: false, error: 'missing-follow_up_questions' };
 
@@ -288,6 +318,15 @@ export function validateFeedback(raw: unknown): FeedbackResult {
     total += score;
   }
 
+  // 行動閘門：只能把分數往下壓，不會往上加。
+  let clamped = false;
+  const step = readiness.next_validation_step as { score: number; reason: string };
+  if (step.score > 0 && !hasActionVerb(fields)) {
+    total -= step.score;
+    readiness.next_validation_step = { score: 0, reason: NO_ACTION_REASON };
+    clamped = true;
+  }
+
   const reported = source.total_readiness;
   const corrected = !(typeof reported === 'number' && Number.isInteger(reported) && reported === total);
   readiness.total_readiness = total;
@@ -295,6 +334,7 @@ export function validateFeedback(raw: unknown): FeedbackResult {
   return {
     ok: true,
     corrected,
+    clamped,
     total,
     feedback: {
       overall_feedback: overall,
@@ -472,14 +512,16 @@ Deno.serve(async (request) => {
   const userContent = buildUserContent(checked.fields);
   let outcome = await callModel(userContent, apiKey);
   if (!outcome.ok && outcome.reason === 'retry-minimal') outcome = await callModel(userContent, apiKey, true);
-  let validated = outcome.ok ? validateFeedback(outcome.parsed) : null;
+  let validated = outcome.ok ? validateFeedback(outcome.parsed, checked.fields) : null;
 
   // 逾時、網路錯誤或格式不符時，單次重試。
   if (!validated || !validated.ok) {
     log('model_retry', { reason: outcome.ok ? (validated as { error: string }).error : outcome.reason });
     outcome = await callModel(userContent, apiKey, true);
-    validated = outcome.ok ? validateFeedback(outcome.parsed) : null;
+    validated = outcome.ok ? validateFeedback(outcome.parsed, checked.fields) : null;
   }
+
+  if (validated && validated.ok && validated.clamped) log('step_clamped');
 
   if (!validated || !validated.ok) {
     log('model_failed');

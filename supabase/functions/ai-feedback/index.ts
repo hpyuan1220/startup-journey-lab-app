@@ -172,14 +172,16 @@ Deno.serve(async (request) => {
   const userContent = buildUserContent(checked.fields);
   let outcome = await callModel(userContent, apiKey);
   if (!outcome.ok && outcome.reason === 'retry-minimal') outcome = await callModel(userContent, apiKey, true);
-  let validated = outcome.ok ? validateFeedback(outcome.parsed) : null;
+  let validated = outcome.ok ? validateFeedback(outcome.parsed, checked.fields) : null;
 
   // 逾時、網路錯誤或格式不符時，單次重試。
   if (!validated || !validated.ok) {
     log('model_retry', { reason: outcome.ok ? (validated as { error: string }).error : outcome.reason });
     outcome = await callModel(userContent, apiKey, true);
-    validated = outcome.ok ? validateFeedback(outcome.parsed) : null;
+    validated = outcome.ok ? validateFeedback(outcome.parsed, checked.fields) : null;
   }
+
+  if (validated && validated.ok && validated.clamped) log('step_clamped');
 
   if (!validated || !validated.ok) {
     log('model_failed');

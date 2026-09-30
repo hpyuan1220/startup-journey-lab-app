@@ -2,10 +2,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ACTION_PATTERN,
+  NO_ACTION_REASON,
   PROMPT_VERSION,
   SYSTEM_PROMPT,
   buildUserContent,
   checkFields,
+  hasActionVerb,
   hashSource,
   sanitiseField,
   validateFeedback,
@@ -145,5 +148,75 @@ test('合成評測卡不含真實學生內容，且每張都有預期分數', as
     assert.ok(Object.keys(c.expect).length > 0, `${c.id} 缺少預期分數`);
     const check = checkFields(c.fields);
     assert.equal(check.ok, true, `${c.id} 未通過欄位檢查`);
+  }
+});
+
+// 空白卡曾經讓函式回 502：模型找不到優點就回空陣列，驗證直接拒絕。
+// 最需要幫助的學生因此只看得到錯誤訊息。空陣列必須合法。
+test('strengths 為空陣列仍然通過驗證，不再回 502', () => {
+  const feedback = makeFeedback(makeReadiness([0, 0, 0, 0, 0], 0));
+  feedback.strengths = [];
+  const result = validateFeedback(feedback, good);
+  assert.equal(result.ok, true, result.error);
+  assert.deepEqual(result.feedback.strengths, []);
+});
+
+test('missing_evidence 與 follow_up_questions 仍然必填', () => {
+  for (const key of ['missing_evidence', 'follow_up_questions']) {
+    const feedback = makeFeedback(makeReadiness([1, 1, 1, 1, 1], 5));
+    feedback[key] = [];
+    assert.equal(validateFeedback(feedback, good).ok, false, `${key} 為空時不該通過`);
+  }
+});
+
+// 行動閘門：模型會宣稱「有行動動詞」即使學生根本沒寫。改由程式判斷。
+test('沒有行動動詞時，下一步驗證方向強制歸零並重算總分', () => {
+  // good 的 expected_learning 本來就寫著「用訪談確認」—— 那是學習目標不是計畫，
+  // 閘門不該因此放行，所以這張卡仍應被歸零。
+  const noAction = { ...good, unverified_assumption: '是不是因為製作成本比較高。' };
+  const result = validateFeedback(makeFeedback(makeReadiness([3, 3, 2, 2, 2], 12)), noAction);
+  assert.equal(result.ok, true);
+  assert.equal(result.feedback.readiness.next_validation_step.score, 0);
+  assert.equal(result.feedback.readiness.next_validation_step.reason, NO_ACTION_REASON);
+  assert.equal(result.feedback.readiness.total_readiness, 10, '總分必須扣掉被歸零的那 2 分');
+  assert.equal(result.clamped, true);
+});
+
+test('有行動動詞時不介入，維持模型分數', () => {
+  const withAction = { ...good, unverified_assumption: '我會訪問五位同學確認這件事。' };
+  const result = validateFeedback(makeFeedback(makeReadiness([3, 3, 2, 2, 2], 12)), withAction);
+  assert.equal(result.feedback.readiness.next_validation_step.score, 2);
+  assert.equal(result.feedback.readiness.total_readiness, 12);
+  assert.equal(result.clamped, false);
+});
+
+test('閘門只能往下壓，0 分不會被再動一次', () => {
+  const result = validateFeedback(makeFeedback(makeReadiness([1, 1, 1, 1, 0], 4)), { observed_problem: '沒有動作' });
+  assert.equal(result.feedback.readiness.total_readiness, 4);
+  assert.equal(result.clamped, false);
+});
+
+test('沒有傳入學生原文時不做判斷，維持模型分數', () => {
+  const result = validateFeedback(makeFeedback(makeReadiness([1, 1, 1, 1, 3], 7)));
+  assert.equal(result.feedback.readiness.next_validation_step.score, 3);
+  assert.equal(result.clamped, false);
+});
+
+test('動詞表不收「去過」「填問卷」這類非行動用法', () => {
+  assert.equal(hasActionVerb({ unverified_assumption: '我去過那三家店' }), false);
+  assert.equal(hasActionVerb({ unverified_assumption: '如果要填問卷才有推薦' }), false);
+  assert.equal(hasActionVerb({ unverified_assumption: '希望有人告訴我怎麼寫' }), false);
+  assert.equal(hasActionVerb({ unverified_assumption: '我會去問五位同學' }), true);
+  assert.equal(hasActionVerb({ unverified_assumption: '我打算在現場計時三天' }), true);
+  // 只掃「還需要驗證什麼」欄位：學習目標與已完成的觀察都不算下一步
+  assert.equal(hasActionVerb({ expected_learning: '希望學會用訪談確認' }), false);
+  assert.equal(hasActionVerb({ known_fact: '我連續三週到場計時' }), false);
+  assert.ok(ACTION_PATTERN.test('訪談'));
+});
+
+test('五張合成卡都沒有行動動詞，應全部被閘門歸零', async () => {
+  const { cases } = await import('../scripts/eval-week1-rubric.mjs');
+  for (const c of cases) {
+    assert.equal(hasActionVerb(c.fields), false, `${c.id} 不該被判定為有行動`);
   }
 });

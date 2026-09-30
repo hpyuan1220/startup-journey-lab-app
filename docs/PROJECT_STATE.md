@@ -297,3 +297,44 @@ AI 的分層可信（頭尾都對），但中間三張被壓成同一個 10 分�
 - 部署 week2-api：貼上重新產生的 index.bundled.ts，讓伺服器端與前端規則一致。
 - 部署後跑 `OPENAI_API_KEY=... node scripts/eval-week1-rubric.mjs --run`（五次模型呼叫），
   確認新 rubric 的行為符合預期再讓全班使用。
+
+### 2026-09-30（下午）：上線驗證失敗 → 兩項修正
+
+用五張合成卡打**已部署**的函式驗證新 rubric，結果 **1/5 通過**。記錄實際結果，不是預期結果：
+
+| 卡 | 期望 | 實得 | 判定 |
+| --- | --- | --- | --- |
+| strong | 分開度 3–4、總分 11–20 | 4/3/3/3/2＝15 | 通過（與人工手評 15 完全一致）|
+| blank-help | 全 0 | **HTTP 502** | 失敗 |
+| no-action | 下一步 0 | 下一步 **2** | 失敗 |
+| causal-fact | 分開度 0–1、下一步 0 | 分開度 **1** ✓、下一步 **1** ✗ | 部分 |
+| mismatch | 對象 0–1、下一步 0 | 對象 **1** ✓、下一步 **1** ✗ | 部分 |
+
+有效：事實／假設收緊（因果卡 3→1）、跨欄位一致性（不一致卡 3→1）、總分下降（10→5、10→8）。
+無效：**next_validation_step 仍然給 1–2 分**。模型在沒有行動句的卡上寫出
+「有行動動詞，但缺少具體的對象和時間」——prompt 明文禁止仍然照寫。結論是這種判斷不能靠 prompt。
+
+#### 修正一：strengths 允許空陣列
+
+502 的原因在日誌裡很明確：`{"event":"model_retry","reason":"missing-strengths"}`。
+`validateFeedback` 要求 strengths 非空，一張全空的卡讓模型找不到優點可寫，回空陣列 → 驗證失敗 → 502。
+**這個檢查在改動前就存在（HEAD~1 validate.ts:227）**，是收緊 rubric（明令不給安慰分）把它引爆的。
+後果是最需要幫助的學生按下去只看到錯誤訊息。已改為空陣列合法；
+前端 SECTIONS 迴圈本來就有 `if (items.length)`，不需要改。
+missing_evidence 與 follow_up_questions 維持必填 —— 空白卡永遠有缺的證據可指出。
+
+#### 修正二：行動閘門改由程式判斷
+
+新增 ACTION_PATTERN、ACTION_FIELDS、hasActionVerb、NO_ACTION_REASON。
+validateFeedback 多收一個 fields 參數；找不到行動動詞就把 next_validation_step 壓成 0、
+換成固定理由、重算總分，並回傳 clamped 供 index.ts 記錄 `step_clamped` 事件。
+**只能往下壓，不會往上加**；未傳入 fields 時完全不介入。
+
+只掃 `unverified_assumption` 一個欄位。掃全部六欄會誤判：
+`expected_learning` 寫的是學習目標（「希望學會用訪談確認」），
+`known_fact` 寫的是已經做過的事（「我連續三週到場計時」），兩者都不是下一步。
+這兩個誤判在測試中實際發生過（strong 卡與 mismatch 卡都因此被放行），才縮小到單一欄位。
+動詞表刻意保守，不收「去過」「填問卷」這類講過去或講別人的用法。
+誤判成 0 的情況下，理由會指名要寫在哪一欄，學生可自行補正。
+
+56 項測試通過（新增 8 項）。未更動資料表、SQL、前端或教師端。
