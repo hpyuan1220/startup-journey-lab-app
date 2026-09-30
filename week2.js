@@ -449,8 +449,10 @@ function render(){
 
  form.onsubmit=e=>{e.preventDefault();};
 }
-function checks(full=false){
- report.replaceChildren();const c=check(normalize(card));
+// 缺哪些題，以及每一題在表單裡的第幾個位置。
+// 抽出來是因為「歡迎回來」也要用同一份答案 —— 它本來就會說出缺哪一題，
+// 卻沒有任何按鈕帶學生過去。
+function missingTargets(){
  const targets=[];
  card.candidates.forEach((candidate,i)=>triageFields.forEach(([k,label])=>{if(!candidate[k])targets.push({label:`痛點 ${i+1}：${label}`,index:i*triageFields.length+triageFields.findIndex(([key])=>key===k)});}));
  const base=card.candidates.length*triageFields.length;
@@ -460,10 +462,32 @@ function checks(full=false){
  const afterDepth=base+3+depthFields.length;
  card.interviewees.forEach((v,i)=>{if(!v)targets.push({label:`受訪者 ${i+1} 的角色與接觸方式`,index:afterDepth+i});});
  card.questions.forEach((v,i)=>{if(!v)targets.push({label:`訪談問題 ${i+1}`,index:afterDepth+3+i});});
- const shown=full||card.mode!=='guided'?targets:targets.filter(t=>t.index===step);
+ return targets;
+}
+// 跳到指定的題目並把游標放進去。
+function gotoTarget(t){
+ const before=[...form.querySelectorAll('.week2-question')][t.index];
+ if(!before)return false;
+ step=t.index;activeStage=before.closest('[data-stage]').dataset.stage;
+ render();remember();
+ const q=[...form.querySelectorAll('.week2-question')][t.index];
+ if(!q)return false;
+ const box=q.closest('details');if(box)box.open=true;
+ const ta=q.querySelector('textarea');if(ta)ta.focus();
+ q.scrollIntoView({block:'center'});
+ return true;
+}
+function checks(full=false){
+ report.replaceChildren();const c=check(normalize(card));
+ const targets=missingTargets();
+ // 引導模式原本只列出「剛好等於目前這一題」的缺項。缺的那一題不是目前這一題時，
+ // 清單就完全是空的 —— 學生看到「尚有 1 個欄位待填」卻沒有任何可以按的東西，
+ // 還要再按一次「查看整張卡還缺什麼」才會出現。改成至少給三個可以直接按的。
+ const here=targets.filter(t=>t.index===step);
+ const shown=full||card.mode!=='guided'?targets:(here.length?here:targets.slice(0,3));
  el('h3',c.ok?'必要內容已填齊':full?'提交前：還有哪些內容需要補充？':'目前填答進度',report);
- el('p',`尚有 ${targets.length} 個文字欄位待填。可先保存草稿，不必一次完成。${!full&&card.mode==='guided'?'這裡先顯示目前這一題；完整檢查可按下方按鈕。':''}`,report);
- shown.forEach(t=>button(`前往填寫：${t.label}`,()=>{step=t.index;const before=[...form.querySelectorAll('.week2-question')][t.index];activeStage=before.closest('[data-stage]').dataset.stage;render();remember();const q=[...form.querySelectorAll('.week2-question')][t.index];const box=q.closest('details');if(box)box.open=true;q.querySelector('textarea').focus();q.scrollIntoView({block:'center'});},report));
+ el('p',`尚有 ${targets.length} 個文字欄位待填。可先保存草稿，不必一次完成。${!full&&card.mode==='guided'&&targets.length>shown.length?'下面先列出前幾項；完整清單可按最下面的按鈕。':''}`,report);
+ shown.forEach(t=>button(`前往填寫：${t.label}`,()=>gotoTarget(t),report));
  if(!full&&card.mode==='guided')button('查看整張卡還缺什麼',()=>checks(true),report);
  if(full){for(const [key,label]of [['contact_confirmed','確認受訪者的接觸方式'],['questions_checked','確認訪談問題不引導']])if(!card[key])button('前往確認：'+label,()=>{goStage('interview');form.querySelector(`[data-confirmation="${key}"]`).focus();},report);for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
  report.hidden=false;report.scrollIntoView({block:'nearest'});return c;
@@ -554,6 +578,9 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  addBackupDownload();
  if(remembered){welcome.hidden=false;el('h3','歡迎回來',welcome);el('p',`你上次停在「${steps.find(x=>x[0]===activeStage)?.[1]||'選填探索'}」。${pendingLocal?'請先比較本機與雲端內容。':dirty?'有本機修改未同步。':row?`雲端版本 ${version} · ${readiness(row)}`:'尚未保存至雲端。'} 下一步可繼續上次進度，或查看步驟缺項。位置僅在同裝置、同瀏覽器恢復。`,welcome);
   button('繼續上次進度',()=>{welcome.hidden=true;if(['guided','standard','challenge'].includes(remembered.mode)){const next=adoptPacing(remembered.mode);if(card.mode!==next){card.mode=next;localSave();}}goStage(activeStage);qFocus();},welcome);button('查看全部步驟',()=>{journey.scrollIntoView({block:'center'});stageButtons.get('0').focus();},welcome);
+  // 上面那句話已經講出缺的是哪一題了，卻沒有路過去。補一顆直達按鈕。
+  const first=missingTargets()[0];
+  if(first){const go=button(`直接去補：${first.label}`,()=>{welcome.hidden=true;if(!gotoTarget(first))checks(true);},welcome);go.className='primary-action';}
  }
  refreshJourney();
  const fb=data.feedback?.find(x=>x.state==='complete');if(fb){showFeedback(fb.feedback,true);if(fb.submission_version!==version)el('p','此建議來自較早版本，請依目前內容重新判讀。',feedback);}

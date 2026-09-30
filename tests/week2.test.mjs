@@ -143,3 +143,25 @@ test('深入區的題數說明必須跟著 depthFields 走，不可寫死',async
  const {depthFields}=await import('../week2-core.mjs');
  assert.equal(depthFields.length,5,'目前是五題；改動時這個測試會提醒你連說明一起看');
 });
+
+// 使用者連問四次「那一格在哪裡」。實際情況：
+// 1) 引導模式一次只顯示一題，缺的那一題根本不在畫面上；
+// 2)「歡迎回來」明確說出缺的是哪一題，卻沒有任何按鈕帶她過去；
+// 3)「檢查目前進度」在引導模式下只列出「剛好等於目前這一題」的缺項 ——
+//    缺的不是目前這一題時清單是空的，要再按一次「查看整張卡還缺什麼」才會出現。
+// 系統知道答案、也說出來了，就是不給路。
+test('缺的那一題一定要有一顆按鈕可以直接過去',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../week2.js',import.meta.url),'utf8');
+
+ assert.match(src,/function missingTargets\(\)/,'缺項的計算要抽出來，歡迎區塊與檢查共用同一份答案');
+ assert.match(src,/function gotoTarget\(t\)/,'跳題要有單一入口，不要在兩個地方各寫一次');
+ assert.match(src,/直接去補：\$\{first\.label\}/,'歡迎回來要有一顆直達缺項的按鈕');
+ assert.match(src,/const first=missingTargets\(\)\[0\]/,'那顆按鈕要用真正的缺項，不是猜的');
+
+ // 引導模式下，清單不可以是空的
+ assert.match(src,/here\.length\?here:targets\.slice\(0,3\)/,
+  '缺項不是目前這一題時，也要列出可以按的項目，不能讓畫面沒有任何出口');
+ // 這裡刻意不寫負向字串比對：上一版寫了一個會打到合法變數的 regex，
+ // 測試紅了但程式是對的。改用正向比對三選一的那一行就夠。
+});
