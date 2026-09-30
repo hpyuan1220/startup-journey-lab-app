@@ -584,6 +584,18 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  }
  refreshJourney();
  const fb=data.feedback?.find(x=>x.state==='complete');if(fb){showFeedback(fb.feedback,true);if(fb.submission_version!==version)el('p','此建議來自較早版本，請依目前內容重新判讀。',feedback);}
- }catch(e){msg.textContent=`${e.message} 你仍可閱讀本週藍圖與下載教材。`;}
+ }catch(e){
+ // 讀不到資料時，卡片整張不會出現，畫面看起來就像資料不見了。
+ // 「Failed to fetch」是請求沒送到伺服器（網路瞬斷、剛睡醒、分頁擱太久），
+ // 不是伺服器回錯誤，重試通常就好 —— 所以一定要給一顆重試按鈕，不能只留一句話。
+  const 網路問題=/Failed to fetch|NetworkError|Load failed/i.test(e.message||'');
+  msg.textContent=網路問題
+   ? '連不上伺服器，你的內容沒有遺失，請按下面的「重新載入」再試一次。'
+   : `${e.message} 你的內容沒有遺失。可按下面的「重新載入」再試一次。`;
+  const retry=el('button','重新載入',msg.parentElement||document.body);
+  retry.type='button';retry.className='primary-action';
+  retry.onclick=()=>location.reload();
+  try{retry.scrollIntoView({block:'center'});retry.focus();}catch{}
+ }
 })();
 }

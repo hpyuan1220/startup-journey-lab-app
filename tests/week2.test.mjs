@@ -165,3 +165,16 @@ test('缺的那一題一定要有一顆按鈕可以直接過去',async()=>{
  // 這裡刻意不寫負向字串比對：上一版寫了一個會打到合法變數的 regex，
  // 測試紅了但程式是對的。改用正向比對三選一的那一行就夠。
 });
+
+// 載入失敗時，卡片整張不會出現，畫面看起來就跟資料不見一樣。
+// 原本只留一句「你仍可閱讀本週藍圖與下載教材」——沒有重試、沒有說可以重新整理、
+// 也沒有講「你的內容沒有遺失」。使用者實際遇到的就是這一句。
+test('載入失敗要給重試按鈕，並說清楚內容沒有遺失',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/你的內容沒有遺失/,'先講清楚資料還在，再講怎麼辦');
+ assert.match(src,/el\('button','重新載入'/,'要有一顆重試按鈕，不能只留一句話');
+ assert.match(src,/retry\.onclick=\(\)=>location\.reload\(\)/,'按下去要真的重載');
+ assert.match(src,/Failed to fetch\|NetworkError\|Load failed/,'網路層失敗要用學生看得懂的話說，不要直接丟英文');
+ assert.ok(!/你仍可閱讀本週藍圖與下載教材/.test(src),'舊的那句沒有出路，不該留著');
+});
