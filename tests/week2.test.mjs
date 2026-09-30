@@ -131,3 +131,15 @@ test('換步驟之後要捲到「這一步要做的事」，死按鈕要隱藏�
  assert.match(src,/若沒看到檔案，請查看瀏覽器的下載項目/,
   '下載按鈕在手機上可能靜默失敗，要留一句話');
 });
+
+// 今天把 acceptance 從選填移進 depthFields，深入區從四題變五題，
+// 但畫面上那句說明還寫著「接下來四題」——改了 A 沒去檢查誰依賴 A，又一次。
+// 這類數字一律從資料推導，不要寫死。
+test('深入區的題數說明必須跟著 depthFields 走，不可寫死',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/接下來\$\{depthFields\.length\}題只問這一個困擾/,'題數要由 depthFields.length 推導');
+ assert.ok(!/接下來(一|二|三|四|五|六|七|八|九|十|\d)+題/.test(src),'不可再有寫死的題數');
+ const {depthFields}=await import('../week2-core.mjs');
+ assert.equal(depthFields.length,5,'目前是五題；改動時這個測試會提醒你連說明一起看');
+});

@@ -390,7 +390,7 @@ function render(){
   const pick=Math.max(0,selectedIndex(card)),chosen=card.candidates[pick];
   const depthBox=el('section','',choice);depthBox.className='week2-depth';
   el('h3',`深入你選的這一題：痛點 ${pick+1}`,depthBox);
-  el('p',`「${chosen.problem||'（尚未填寫阻礙）'}」—— 接下來四題只問這一個困擾。`,depthBox);
+  el('p',`「${chosen.problem||'（尚未填寫阻礙）'}」—— 接下來${depthFields.length}題只問這一個困擾。`,depthBox);
   const depthHints={cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',
    // 選題的及格線：如果現在的方法其實夠用，這個題目做下去第五週會沒人在乎。
    acceptance:'例如：便利商店買得到，但排隊一樣久，而且常常賣完；或：現在的方法其實還可以，我還不確定值不值得做',
