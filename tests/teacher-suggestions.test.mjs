@@ -181,3 +181,26 @@ test('Week 1 的版本快照觸發器仍在',async()=>{
  assert.match(sql,/create trigger week1_snapshot after insert or update on public\.week1_submissions/);
  assert.match(sql,/if old\.submitted_at is not null then new\.submitted_at=old\.submitted_at/,'第一次提交時間不該被後來的提交蓋掉');
 });
+
+// 資料表的唯一鍵是 (class_id, student_id)。只用學號過濾的話，
+// 同一個學號若出現在兩個班，兩邊的 teacher_note 都會被寫入。
+test('送出老師回饋時要同時比對班級與學號',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../teacher-note.js',import.meta.url),'utf8');
+ assert.match(src,/class_id=eq\./,'PATCH 條件缺少班級');
+ assert.match(src,/student_id=eq\./);
+ const schema=await fs.readFile(new URL('../supabase/schema.sql',import.meta.url),'utf8');
+ assert.match(schema,/unique\(class_id, student_id\)/,'唯一鍵若改變，這個過濾條件要跟著檢查');
+});
+
+// 老師留言會讓學生看到「第 2 版」，但他根本沒有再提交過。
+test('教師欄位單獨更新時不進版、不留快照',async()=>{
+ const fs=await import('node:fs/promises');
+ const sql=await fs.readFile(new URL('../supabase/migrations/20260930_teacher_note_no_version_bump.sql',import.meta.url),'utf8');
+ for(const field of ['teacher_note','needs_follow_up','review_status']){
+  assert.ok(sql.includes(`- '${field}'`),`版本比較時要排除 ${field}`);
+ }
+ assert.match(sql,/new\.version := old\.version;/,'只有教師欄位變動時要維持原版本');
+ assert.match(sql,/if TG_OP = 'UPDATE' and new\.version = old\.version then\s*return new;/,'版本沒動就不該留快照');
+ assert.match(sql,/if old\.submitted_at is not null then new\.submitted_at := old\.submitted_at/,'第一次提交時間仍要保護');
+});

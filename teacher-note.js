@@ -51,8 +51,14 @@ async function save(studentId, note, statusEl, buttons) {
   buttons.forEach((b) => { b.disabled = true; });
   statusEl.textContent = '儲存中…';
   try {
+    // 資料表的唯一鍵是 (class_id, student_id)。只用學號過濾的話，
+    // 同一個學號若出現在兩個班，兩邊都會被寫入。
+    const classId = submissions[studentId] && submissions[studentId].class_id;
+    if (!classId) throw new Error('missing-class');
     const res = await fetch(
-      cfg.supabaseUrl + '/rest/v1/week1_submissions?student_id=eq.' + encodeURIComponent(studentId),
+      cfg.supabaseUrl + '/rest/v1/week1_submissions'
+        + '?class_id=eq.' + encodeURIComponent(classId)
+        + '&student_id=eq.' + encodeURIComponent(studentId),
       {method: 'PATCH', headers: Object.assign(headers(), {Prefer: 'return=minimal'}), body: JSON.stringify({teacher_note: note})},
     );
     if (!res.ok) throw new Error('failed');

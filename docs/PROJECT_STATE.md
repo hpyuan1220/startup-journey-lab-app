@@ -728,3 +728,26 @@ Week 2 的教師回饋仍走原本那條會被覆寫的狀態訊息，尚未比�
 
 89 項測試通過（新增 3 項）。瀏覽器實測：狀態列文字正確、未改動時發出 0 個請求、
 改一個欄位後發出 1 個請求（快照比對判定有差異）。資源版本 v=20260930-resubmit。
+
+#### 教師回饋的兩個缺陷（同日補）
+
+檢查「送出給學生的內容去了哪裡」時發現兩個問題，都是當天新寫的程式造成的。
+
+**一、PATCH 條件漏了班級。** `teacher-note.js` 用
+`week1_submissions?student_id=eq.<學號>` 更新，但資料表唯一鍵是
+`unique(class_id, student_id)` —— 同一個學號若出現在兩個班，兩邊的 teacher_note 都會被寫入。
+已改為同時比對 `class_id` 與 `student_id`，班級取自該列本身；取不到就不送出。
+
+**二、老師留言會把學生的版本號往上加。** `week1_version` 觸發器對任何 update 都生效，
+包括老師寫 teacher_note。結果是：學生提交一次（第 1 版）→ 老師留言 →
+**學生回來看到「第 2 版」，但他根本沒有再提交過**，而且 learning_versions 也多一筆
+沒有內容變動的快照。這直接打臉同日稍早才做的版本顯示。
+
+修法寫在 `supabase/migrations/20260930_teacher_note_no_version_bump.sql`：
+`bump_learning_version()` 改為先比較「移除 teacher_note / needs_follow_up / review_status /
+updated_at / version 之後的整列」，只有學生自己填的內容真的變了才 version+1；
+`snapshot_learning()` 在 version 沒變時直接 return，不留快照。
+第一次提交時間的保護維持不變。**這一份要在 Supabase SQL Editor 執行才會生效。**
+
+91 項測試通過（新增 2 項），其中一項逐欄檢查遷移檔有排除三個教師欄位。
+資源版本 teacher-note.js v=20260930-classid。
