@@ -75,7 +75,7 @@ function renderSubmittedState(){
 }
 
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }
-async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok){const error=new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`);error.status=res.status;throw error;} return body; }
+async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok){const error=new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`);error.status=res.status;error.body=body;throw error;} return body; }
 async function studentApi(body){ return api('/functions/v1/Student-api',{method:'POST',body:JSON.stringify(body)}); }
 // 老師的回饋放在卡片最上方的固定區塊，不放狀態訊息 ——
 // 那個元素在這個檔案裡被十幾個地方覆寫，老師寫的話會被「草稿已同步」蓋掉。
@@ -117,8 +117,40 @@ function showMainView(name){
 }
 document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{location.hash=btn.dataset.view;showMainView(btn.dataset.view);}));
 window.addEventListener('hashchange',()=>showMainView(location.hash.slice(1)));
-$('student-enter').onclick=async()=>{ if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true); try{message('access-message','正在確認班級…'); studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value}); localStorage.setItem('sjl-student-session',JSON.stringify(studentSession)); showStudent(); const loaded=await studentApi({action:'load',token:studentSession.token}); fill(loaded.submission||{}); message('form-message','已進入起點卡，可先儲存草稿。');}catch(e){message('access-message',e.message,true);}};
+$('student-enter').onclick=()=>enterStudent(false);
 $('student-exit').onclick=()=>{localStorage.removeItem('sjl-student-session');studentSession=null;showStudent();};
+// 本班沒有這個學號時，不要默默開一張新卡 —— 先讓學生確認一次。
+// 打錯字的人在這裡被接住；真的第一次進入的人按「是」就進去，不會被擋。
+function askFirstTime(typedId){
+  const box=$('access-message');
+  box.textContent='';
+  box.classList.add('message');
+  const p=document.createElement('p');
+  p.textContent=`本班沒有「${typedId}」的作答紀錄。如果你之前填過，很可能是學號打錯了。`;
+  box.appendChild(p);
+  const row=document.createElement('div');row.className='actions';box.appendChild(row);
+  const back=document.createElement('button');back.type='button';back.textContent='我要改學號';
+  back.onclick=()=>{box.textContent='';const el=$('access-student-id');el.focus();el.select();};
+  const go=document.createElement('button');go.type='button';go.className='primary';go.textContent='是，我第一次進入';
+  go.onclick=()=>enterStudent(true);
+  row.appendChild(back);row.appendChild(go);
+  back.focus();
+}
+async function enterStudent(confirmNew){
+  if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true);
+  try{
+    message('access-message','正在確認班級…');
+    studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value,...(confirmNew?{confirm_new:true}:{})});
+    localStorage.setItem('sjl-student-session',JSON.stringify(studentSession));
+    showStudent();
+    const loaded=await studentApi({action:'load',token:studentSession.token});
+    fill(loaded.submission||{});
+    message('form-message','已進入起點卡，可先儲存草稿。');
+  }catch(e){
+    if(e.status===409&&e.body&&e.body.unknown_student){askFirstTime(e.body.student_id||$('access-student-id').value);return;}
+    message('access-message',e.message,true);
+  }
+}
 $('week1-form').addEventListener('input',renderCard);
 async function save(status, button, labels={}){
   const data=formData();

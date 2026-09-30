@@ -14,11 +14,24 @@ Deno.serve(async (request) => {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   if (!body) return reply({ error: '格式不正確。' }, 400);
   if (body.action === 'login') {
-    const studentId = String(body.student_id || '').trim();
+    // 學號一律去空白並轉大寫。先前是原樣接受：同一個人用 a111270229 和 A111270229
+    // 登入會變成兩個不同的身分，各自一張卡。
+    const studentId = String(body.student_id || '').trim().toUpperCase();
     const inviteCode = String(body.invite_code || '');
     if(!studentId||studentId.length>60||inviteCode.length>200)return reply({error:'學號或邀請碼格式不正確。'},422);
     const { data: classId } = await db.rpc('validate_class_invite', { p_invite_code: inviteCode });
     if (!studentId || !classId) return reply({ error: '學號或班級邀請碼不正確。' }, 401);
+    // 打錯一個字就是另一個人。本班沒有這個學號的紀錄時先問一次，
+    // 否則學生會進到一張全新的空白卡，以為自己的作業不見了。
+    // 真的第一次進入的人按「是」再送一次即可，不會被擋住。
+    if (body.confirm_new !== true) {
+      const { data: known } = await db.from('week1_submissions')
+        .select('student_id').eq('class_id', classId).eq('student_id', studentId).maybeSingle();
+      if (!known) return reply({
+        error: '本班沒有這個學號的紀錄。如果你之前填過，請檢查學號是否打錯。',
+        unknown_student: true, student_id: studentId,
+      }, 409);
+    }
     const token = crypto.randomUUID() + crypto.randomUUID();
     const {error:sessionError}=await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + 1209600000).toISOString() }, { onConflict: 'class_id,student_id' });
     if(sessionError)return reply({error:'登入暫時無法完成，請稍後重試。'},503);

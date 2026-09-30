@@ -56,3 +56,59 @@ test('前端：提交之後不再顯示「儲存草稿」與「清除內容」',
  assert.match(api,/const locked = current\?\.status === 'submitted'/,'伺服器要先讀目前狀態');
  assert.match(api,/fields\.status = locked \? 'submitted' : input\.status/,'伺服器不可接受降級');
 });
+
+// 正式班實查：44 個學號登入過，只有 37 筆作答。
+// A111270229 與 a111270229 是同一個人的兩種寫法，各自一張卡；
+// A1130309125 / A30309125 / A11309125 是同一人的三種寫法。
+// 學號打錯或大小寫不同 → 靜默進到一張全新的空白卡 → 學生以為作業不見了。
+test('學號一律轉大寫去空白：大小寫不同的同一人不會變成兩張卡',async()=>{
+ const h=await harness();
+ // 先用大寫建立一份已提交的卡
+ const upper=await h.student('A111270229');
+ await h.call({action:'save',token:upper,submission:{...fullCard(),status:'submitted'}});
+
+ // 再用小寫登入，應該被視為同一個人（而且不必確認，因為紀錄已存在）
+ const r=await h.call({action:'login',student_id:' a111270229 ',invite_code:'whatever'});
+ assert.equal(r.status,200,r.body?.error);
+ assert.equal(r.body.student_id,'A111270229','學號要正規化成大寫並去掉空白');
+
+ const rows=h.tables.week1_submissions.filter(x=>x.student_id.toUpperCase()==='A111270229');
+ assert.equal(rows.length,1,'不可以變成兩張卡');
+});
+
+test('本班沒有這個學號時，先回 409 問一次，而且不建立任何資料',async()=>{
+ const h=await harness();
+ const before=h.tables.student_sessions.length;
+ const r=await h.call({action:'login',student_id:'A11309125',invite_code:'whatever'});
+ assert.equal(r.status,409);
+ assert.equal(r.body.unknown_student,true,'前端要靠這個旗標才知道該問，不是靠訊息字串');
+ assert.equal(r.body.student_id,'A11309125','要把正規化後的學號回傳，讓學生看到自己打的是什麼');
+ assert.equal(h.tables.student_sessions.length,before,'被擋下時不可以建立 session');
+});
+
+test('真的第一次進入的人按「是」就能進去，不會被擋住',async()=>{
+ const h=await harness();
+ const r=await h.call({action:'login',student_id:'A113270099',invite_code:'whatever',confirm_new:true});
+ assert.equal(r.status,200,r.body?.error);
+ assert.ok(r.body.token,'要拿到權杖');
+ assert.equal(r.body.student_id,'A113270099');
+});
+
+test('已經有作答紀錄的人照常登入，不會被多問一次',async()=>{
+ const h=await harness();
+ const t=await h.student('A113270003');
+ await h.call({action:'save',token:t,submission:{...fullCard(),status:'submitted'}});
+ const r=await h.call({action:'login',student_id:'A113270003',invite_code:'whatever'});
+ assert.equal(r.status,200,'有紀錄的人不該被攔');
+});
+
+test('前端：409 要走確認流程，不是直接把錯誤訊息丟出來',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../app.js',import.meta.url),'utf8');
+ assert.match(src,/error\.body=body/,'api\(\) 要把回應內容帶出來，否則前端讀不到旗標');
+ assert.match(src,/e\.status===409&&e\.body&&e\.body\.unknown_student/,'要用旗標判斷，不要比對訊息字串');
+ assert.match(src,/function askFirstTime\(typedId\)/,'要有確認流程');
+ assert.match(src,/是，我第一次進入/,'第一次進入的人要有一條路');
+ assert.match(src,/我要改學號/,'打錯的人也要有一條路');
+ assert.match(src,/enterStudent\(true\)/,'按「是」之後要帶 confirm_new 重送');
+});
