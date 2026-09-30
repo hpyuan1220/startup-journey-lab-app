@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-triage';
+import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-disclose';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -47,6 +47,43 @@ const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修�
 const actions=el('div','',workspace);actions.className='actions workspace-actions';
 const submitResult=el('section','',workspace);submitResult.hidden=true;submitResult.tabIndex=-1;submitResult.setAttribute('role','status');submitResult.setAttribute('aria-live','polite');submitResult.className='submission-result';
 const finalStage=el('section','',workspace);finalStage.hidden=true;el('h3','最後檢查與提交',finalStage);el('p','填齊欄位不代表題目已驗證或教師已核准。提交成功後會顯示雲端版本。',finalStage);
+// 誠信揭露：external_ai 原本只在「來源確認」那個選用步驟裡，幾乎不會有人看到。
+// 這裡不改成必填 —— 用了外部 AI 不是作弊，重點是被問到、可以誠實回答。
+const aiDisclosure=el('section','',finalStage);aiDisclosure.className='ai-disclosure';
+el('h4','這張卡有用到系統以外的 AI 嗎？',aiDisclosure);
+el('p','例如 ChatGPT、Gemini。用了不影響提交，也不扣分；寫出來就好。系統內建的 AI 建議不用填。',aiDisclosure);
+const disclosureChoices=el('div','',aiDisclosure);disclosureChoices.className='ai-disclosure-choices';
+const disclosureBox=el('div','',aiDisclosure);disclosureBox.className='ai-disclosure-detail';
+const disclosureLabel=el('label','用了哪一個？用來做什麼？',disclosureBox);
+const disclosureText=el('textarea','',disclosureLabel);
+disclosureText.maxLength=200;disclosureText.rows=2;
+disclosureText.placeholder='例如：ChatGPT 協助整理訪談題';
+disclosureText.oninput=()=>{card.external_ai=disclosureText.value;localSave();};
+const disclosureStatus=el('p','',aiDisclosure);disclosureStatus.className='ai-disclosure-status';disclosureStatus.setAttribute('role','status');
+const yesBtn=button('有',()=>setDisclosure(true),disclosureChoices);
+const noBtn=button('沒有',()=>setDisclosure(false),disclosureChoices);
+function setDisclosure(used){
+ disclosureBox.hidden=!used;
+ yesBtn.setAttribute('aria-pressed',String(used));
+ noBtn.setAttribute('aria-pressed',String(!used));
+ try{localStorage.setItem(disclosureKey(),used?'yes':'no');}catch{}
+ if(used){disclosureText.focus();disclosureStatus.textContent='';}
+ else{if(card.external_ai){card.external_ai='';disclosureText.value='';localSave();}
+  disclosureStatus.textContent='已記錄：沒有使用系統以外的 AI。';}
+}
+// 回答「沒有」只存本機：卡片結構存在伺服器端，為了一個提示欄位改 schema 與
+// 重新部署 Edge Function 不划算。被問到才是重點，答案本身不必進資料庫。
+const disclosureKey=()=>session?`sjl-w2-ai-disclosed-${session.class_id}-${session.student_id}`:'';
+function renderDisclosure(){
+ const used=Boolean((card.external_ai||'').trim());
+ let answeredNo=false;
+ try{answeredNo=!used&&localStorage.getItem(disclosureKey())==='no';}catch{}
+ disclosureText.value=card.external_ai||'';
+ disclosureBox.hidden=!used;
+ yesBtn.setAttribute('aria-pressed',String(used));
+ noBtn.setAttribute('aria-pressed',String(answeredNo));
+ disclosureStatus.textContent=answeredNo?'已記錄：沒有使用系統以外的 AI。':'';
+}
 const form=el('form','',workspace);form.noValidate=true;
 form.addEventListener('focusin',e=>{const q=e.target.closest('.week2-question');if(q){step=[...form.querySelectorAll('.week2-question')].indexOf(q);remember();}});
 const liveCheck=el('section','',workspace);liveCheck.setAttribute('aria-live','polite');liveCheck.className='video-learning-card';
@@ -164,7 +201,7 @@ function refreshJourney(){
 }
 function showStage(){
  for(const box of form.querySelectorAll('[data-stage]'))box.hidden=box.dataset.stage!==activeStage;
- form.hidden=['ai','submit'].includes(activeStage);aiStep.hidden=activeStage!=='ai';finalStage.hidden=activeStage!=='submit';liveCheck.hidden=activeStage!=='submit';report.hidden=activeStage!=='submit';
+ form.hidden=['ai','submit'].includes(activeStage);aiStep.hidden=activeStage!=='ai';finalStage.hidden=activeStage!=='submit';if(activeStage==='submit')renderDisclosure();liveCheck.hidden=activeStage!=='submit';report.hidden=activeStage!=='submit';
  const qs=[...form.querySelectorAll('.week2-question')],group=form.querySelector(`[data-stage="${activeStage}"]`);
  if(group){const current=qs[step];if(!current||!group.contains(current))step=qs.findIndex(q=>group.contains(q));
  qs.forEach((q,i)=>{const hide=card.mode==='guided'&&i!==step;q.hidden=hide;for(const helper of q.week2Helpers||[])helper.hidden=hide;});

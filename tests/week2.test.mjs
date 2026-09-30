@@ -57,3 +57,19 @@ test('week2-api 單檔版本與 week2-core.mjs 同步', async () => {
     assert.ok(bundled.includes(body), `單檔版本落後：請執行 node scripts/build-week2-function.mjs\n缺少：${body.slice(0, 60)}`);
   }
 });
+
+// 外部 AI 揭露原本埋在「來源確認」那個選用步驟裡，幾乎沒人看得到。
+// 移到提交前會被問到，但不擋提交 —— 用了外部 AI 不是作弊，重點是誠實揭露。
+test('提交前會問外部 AI，但不影響提交資格',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/這張卡有用到系統以外的 AI 嗎/);
+ assert.match(src,/ai-disclosure/);
+ const {check,normalize}=await import('../week2-core.mjs');
+ const {demoCard}=await import('./support/week2-harness.mjs');
+ const withAi=normalize({...demoCard(),external_ai:'ChatGPT 協助整理訪談題'});
+ const withoutAi=normalize({...demoCard(),external_ai:''});
+ assert.equal(check(withAi).ok,true,'揭露了外部 AI 不該擋住提交');
+ assert.equal(check(withoutAi).ok,true,'沒有揭露也不該擋住提交');
+ assert.equal(withAi.external_ai,'ChatGPT 協助整理訪談題','揭露內容要保存下來');
+});

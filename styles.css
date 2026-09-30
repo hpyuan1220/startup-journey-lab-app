@@ -140,3 +140,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-note[data-state="new"] h2::after{content:'　新';font-size:13px;color:#8a3b23}
 #teacher-note p{margin:0 0 10px;line-height:1.7;white-space:pre-wrap}
 #teacher-note[data-state="seen"] button{display:none}
+
+/* 提交前的外部 AI 揭露：問到就好，不擋提交 */
+#week-two .ai-disclosure{margin:14px 0;padding:12px 14px;border:1px dashed #b9b2a2;border-radius:8px;background:#fbfaf7}
+#week-two .ai-disclosure h4{margin:0 0 6px;font-size:16px}
+#week-two .ai-disclosure>p{margin:0 0 10px;font-size:14px;color:#5b5548;line-height:1.6}
+#week-two .ai-disclosure-choices{display:flex;gap:8px}
+#week-two .ai-disclosure-choices button{padding:8px 22px}
+#week-two .ai-disclosure-choices button[aria-pressed="true"]{background:#183d2b;color:#fff;border-color:#183d2b}
+#week-two .ai-disclosure-detail{margin-top:10px}
+#week-two .ai-disclosure-detail textarea{width:100%;box-sizing:border-box}
+#week-two .ai-disclosure-status{margin:8px 0 0;font-size:14px;color:#1f6f63;min-height:1.2em}
