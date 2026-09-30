@@ -1,7 +1,7 @@
 // 純函式模組：不依賴 Deno 或網路，方便單獨測試。
 // Startup Journey Lab — Week 1 AI 學習建議
 
-export const PROMPT_VERSION = 'w1-2026-09-30';
+export const PROMPT_VERSION = 'w1-2026-09-30b';
 export const WEEK_NUMBER = 1;
 
 export const REQUIRED_FIELDS = [
@@ -29,7 +29,7 @@ export const FIELD_LABELS: Record<FieldName, string> = {
   observed_problem: '我親身觀察到的生活不便',
   affected_user: '誰受到影響',
   known_fact: '目前知道的事實',
-  unverified_assumption: '仍待驗證的假設',
+  unverified_assumption: '仍待驗證的假設，以及你打算怎麼確認',
   expected_learning: '我最期待學到什麼',
   concern: '我最擔心的是什麼',
 };
@@ -86,6 +86,8 @@ fact_quality（事實品質）
 4：有可查證的細節，並包含使用者原話或可追溯的來源。
 
 fact_assumption_separation（事實與假設分開）
+unverified_assumption 這一欄現在同時要求兩件事：學生的猜測，以及他打算怎麼確認。
+判斷本項時只看猜測的部分；確認行動的部分屬於 next_validation_step。
 判斷順序：先只看 known_fact 這一欄，再看 unverified_assumption。
 - 若 known_fact 內含因果或推測字詞（因為、所以、導致、可能、應該、大概、我猜、一定），本項最高 2 分，不論假設欄寫得多好。
 - 若 known_fact 與 unverified_assumption 其實在講同一個因果，只是換句話說，本項最高 1 分。
@@ -96,6 +98,7 @@ fact_assumption_separation（事實與假設分開）
 4：事實欄只有觀察，且假設欄自己標示了不確定（我猜測、還需要確認、是不是），並指向一個可以被否證的問題。
 
 next_validation_step（下一步驗證方向）
+學生被要求把這件事寫在 unverified_assumption 欄的後半段，請在那裡找。
 本項只看「行動」，不看「意圖」。一個合格的行動至少要寫出：要問或觀察的對象是誰、以及要問或要看什麼。
 0：沒有任何行動句。只寫出疑問、猜測、願望，或「希望有人告訴我怎麼做」，都是 0 分。例如「是不是製作成本比較高」「因為選擇太多所以無法決定」都是 0 分。
 1：有行動動詞（訪問、觀察、問、記錄、計時），但沒有寫出對象，也沒有寫出要問什麼。

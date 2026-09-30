@@ -137,8 +137,9 @@ test('五個維度都有 0 到 4 的分級描述', () => {
   assert.equal((SYSTEM_PROMPT.match(/^4：/gm) || []).length, 5, '應有五個 4 分錨點');
 });
 
+// 送進模型的內容一改，版本就要動，否則新舊 prompt 會共用同一個快取鍵。
 test('rubric 版本已更新，快取會重新計分', () => {
-  assert.equal(PROMPT_VERSION, 'w1-2026-09-30');
+  assert.equal(PROMPT_VERSION, 'w1-2026-09-30b');
 });
 
 test('合成評測卡不含真實學生內容，且每張都有預期分數', async () => {
@@ -238,4 +239,26 @@ test('幫助優先的門檻與六個欄位的範例對照都齊全', async () =>
   // 低分版面不得把分數表留在主版面
   assert.match(src, /detail\.appendChild\(readinessTable/);
   assert.ok(!/bodyEl\.appendChild\(readinessTable/.test(src), '分數表仍直接掛在主版面');
+});
+
+// 表單問什麼，rubric 就該評什麼。兩邊不同步時，學生會被扣一個沒出過的題目的分。
+test('表單欄位標籤與送進模型的標籤一致', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const { FIELD_LABELS } = await import('../supabase/functions/ai-feedback/validate.ts');
+  for (const [key, label] of Object.entries(FIELD_LABELS)) {
+    const pattern = new RegExp('<label>' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' <em>');
+    assert.match(html, pattern, `表單裡找不到「${label}」，index.html 與 FIELD_LABELS 不同步`);
+  }
+});
+
+test('假設欄同時問猜測與確認方式，且 rubric 知道行動寫在那裡', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const { FIELD_LABELS, SYSTEM_PROMPT, ACTION_FIELDS } = await import('../supabase/functions/ai-feedback/validate.ts');
+  assert.match(FIELD_LABELS.unverified_assumption, /打算怎麼確認/);
+  assert.match(html, /你要問誰、問什麼，或去看什麼/, '表單缺少寫出行動的提示');
+  assert.match(html, /placeholder="例：我猜是付款流程慢/, '表單缺少具體範例');
+  assert.deepEqual([...ACTION_FIELDS], ['unverified_assumption']);
+  assert.match(SYSTEM_PROMPT, /寫在 unverified_assumption 欄的後半段/);
 });
