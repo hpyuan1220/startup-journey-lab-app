@@ -91,3 +91,21 @@ test('預覽有自己的容器，兩顆按鈕畫在框內',async()=>{
  assert.match(src,/button\('確認套用已勾選欄位'[\s\S]*?\}\),revisionPreview\)/);
  assert.match(src,/button\('取消，保留原答案'[\s\S]*?,revisionPreview\)/);
 });
+
+// 套用之後的訊息原本寫著「請檢查並儲存草稿」，但那兩顆按鈕已因重複而移除，
+// 學生得自己捲回卡片上方找。訊息叫他做的事，按鈕就要在旁邊。
+test('套用與復原之後都有對應的儲存按鈕，訊息不指向不存在的按鈕',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/saveAfterApply=button\('儲存草稿到雲端'/,'這一區要有自己的儲存按鈕');
+ assert.match(src,/saveAfterApply\.className='primary-action'/,'存檔是套用後最該做的事，要是主按鈕');
+ // 套用後與復原後都要顯示；只有初始狀態隱藏
+ const shown=(src.match(/saveAfterApply\.hidden=false/g)||[]).length;
+ assert.equal(shown,2,`套用與復原兩條路都要顯示儲存按鈕，目前 ${shown} 處`);
+ // 訊息不可以再提到已經移除的按鈕名稱
+ // 只看實際指派給 revisionStatus 的訊息，不看註解
+ const messages=(src.match(/revisionStatus\.textContent=[^;]+;/g)||[]).join('\n');
+ assert.ok(!messages.includes('請檢查並儲存草稿'),'訊息仍指向已移除的按鈕');
+ assert.ok(messages.includes('儲存草稿到雲端'),'訊息要指名這一區真的有的按鈕');
+ assert.match(src,/下一步：按下面的「儲存草稿到雲端」/);
+});

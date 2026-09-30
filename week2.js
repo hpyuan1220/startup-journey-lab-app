@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-revision';
+import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-afterapply';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -132,8 +132,13 @@ const undoKey=()=>`sjl-week2-revision-${session?.class_id}-${session?.student_id
 const undoButton=button('復原上次套用',()=>revisionAction(()=>{
  if(!revisionUndo)throw Error('目前沒有可復原的套用紀錄。');
  card=applyRevision(card,revisionUndo,true);revisionUndo=null;try{localStorage.removeItem(undoKey());}catch{}
- localSave();render();revisionPreview.hidden=true;undoButton.hidden=true;draftButton.hidden=false;revisionStatus.textContent='已復原上次套用的欄位，請儲存草稿同步雲端。';
+ localSave();render();revisionPreview.hidden=true;undoButton.hidden=true;draftButton.hidden=false;saveAfterApply.hidden=false;revisionStatus.textContent='已復原上次套用的欄位，但還沒存到雲端。按下面的「儲存草稿到雲端」把復原後的內容存好。';
 }),revisionArea);undoButton.hidden=true;
+// 套用之後最該做的事是把內容存到雲端。原本這一區的訊息寫著「請檢查並儲存草稿」，
+// 但那兩顆按鈕已經因為重複而移除，學生得自己捲回卡片上方找 —— 訊息叫他做的事，
+// 按鈕就要在旁邊。這一顆只在套用後出現，不會又變回五顆並排。
+const saveAfterApply=button('儲存草稿到雲端',()=>saveWithAuto(),revisionArea);
+saveAfterApply.hidden=true;saveAfterApply.className='primary-action';
 const draftButton=button('幫我草擬修改',()=>revisionAction(()=>{
  const keys=revisionChecks.filter(c=>c.checked).map(c=>c.value);if(!keys.length)throw Error('請先勾選想修改的欄位。');
  const patches=draftRevision(card,latestFeedback,keys),selectedTopic=card.selected,sourceSnapshot=JSON.stringify(card.candidates[card.selected]);
@@ -153,7 +158,8 @@ const draftButton=button('幫我草擬修改',()=>revisionAction(()=>{
  const chosen=editors.filter(e=>e.choose.checked).map(e=>({...e.p,after:e.text.value}));
  const next=applyRevision(card,chosen);card=next;revisionUndo=chosen;let stored=true;try{localStorage.setItem(undoKey(),JSON.stringify(chosen));}catch{stored=false;}
  localSave();render();undoButton.hidden=false;revisionPreview.hidden=true;draftButton.hidden=false;
- revisionStatus.textContent=`已套用 ${chosen.length} 個欄位；尚未正式提交。請檢查並儲存草稿。${stored?'可用「復原上次套用」回復原答案。':'本機無法保存復原紀錄，僅此頁開啟期間可復原。'}`;
+ saveAfterApply.hidden=false;
+ revisionStatus.textContent=`已套用 ${chosen.length} 個欄位，但還沒存到雲端。下一步：按下面的「儲存草稿到雲端」，存好之後再前往提交檢查。${stored?'改壞了可以按「復原上次套用」回到原答案。':'本機無法保存復原紀錄，僅此頁開啟期間可復原。'}`;
  }),revisionPreview).className='primary-action';
  button('取消，保留原答案',()=>{revisionPreview.hidden=true;draftButton.hidden=false;revisionStatus.textContent='已取消，原答案沒有改動。';},revisionPreview);
  // 草稿開著時把這顆藏起來。學生可能已經在預覽的文字框裡改過字，
