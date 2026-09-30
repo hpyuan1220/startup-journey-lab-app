@@ -1,12 +1,16 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-rubric';
+import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-helpfirst';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
 let card=emptyCard(),version=null,row=null,step=0,dirty=false,session,week1Identity=[],editGeneration=0,saving=false;
 try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
+// 前四步的缺項總數：全空 28、Week 1 帶入後 25、填完 0。
+// 24 代表學生自己寫的不超過四欄 —— 這時「繼續下一步」只是換頁，
+// helpNext() 會直接指出缺哪一項並帶他過去，比較有用。
+const STUCK_THRESHOLD=24;
 const el=(tag,text,parent=root)=>{const e=document.createElement(tag);if(text)e.textContent=text;parent.append(e);return e;};
 const msg=el('p','正在載入你的學習卡…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const workspace=el('section');workspace.hidden=true;
@@ -109,7 +113,7 @@ const historyBox=el('details','',workspace);el('summary','歷次保存與提交'
 const journeyControls=el('div','',workspace);journeyControls.className='journey-controls';
 const previousStep=button('上一步',()=>moveStage(-1),journeyControls);
 const nextStep=button('繼續下一步',()=>moveStage(1),journeyControls);nextStep.className='primary-action';
-button('我不知道下一步',()=>helpNext(),journeyControls);
+const helpButton=button('我不知道下一步',()=>helpNext(),journeyControls);
 const stageButtons=new Map(steps.map(([key,title],i)=>[key,button(`${i+1}. ${title}`,()=>goStage(key),journey)]));
 function remember(){if(!session)return;try{localStorage.setItem(progressKey(session),JSON.stringify({stage:activeStage,question:step,mode:card.mode,skipped:aiSkipped}));}catch{}}
 function refreshJourney(){
@@ -118,6 +122,13 @@ function refreshJourney(){
  for(const [key,b]of stageButtons){const st=states[key];b.dataset.state=st.state;b.textContent=`${steps.findIndex(x=>x[0]===key)+1}. ${steps.find(x=>x[0]===key)[1]} · ${labels[st.state]}${st.missing.length?'（'+st.missing.length+'項）':''}${key===activeStage?' · 目前步驟':''}`;if(key===activeStage)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');}
  const index=steps.findIndex(x=>x[0]===activeStage),info=steps[index];
  const welcomeText=welcome.querySelector('p');if(welcomeText){const missing=steps.slice(0,4).find(([key])=>states[key].missing.length);welcomeText.textContent=`歡迎回來，你上次停在「${steps.find(x=>x[0]===remembered?.stage)?.[1]||'選填探索'}」。目前${pendingLocal?'本機與雲端不同，請先選擇版本':dirty?'有本機修改未同步':row?`雲端版本 ${version} · ${readiness(row)}`:'尚未保存至雲端'}。下一步建議：${pendingLocal?'比較差異後接續':dirty?'儲存草稿':states.submit.state==='submitted'?'準備訪談，不必重複提交':missing?`補充${missing[1]}的「${states[missing[0]].missing[0]}」`:'前往提交檢查，AI 為選用'}。位置僅在同裝置、同瀏覽器恢復。`;}
+ // 卡片幾乎全空時，學生需要的是一條路，不是「繼續下一步」。
+ const missingTotal=steps.slice(0,4).reduce((n,[key])=>n+states[key].missing.length,0);
+ const stuck=missingTotal>=STUCK_THRESHOLD&&states.submit.state!=='submitted';
+ nextStep.classList.toggle('primary-action',!stuck);
+ helpButton.classList.toggle('primary-action',stuck);
+ helpButton.textContent=stuck?'我不知道下一步（建議先從這裡開始）':'我不知道下一步';
+
  journeyTitle.textContent=info?`第 ${index+1}/7 步：${info[1]}`:activeStage==='2'?'選填：第三個痛點':'選填：進階探索';
  journeyHint.textContent=(info?.[2]||'可自由探索，不增加所有學生的必經步驟。')+(states[activeStage]?.missing.length?` 尚缺：${states[activeStage].missing.slice(0,3).join('、')}。`:'');
  journeyStorage.textContent=pendingLocal?'本機與雲端內容不同，請先選擇要繼續的版本。':dirty?'目前有本機修改，尚未同步雲端。':row?`雲端版本 ${version} · ${readiness(row)}`:'目前尚未保存至雲端。';

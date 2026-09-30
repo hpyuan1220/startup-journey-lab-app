@@ -23,3 +23,19 @@ test('每個實際出現的狀態都有專屬符號與文字，不依賴顏色',
  assert.equal(new Set(labels).size,labels.length,'狀態標籤不可重複');
  for(const label of labels)assert.match(label,/^[^\p{L}\p{N}\s]/u,'標籤需以符號開頭：'+label);
 });
+
+// 空卡的學生需要的是一條路，不是「繼續下一步」。
+// 門檻 24 與 week2.js 的 STUCK_THRESHOLD 一致；邊界就是學生自己寫了四欄還是五欄。
+test('卡住門檻的邊界：自己填四欄仍算卡住，填五欄就不算',()=>{
+ const STUCK=24;
+ const missingTotal=card=>steps.slice(0,4)
+  .reduce((n,[key])=>n+stepState(card,null)[key].missing.length,0);
+ assert.equal(missingTotal(emptyCard()),28,'全空卡的缺項總數若改變，門檻要跟著重算');
+ assert.equal(missingTotal(demoCard()),0,'完整卡不該有缺項');
+ const fill=n=>{const c=emptyCard();
+  ['people','context','job','problem','frequency'].slice(0,n).forEach(k=>{c.candidates[0][k]='已填';});
+  return c;};
+ assert.ok(missingTotal(fill(4))>=STUCK,`填四欄應仍算卡住，實得 ${missingTotal(fill(4))}`);
+ assert.ok(missingTotal(fill(5))<STUCK,`填五欄不該算卡住，實得 ${missingTotal(fill(5))}`);
+ assert.ok(missingTotal(demoCard())<STUCK);
+});

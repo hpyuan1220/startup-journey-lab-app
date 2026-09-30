@@ -109,3 +109,15 @@
   #ai-feedback-run { width: 100%; }
   .ai-readiness { display: block; overflow-x: auto; }
 }
+#ai-feedback .ai-help-first{border:2px solid #1f6f63;border-radius:10px;padding:16px;background:#f2f8f6;margin-bottom:14px}
+#ai-feedback .ai-help-lead{margin:0 0 10px;font-size:16px;line-height:1.6}
+#ai-feedback .ai-help-target{margin:0 0 12px}
+#ai-feedback .ai-help-go{padding:12px 20px;font-size:16px;font-weight:700;border-radius:8px;cursor:pointer;background:#183d2b;color:#fff;border:2px solid #183d2b}
+#ai-feedback .ai-help-go:focus-visible{outline:3px solid #d45032;outline-offset:3px}
+#ai-feedback .ai-help-example>p{margin:8px 0;padding:8px 12px;border-radius:6px;border-left:4px solid #8c8578;background:#fdfcfa;line-height:1.6}
+#ai-feedback .ai-help-bad{border-left-color:#b23c17}
+#ai-feedback .ai-help-good{border-left-color:#1f6f63}
+#ai-feedback .ai-help-note{border-left-style:dashed;font-size:14px}
+#ai-feedback .ai-help-more{margin-top:8px}
+#ai-feedback .ai-help-more>summary{cursor:pointer;color:#8a3b23;text-decoration:underline;width:max-content}
+@media(max-width:600px){#ai-feedback .ai-help-first{padding:12px}#ai-feedback .ai-help-go{width:100%}}

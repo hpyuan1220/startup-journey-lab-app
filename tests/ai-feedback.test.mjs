@@ -220,3 +220,22 @@ test('五張合成卡都沒有行動動詞，應全部被閘門歸零', async ()
     assert.equal(hasActionVerb(c.fields), false, `${c.id} 不該被判定為有行動`);
   }
 });
+
+// 低分時 AI 面板改為幫助優先：分數收起來，先給一條路。
+// 這裡驗的是判斷邏輯與對照資料，DOM 行為另以瀏覽器實跑驗證。
+test('幫助優先的門檻與六個欄位的範例對照都齊全', async () => {
+  const fs = await import('node:fs/promises');
+  const src = await fs.readFile(new URL('../ai-feedback.js', import.meta.url), 'utf8');
+  assert.match(src, /HELP_FIRST_THRESHOLD = 3/);
+  assert.match(src, /total <= HELP_FIRST_THRESHOLD/);
+  for (const key of ['observed_problem', 'affected_user', 'known_fact', 'unverified_assumption', 'expected_learning', 'concern']) {
+    assert.ok(new RegExp(key + ':\\s*\\[').test(src), `${key} 缺少範例對照`);
+  }
+  // 每個維度都要能對應到一個要去補的欄位
+  for (const key of ['problem_specificity', 'affected_user_clarity', 'fact_quality', 'fact_assumption_separation', 'next_validation_step']) {
+    assert.ok(src.includes(key + ':'), `${key} 沒有對應欄位`);
+  }
+  // 低分版面不得把分數表留在主版面
+  assert.match(src, /detail\.appendChild\(readinessTable/);
+  assert.ok(!/bodyEl\.appendChild\(readinessTable/.test(src), '分數表仍直接掛在主版面');
+});
