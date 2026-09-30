@@ -159,3 +159,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .revision-preview .revision-item{margin:0 0 14px;padding:12px;border:1px solid #cfd8d3;border-radius:8px;background:#fff}
 #week-two .revision-preview .revision-item:last-of-type{margin-bottom:16px}
 #week-two .revision-preview>button{margin-right:8px}
+
+/* 已提交狀態：回來時一眼看到自己在哪個狀態，不用按按鈕試探 */
+#submitted-state{margin:0 0 14px;padding:10px 14px;border-left:4px solid #1f6f63;border-radius:6px;background:#f2f8f6}
+#submitted-state p{margin:0;font-size:15px;line-height:1.6;color:#1f4a40}

@@ -149,3 +149,35 @@ test('升級後會清掉舊版留在 localStorage 的教師權杖',async()=>{
  assert.match(app,/localStorage\.removeItem\('sjl-teacher-session'\)/);
  assert.match(app,/localStorage\.removeItem\('sjl-teacher-token'\)/);
 });
+
+// Week 1 原本沒有任何重複提交的處理：學生回來按「正式提交」就再送一次，
+// 訊息還和第一次一模一樣，他不知道這是第幾版、也不知道內容有沒有變。
+test('Week 1 內容沒變就不重送，有變會講第幾版',async()=>{
+ const fs=await import('node:fs/promises');
+ const app=await fs.readFile(new URL('../app.js',import.meta.url),'utf8');
+ assert.match(app,/snapshotOf\(data\)===savedSnapshot/,'要比對內容才知道有沒有改過');
+ assert.match(app,/內容和上次提交的完全相同/);
+ assert.match(app,/這是第 \$\{savedVersion\} 版/);
+ // 沒變時不可以發出儲存請求
+ const guard=app.slice(app.indexOf('snapshotOf(data)===savedSnapshot'),app.indexOf('startAction(button,labels.busy'));
+ assert.ok(!guard.includes('studentApi'),'內容沒變時不該發出請求');
+});
+
+test('回到已提交的卡片會看到狀態，不必按按鈕試探',async()=>{
+ const fs=await import('node:fs/promises');
+ const app=await fs.readFile(new URL('../app.js',import.meta.url),'utf8');
+ const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/id="submitted-state"/);
+ assert.match(app,/function renderSubmittedState/);
+ assert.match(app,/renderCard\(\); renderSubmittedState\(\); \}/,'載入卡片時要更新狀態');
+ assert.match(app,/可以直接修改後重新提交，先前版本會保留/);
+});
+
+// 清除按鈕的說明寫著「原版本會保留」—— 靠的是資料庫觸發器，不是前端。
+test('Week 1 的版本快照觸發器仍在',async()=>{
+ const fs=await import('node:fs/promises');
+ const sql=await fs.readFile(new URL('../supabase/migrations/20260927_week2.sql',import.meta.url),'utf8');
+ assert.match(sql,/create trigger week1_version before update on public\.week1_submissions/);
+ assert.match(sql,/create trigger week1_snapshot after insert or update on public\.week1_submissions/);
+ assert.match(sql,/if old\.submitted_at is not null then new\.submitted_at=old\.submitted_at/,'第一次提交時間不該被後來的提交蓋掉');
+});

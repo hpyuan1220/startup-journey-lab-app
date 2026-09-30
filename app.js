@@ -20,6 +20,12 @@ let teacherSession = JSON.parse(teacherStore.get('sjl-teacher-session') || 'null
 let teacherToken = teacherSession?.access_token || teacherStore.get('sjl-teacher-token') || '';
 let teacherRows = [];
 let savedStatus = '';
+// 記住雲端那一份的內容與版本。Week 1 原本沒有任何重複提交的處理：
+// 學生回來按「正式提交」就直接再送一次，訊息還和第一次一模一樣，
+// 他不知道這是第幾版、也不知道內容到底有沒有變。
+let savedSnapshot = null, savedVersion = 0, savedSubmittedAt = '';
+const SUBMIT_FIELDS = ['student_name','team_preference','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','consent_to_share_in_class'];
+function snapshotOf(data){ return JSON.stringify(SUBMIT_FIELDS.map(k=>k==='consent_to_share_in_class'?Boolean(data[k]):String(data[k]||'').trim())); }
 
 function configured(){ return cfg.supabaseUrl && !cfg.supabaseUrl.includes('YOUR_') && cfg.supabaseAnonKey && !cfg.supabaseAnonKey.includes('YOUR_'); }
 function message(id, text, bad=false){ const el=$(id); el.textContent=text; el.classList.toggle('error',bad); }
@@ -43,7 +49,24 @@ function finishAction(button, label, failed=false){
   },2200);
 }
 function formData(){ const data=Object.fromEntries(new FormData($('week1-form')).entries()); data.consent_to_share_in_class=$('week1-form').consent_to_share_in_class.checked; data.student_id=studentSession?.student_id || ''; return data; }
-function fill(data={}){ savedStatus=data.status || ''; Object.entries(data).forEach(([k,v])=>{const el=$('week1-form').elements[k]; if(el) el.type==='checkbox' ? el.checked=Boolean(v) : el.value=v || '';}); renderCard(); }
+function fill(data={}){ savedStatus=data.status || '';
+ savedSnapshot=data.status?snapshotOf(data):null;
+ savedVersion=Number(data.version)||0;
+ savedSubmittedAt=data.submitted_at||''; Object.entries(data).forEach(([k,v])=>{const el=$('week1-form').elements[k]; if(el) el.type==='checkbox' ? el.checked=Boolean(v) : el.value=v || '';}); renderCard(); renderSubmittedState(); }
+// 回來時就講清楚自己在什麼狀態，不用靠按按鈕試探。
+function submittedSummary(){
+ if(savedStatus!=='submitted')return '';
+ const when=savedSubmittedAt?new Date(savedSubmittedAt).toLocaleDateString('zh-TW',{month:'long',day:'numeric'}):'';
+ return `${when?`已於 ${when} 提交`:'已提交'}${savedVersion>1?`（第 ${savedVersion} 版）`:''}。`;
+}
+function renderSubmittedState(){
+ const box=$('submitted-state');
+ if(!box)return;
+ if(savedStatus!=='submitted'){box.hidden=true;return;}
+ box.hidden=false;
+ $('submitted-state-text').textContent=`${submittedSummary()}可以直接修改後重新提交，先前版本會保留。`;
+}
+
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }
 async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok){const error=new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`);error.status=res.status;throw error;} return body; }
 async function studentApi(body){ return api('/functions/v1/Student-api',{method:'POST',body:JSON.stringify(body)}); }
@@ -98,12 +121,26 @@ async function save(status, button, labels={}){
     finishAction(button,'請補齊欄位',true);
     return false;
   }
+  // 內容和已提交的版本一模一樣就不要再送一次 —— 學生不確定有沒有成功會多按幾次，
+  // 每一次都會在 learning_versions 留下一個內容相同的版本。
+  if(status==='submitted'&&savedStatus==='submitted'&&savedSnapshot&&snapshotOf(data)===savedSnapshot){
+    message('form-message',`內容和上次提交的完全相同，不需要重送。${submittedSummary()}`);
+    finishAction(button,'內容未變更');
+    return true;
+  }
   startAction(button,labels.busy || (status==='submitted'?'提交中…':'儲存中…'));
   try{
     const result=await studentApi({action:'save',token:studentSession.token,submission:{...data,status}});
     savedStatus=result.submission.status || status;
+    savedSnapshot=snapshotOf(result.submission);
+    savedVersion=Number(result.submission.version)||savedVersion+1;
+    savedSubmittedAt=result.submission.submitted_at||savedSubmittedAt;
+    renderSubmittedState();
     $('updated-at').textContent=`最後更新：${new Date(result.submission.updated_at).toLocaleString('zh-TW')}`;
-    message('form-message',labels.message || (status==='submitted'?'已正式提交，老師現在可以查看。':'草稿已儲存。'));
+    const submittedMessage = savedVersion>1
+      ? `已更新提交，這是第 ${savedVersion} 版。老師會看到最新版本，先前版本也保留著。`
+      : '已正式提交，老師現在可以查看。';
+    message('form-message',labels.message || (status==='submitted'?submittedMessage:'草稿已儲存。'));
     finishAction(button,labels.done || (status==='submitted'?'已提交 ✓':'已儲存 ✓'));
     return true;
   }catch(e){
