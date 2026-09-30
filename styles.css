@@ -163,3 +163,4 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* 已提交狀態：回來時一眼看到自己在哪個狀態，不用按按鈕試探 */
 #submitted-state{margin:0 0 14px;padding:10px 14px;border-left:4px solid #1f6f63;border-radius:6px;background:#f2f8f6}
 #submitted-state p{margin:0;font-size:15px;line-height:1.6;color:#1f4a40}
+#week-two .revision-skipped{margin:0 0 12px;font-size:14px;color:#5b5548}

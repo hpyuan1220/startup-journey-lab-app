@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-afterapply';
+import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-nodiff';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -141,9 +141,18 @@ const saveAfterApply=button('儲存草稿到雲端',()=>saveWithAuto(),revisionA
 saveAfterApply.hidden=true;saveAfterApply.className='primary-action';
 const draftButton=button('幫我草擬修改',()=>revisionAction(()=>{
  const keys=revisionChecks.filter(c=>c.checked).map(c=>c.value);if(!keys.length)throw Error('請先勾選想修改的欄位。');
- const patches=draftRevision(card,latestFeedback,keys),selectedTopic=card.selected,sourceSnapshot=JSON.stringify(card.candidates[card.selected]);
- revisionPreview.replaceChildren();revisionPreview.hidden=false;revisionStatus.textContent='草稿已準備好；原答案尚未改動。請逐欄檢查並勾選要套用的內容。';
+ const all=draftRevision(card,latestFeedback,keys),selectedTopic=card.selected,sourceSnapshot=JSON.stringify(card.candidates[card.selected]);
+ // 和現在寫的一模一樣的欄位不要列出來 —— 要學生比較兩段相同的文字再決定要不要套用，
+ // 是這一區最讓人困惑的地方，而且他做什麼選擇結果都一樣。
+ const patches=all.filter(p=>p.changed),unchanged=all.filter(p=>!p.changed);
+ if(!patches.length){
+  revisionPreview.hidden=true;
+  throw Error(`勾選的欄位（${unchanged.map(p=>p.label).join('、')}）建議內容和你現在寫的完全一樣，沒有東西需要套用。`);
+ }
+ revisionPreview.replaceChildren();revisionPreview.hidden=false;
+ revisionStatus.textContent=`有 ${patches.length} 個欄位的建議和你現在寫的不同；原答案尚未改動。請逐欄檢查並勾選要套用的內容。`;
  el('h4','預覽差異：原答案／建議修改',revisionPreview);
+ if(unchanged.length)el('p',`${unchanged.map(p=>p.label).join('、')}的建議和你現在寫的一樣，沒有列出來。`,revisionPreview).className='revision-skipped';
  const editors=patches.map(p=>{
  const item=el('section','',revisionPreview);item.className='revision-item';
  const l=el('label','',item),choose=el('input','',l);choose.type='checkbox';choose.checked=true;l.append(document.createTextNode(`套用：${p.label}`));

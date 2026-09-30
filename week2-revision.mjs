@@ -8,7 +8,10 @@ export function draftRevision(card,feedback,keys){
  return revisionFields.filter(([key])=>keys.includes(key)).map(([key,label,max])=>{
  const after=key==='statement'?statement:feedback?.questions?.[Number(key.slice(-1))];
  if(typeof after!=='string'||!after.trim())throw Error('尚無可用的 AI 訪談追問，請先取得 AI 建議，或只選痛點陳述。');
- return {key,label,max,before:revisionValue(card,key)||'',after,source:key==='statement'?'依目前選中痛點的原填答整理；缺少內容標為待驗證，未新增事實。':'沿用已取得的 AI 追問；請確認符合目前選題，這不是訪談結果。'};
+ const before=revisionValue(card,key)||'';
+ // 訪談題的建議是直接沿用 AI 的追問，學生上次套用過就會產生一模一樣的文字。
+ // 標出來讓介面不要把「沒有差異」的欄位當成待決定的選項列給學生看。
+ return {key,label,max,before,after,changed:before.trim()!==after.trim(),source:key==='statement'?'依目前選中痛點的原填答整理；缺少內容標為待驗證，未新增事實。':'沿用已取得的 AI 追問；請確認符合目前選題，這不是訪談結果。'};
  });
 }
 export function applyRevision(card,patches,undo=false){

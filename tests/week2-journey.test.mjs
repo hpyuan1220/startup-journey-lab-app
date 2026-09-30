@@ -109,3 +109,25 @@ test('套用與復原之後都有對應的儲存按鈕，訊息不指向不存�
  assert.ok(messages.includes('儲存草稿到雲端'),'訊息要指名這一區真的有的按鈕');
  assert.match(src,/下一步：按下面的「儲存草稿到雲端」/);
 });
+
+// 訪談題的建議是直接沿用 AI 的追問。學生上次套用過，再草擬一次就會產生一模一樣的
+// 文字，而介面照樣把「原答案」和「建議修改」並排要他決定 —— 兩段字完全相同。
+test('草稿標出哪些欄位其實沒有差異',async()=>{
+ const {draftRevision}=await import('../week2-revision.mjs');
+ const {demoCard}=await import('./support/week2-harness.mjs');
+ const card=demoCard();
+ const feedback={questions:[card.questions[0],'一個不一樣的追問']};
+ const patches=draftRevision(card,feedback,['question0','question1']);
+ const q0=patches.find(p=>p.key==='question0'),q1=patches.find(p=>p.key==='question1');
+ assert.equal(q0.changed,false,'建議和現況相同時要標成沒有差異');
+ assert.equal(q1.changed,true);
+ assert.equal(q0.before,q0.after,'前提：這個案例的前後確實相同');
+});
+
+test('全部都沒有差異時不開預覽，直接說清楚',async()=>{
+ const fs=await import('node:fs/promises');
+ const src=await fs.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/all\.filter\(p=>p\.changed\)/,'要濾掉沒有差異的欄位');
+ assert.match(src,/建議內容和你現在寫的完全一樣，沒有東西需要套用/);
+ assert.match(src,/的建議和你現在寫的一樣，沒有列出來/,'有差異時也要交代被略過的欄位');
+});
