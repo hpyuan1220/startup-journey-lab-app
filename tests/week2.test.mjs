@@ -96,3 +96,38 @@ test('現在的方法為什麼還不夠：必填，且只問選中的那一個�
  other.candidates[1-other.selected].acceptance='';
  assert.equal(check(other).ok,true,'沒被選中的候選不必回答深入題');
 });
+
+// 實際發生過：學生按「我卡住了，給我探索方向」，確認面板被插在整張卡最上面，
+// 距離按鈕約 5000px（手機六個螢幕）；按鈕同時因為 await 變灰，狀態列沒有任何提示。
+// 學生看到的是「按了沒反應」。以下四項各對應一個當時缺的東西。
+test('送出前的確認面板：出現在按鈕旁邊，而且會留下線索',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.match(src,/confirmAnonymous\(content,true,autoStatus\)/,
+  '自動 AI 的確認面板要插在 autoStatus 旁邊');
+ assert.match(src,/confirmAnonymous\(anonymous,false,aiControls,trigger\)/,
+  '手動兩顆按鈕的確認面板要插在 aiControls 旁邊，並把按鈕本身傳進去');
+ assert.match(src,/after\.parentNode\.insertBefore\(panel,after\.nextSibling\)/,
+  '面板要插在傳進來的位置之後，不是整張卡最上面');
+ assert.match(src,/msg\.textContent='有一段內容在等你確認/,
+  '狀態列要說有東西在等確認，否則變灰的按鈕沒有任何解釋');
+ assert.match(src,/trigger\.textContent='↑ 請到上方確認送出內容'/,
+  '變灰的那顆按鈕要自己說明為什麼變灰');
+ assert.match(src,/if\(confirmOpen\)throw Error/,
+  '面板開著時再按另一顆，要給訊息而不是開第二個面板');
+});
+
+// 同一家族的第二批：按了有反應，但反應發生在螢幕外，或按鈕是死的。
+// 量測方式：手機尺寸（390×844）逐顆按，比對新增內容是否落在當下的視窗內。
+test('換步驟之後要捲到「這一步要做的事」，死按鈕要隱藏，下載要有回饋',async()=>{
+ const fsp=await import('node:fs/promises');
+ const src=await fsp.readFile(new URL('../week2.js',import.meta.url),'utf8');
+ assert.ok(src.includes("const target=key==='submit'?liveCheck:key==='ai'?aiStep:form.querySelector"),
+  "表單步驟要捲到題目本身，提交步驟要捲到自動檢查——捲到步驟標題不夠");
+ assert.match(src,/r\.top>innerHeight-140\|\|r\.bottom<0/,
+  '只有在內容確實看不到時才捲，不要每次都跳');
+ assert.match(src,/previousStep\.hidden=index<=0/,
+  '第一步的「上一步」要隱藏，不是灰掉——灰掉沒有任何說明');
+ assert.match(src,/若沒看到檔案，請查看瀏覽器的下載項目/,
+  '下載按鈕在手機上可能靜默失敗，要留一句話');
+});
