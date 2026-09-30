@@ -118,3 +118,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .journey-optional{grid-column:1/-1;margin-top:6px;border:1px dashed #b9b2a2;border-radius:8px;padding:8px 12px;background:#fbfaf7}
 #week-two .journey-optional>summary{cursor:pointer;font-size:14px;color:#5b5548}
 #week-two .journey-optional button{margin-top:8px;width:100%}
+
+/* 教師回饋：證據摘要、建議稿、送出 */
+#submission-list .tnote{margin-top:12px;padding:12px;border-top:2px solid #d8d2c4;background:#fbfaf7;border-radius:0 0 8px 8px}
+#submission-list .tnote-evidence{margin:0 0 8px;font-size:14px;color:#4a4437}
+#submission-list .tnote-label{display:block;margin:0}
+#submission-list .tnote-label span{display:block;font-size:14px;font-weight:600;margin-bottom:4px}
+#submission-list .tnote textarea{width:100%;box-sizing:border-box;padding:8px;font:inherit;font-size:15px;line-height:1.6;border:1px solid #b9b2a2;border-radius:6px;background:#fff}
+#submission-list .tnote-sent{margin:6px 0 0;font-size:13px;color:#5b5548}
+#submission-list .tnote-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+#submission-list .tnote-actions button{padding:8px 16px}
+#submission-list .tnote-status{margin:8px 0 0;font-size:14px;min-height:1.2em}
+#submission-list .tnote-status[data-tone="ok"]{color:#1f6f63}
+#submission-list .tnote-status[data-tone="warn"]{color:#8a3b23}
+#submission-list .tnote-status[data-tone="error"]{color:#b23c17}
+
+/* 老師給學生的回饋：卡片最上方，不會被狀態訊息蓋掉 */
+#teacher-note{border:2px solid #1f6f63;border-radius:10px;padding:14px 16px;margin:0 0 16px;background:#f2f8f6}
+#teacher-note[data-state="new"]{border-color:#8a3b23;background:#fdf4ee}
+#teacher-note h2{margin:0 0 8px;font-size:17px}
+#teacher-note[data-state="new"] h2::after{content:'　新';font-size:13px;color:#8a3b23}
+#teacher-note p{margin:0 0 10px;line-height:1.7;white-space:pre-wrap}
+#teacher-note[data-state="seen"] button{display:none}

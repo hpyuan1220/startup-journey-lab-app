@@ -33,6 +33,23 @@ function fill(data={}){ savedStatus=data.status || ''; Object.entries(data).forE
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }
 async function api(path, options={}){ const { headers: extraHeaders = {}, ...requestOptions } = options; const res=await fetch(`${cfg.supabaseUrl}${path}`, {...requestOptions, headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json',...extraHeaders}}); const body=await res.json().catch(()=>({})); if(!res.ok){const error=new Error(body.error_description||body.msg||body.message||body.error||`請求失敗（HTTP ${res.status}）`);error.status=res.status;throw error;} return body; }
 async function studentApi(body){ return api('/functions/v1/Student-api',{method:'POST',body:JSON.stringify(body)}); }
+// 老師的回饋放在卡片最上方的固定區塊，不放狀態訊息 ——
+// 那個元素在這個檔案裡被十幾個地方覆寫，老師寫的話會被「草稿已同步」蓋掉。
+function showTeacherNote(submission){
+ const box=$('teacher-note'),body=$('teacher-note-body');
+ if(!box||!body)return;
+ const note=submission&&typeof submission.teacher_note==='string'?submission.teacher_note.trim():'';
+ if(!note){box.hidden=true;return;}
+ body.textContent=note;
+ box.hidden=false;
+ // 讀過的標記只存在本機：學生換裝置會再看到一次，總比看不到好。
+ const key=`sjl-note-seen-${studentSession?studentSession.student_id:''}`;
+ let seen='';try{seen=localStorage.getItem(key)||'';}catch{}
+ box.dataset.state=seen===note?'seen':'new';
+ const ack=$('teacher-note-ack');
+ if(ack)ack.onclick=()=>{try{localStorage.setItem(key,note);}catch{}box.dataset.state='seen';};
+}
+
 function showStudent(){ $('student-gate').hidden=Boolean(studentSession); $('student-workspace').hidden=!studentSession; if(studentSession) $('student-label').textContent=`學號：${studentSession.student_id}`; }
 async function restoreStudent(){
   showStudent();
@@ -41,6 +58,7 @@ async function restoreStudent(){
     const loaded=await studentApi({action:'load',token:studentSession.token});
     fill(loaded.submission||{});
     message('form-message',loaded.submission?'已恢復上次儲存的內容。':'尚未儲存草稿。');
+    showTeacherNote(loaded.submission);
   }catch(e){
     localStorage.removeItem('sjl-student-session');
     studentSession=null;
@@ -144,7 +162,11 @@ async function loadTeacher(canRefresh=true){
 $('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});storeTeacherSession(r);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
 $('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;};
 function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;const rows=teacherRows.filter(r=>`${escapeHTML(r.student_name)} ${escapeHTML(r.student_id)}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?r.needs_follow_up:r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需追問',teacherRows.filter(r=>r.needs_follow_up).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article data-class-id="${escapeHTML(r.class_id)}"><h3>${escapeHTML(r.student_name||'未填姓名')} <small>${escapeHTML(r.student_id)}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${escapeHTML(r.observed_problem||'尚未填寫問題')}</p><p>原句：${escapeHTML(r.verbatim_complaint||'—')}<br>現場：${escapeHTML(r.observed_context||'—')}<br>下週問題：${escapeHTML(r.interview_next_question||'—')}</p><p>事實：${escapeHTML(r.known_fact||'—')}<br>假設：${escapeHTML(r.unverified_assumption||'—')}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
+function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;// needs_follow_up 永遠是 false（沒有任何程式寫入過）。teacher-note.js 會用
+// 分數與是否已收過回饋算出真正需要老師看的名單，掛在 window.__sjlNeedsAttention。
+const attention=window.__sjlNeedsAttention instanceof Set?window.__sjlNeedsAttention:null;
+const needsAttention=r=>attention?attention.has(r.student_id):r.needs_follow_up;
+const rows=teacherRows.filter(r=>`${escapeHTML(r.student_name)} ${escapeHTML(r.student_id)}`.toLowerCase().includes(q)&&(f==='all'||(f==='follow'?needsAttention(r):r.status===f)));$('metrics').innerHTML=[['總人數',teacherRows.length],['已提交',teacherRows.filter(r=>r.status==='submitted').length],['草稿',teacherRows.filter(r=>r.status==='draft').length],['需要你看',teacherRows.filter(needsAttention).length]].map(([a,b])=>`<div><strong>${b}</strong><span>${a}</span></div>`).join('');$('submission-list').innerHTML=rows.map(r=>`<article data-class-id="${escapeHTML(r.class_id)}"><h3>${escapeHTML(r.student_name||'未填姓名')} <small>${escapeHTML(r.student_id)}</small></h3><p><b>${r.status==='submitted'?'已提交':'草稿'}</b>　${escapeHTML(r.observed_problem||'尚未填寫問題')}</p><p>原句：${escapeHTML(r.verbatim_complaint||'—')}<br>現場：${escapeHTML(r.observed_context||'—')}<br>下週問題：${escapeHTML(r.interview_next_question||'—')}</p><p>事實：${escapeHTML(r.known_fact||'—')}<br>假設：${escapeHTML(r.unverified_assumption||'—')}</p></article>`).join('')||'<p>沒有符合條件的學生。</p>';}
 $('student-search').oninput=renderTeacher;$('status-filter').onchange=renderTeacher;
 $('export-csv').onclick=()=>{const keys=['student_name','student_id','status','verbatim_complaint','observed_context','observed_problem','affected_user','known_fact','unverified_assumption','interview_next_question','expected_learning','concern','updated_at'];const csv=[keys,...teacherRows.map(r=>keys.map(k=>`"${String(r[k]||'').replaceAll('"','""')}"`))].map(x=>x.join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='week1-submissions.csv';a.click();};
 restoreStudent();loadTeacher();
@@ -180,3 +202,6 @@ if (recoveryToken && recovery.get('type') === 'recovery') {
 }
 
 showMainView(location.hash.slice(1));
+
+// teacher-note.js 算完「需要你看」的名單後重畫統計與清單。
+document.addEventListener('sjl-attention-ready',()=>{if(teacherRows.length)renderTeacher();});
