@@ -139,7 +139,7 @@ test('五個維度都有 0 到 4 的分級描述', () => {
 
 // 送進模型的內容一改，版本就要動，否則新舊 prompt 會共用同一個快取鍵。
 test('rubric 版本已更新，快取會重新計分', () => {
-  assert.equal(PROMPT_VERSION, 'w1-2026-09-30b');
+  assert.equal(PROMPT_VERSION, 'w1-2026-09-30c');
 });
 
 test('合成評測卡不含真實學生內容，且每張都有預期分數', async () => {
@@ -203,9 +203,27 @@ test('沒有傳入學生原文時不做判斷，維持模型分數', () => {
   assert.equal(result.clamped, false);
 });
 
+// 第一版動詞表逐一列舉「去問／問問／問過」，漏掉最自然的「要問」，
+// 而表單 placeholder 正好用那個句型 —— 照著範例寫的學生會被判 0 分。
+// 這一組把表單範例本身釘住，不准再漏。
+test('表單 placeholder 的句型必須被判定為有行動', async () => {
+  const fs = await import('node:fs/promises');
+  const html = await fs.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const placeholder = (html.match(/placeholder="(例：我猜[^"]+)"/) || [])[1];
+  assert.ok(placeholder, '找不到假設欄的 placeholder');
+  assert.equal(hasActionVerb({ unverified_assumption: placeholder }), true,
+    `表單自己的範例被判定為沒有行動：${placeholder}`);
+});
+
+test('「問」當動詞的各種說法都算行動', () => {
+  for (const text of ['下週我要問三位同學', '我會問幾位同學', '我想問店員', '我打算問五個人', '找同學聊一下']) {
+    assert.equal(hasActionVerb({ unverified_assumption: text }), true, text);
+  }
+});
+
 test('動詞表不收「去過」「填問卷」這類非行動用法', () => {
   assert.equal(hasActionVerb({ unverified_assumption: '我去過那三家店' }), false);
-  assert.equal(hasActionVerb({ unverified_assumption: '如果要填問卷才有推薦' }), false);
+  assert.equal(hasActionVerb({ unverified_assumption: '如果要填問卷才有推薦' }), false, '問卷是名詞，不該算行動');
   assert.equal(hasActionVerb({ unverified_assumption: '希望有人告訴我怎麼寫' }), false);
   assert.equal(hasActionVerb({ unverified_assumption: '我會去問五位同學' }), true);
   assert.equal(hasActionVerb({ unverified_assumption: '我打算在現場計時三天' }), true);
