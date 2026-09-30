@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
-import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-pacing';
+import {emptyCard,fields,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-rubric';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -129,7 +129,7 @@ function showStage(){
  form.hidden=['ai','submit'].includes(activeStage);aiStep.hidden=activeStage!=='ai';finalStage.hidden=activeStage!=='submit';liveCheck.hidden=activeStage!=='submit';report.hidden=activeStage!=='submit';
  const qs=[...form.querySelectorAll('.week2-question')],group=form.querySelector(`[data-stage="${activeStage}"]`);
  if(group){const current=qs[step];if(!current||!group.contains(current))step=qs.findIndex(q=>group.contains(q));
- qs.forEach((q,i)=>q.hidden=card.mode==='guided'&&i!==step);
+ qs.forEach((q,i)=>{const hide=card.mode==='guided'&&i!==step;q.hidden=hide;for(const helper of q.week2Helpers||[])helper.hidden=hide;});
  }
  refreshJourney();
 }
@@ -159,8 +159,22 @@ function confirmAnonymous(content,automatic=false){return new Promise(resolve=>{
  root.insertBefore(panel,workspace);panel.querySelector('button').focus();panel.scrollIntoView({block:'center'});
 });}
 function localSave(){submitResult.hidden=true;clearTimeout(rulesTimer);rulesTimer=setTimeout(updateLiveCheck,450);editGeneration++;dirty=true;refreshJourney();remember();try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
-function input(label,value,set,parent,placeholder=''){
- const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};return t;
+function input(label,value,set,parent,placeholder='',pair=null,extra=null){
+ const wrap=el('label',label,parent);wrap.className='week2-question';const t=el('textarea','',wrap);t.value=value||'';t.maxLength=label.startsWith('受訪者 ')?200:label.startsWith('訪談問題 ')?300:label==='內容來源與 AI 使用說明'?60:600;t.placeholder=placeholder;t.oninput=()=>{set(t.value);localSave();};
+ wrap.week2Helpers=[];
+ if(pair){const d=el('details','',parent);d.className='week2-hint';el('summary','看範例對照',d);const bad=el('p','',d);bad.className='week2-hint-bad';bad.textContent='❌ 這樣不夠：'+pair[0];const good=el('p','',d);good.className='week2-hint-good';good.textContent='✅ 這樣可以：'+pair[1];el('p','範例只是說明寫法，不能當成你的證據。',d).className='week2-hint-note';wrap.week2Helpers.push(d);}
+ if(extra)wrap.week2Helpers.push(extra(parent,t,set));
+ return t;
+}
+
+/** 誠實選項：讓學生標記「這不是我親眼看到的」，不扣分也不必編造證據。 */
+function honestOption(parent,t,set){
+ const b=el('button','我還沒親眼看過',parent);b.type='button';b.className='week2-honest';
+ b.onclick=()=>{const cur=t.value.trim();
+  if(HONEST_MARK.test(cur)){msg.textContent='已經標記過「還沒親眼看過」了，不需要再按一次。';return;}
+  t.value=cur?cur+HONEST_TAIL:HONEST_TEXT;
+  set(t.value);localSave();updateLiveCheck();};
+ return b;
 }
 function updateLiveCheck(){
  liveCheck.replaceChildren();
@@ -193,6 +207,22 @@ function setChallengeOptIn(on){try{on?localStorage.setItem(challengeKey(),'1'):l
 function showChallenge(){return hasChallengeContent()||challengeOptIn();}
 // 舊資料相容：'challenge' 已不再是填答節奏，轉為 standard 並保留進階題入口。
 function adoptPacing(mode){if(mode==='challenge'){setChallengeOptIn(true);return 'standard';}return mode==='guided'?'guided':'standard';}
+// 每個欄位的 ❌／✅ 對照，全部是合成範例，不是任何學生的作答。
+const examplePairs={
+ people:['大家、同學還有我','午休只有 50 分鐘、下午第一堂在另一棟大樓的大二學生'],
+ context:['有時候會發生','週二中午 12 點 10 分，在第二餐廳門口'],
+ job:['想要有一個 App 可以解決這件事','在下一堂課開始前，買到並吃完午餐'],
+ problem:['很不方便、體驗不好','排隊時間無法預估，不知道還來不來得及吃完'],
+ frequency:['應該很常發生','待驗證：我自己這三週各發生一次，其他人還沒問過'],
+ cost:['浪費很多時間','待驗證：我上次多花 19 分鐘，午餐只吃了一半'],
+ workaround:['沒有什麼辦法','改買便利商店麵包、提早十分鐘離開教室'],
+ evidence:['很多人都有這個問題','9/23 中午我在現場計時，排了 19 分鐘，這是我自己看到的'],
+ assumption:['大家一定都會需要','我猜等太久是付款流程造成的，但還沒問過店家'],
+};
+const HONEST_TEXT='我還沒親眼看過這件事，目前是我從別人說的或網路上看到的推測，還需要自己去確認。';
+const HONEST_TAIL='（以上不是我親眼看到的，還需要自己確認。）';
+const HONEST_MARK=/還沒親眼看過|不是我親眼看到/;
+
 function render(){
  updateLiveCheck();
  form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
@@ -216,7 +246,7 @@ function render(){
    const q=el('label','先從生活場景選擇（可自行填寫）',box),s=el('select','',q);for(const text of ['請選擇','吃飯','通勤','上課','租屋','打工','分組','行政流程']){el('option',text,s);}s.onchange=()=>{if(s.selectedIndex){const hint=el('p',`你選了「${s.value}」。請在「何時何地發生」補充自己的時間、地點與事件；不會覆蓋原答案。`,box);hint.setAttribute('role','status');}};
   }
   const examples={people:'例如：午休只有 50 分鐘、下午要換教室的同學',context:'例如：週二中午 12 點，在學校餐廳；請填自己的事件',job:'例如：下一堂課開始前，買到並吃完午餐（不是開發 App）',problem:'例如：排隊時間不確定，無法判斷是否來得及吃完',frequency:'不確定可寫：待驗證，訪談最近一週發生幾次',cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',evidence:'請寫自己真的看過的事件、時間與來源；例子不能當成證據',assumption:'例如：我猜其他同學也困擾，但尚未問過他們'};
-  fields.forEach(([k,t])=>input(t,c[k],v=>c[k]=v,box,examples[k]));
+  fields.forEach(([k,t,q])=>input(q||t,c[k],v=>c[k]=v,box,examples[k],examplePairs[k],k==='evidence'?honestOption:null));
   if(i===2)button('不需要第三題，移除並保留復原',()=>{removedCandidate={candidate:card.candidates[2],selected:card.selected};card.candidates.pop();if(card.selected===2)card.selected=0;step=0;activeStage='0';localSave();render();msg.textContent='已移除第三題，可按「復原第三題」找回剛才的內容。請確認暫定選題。';},box);
  });
  if(card.candidates.length<3)button('增加第三個候選題（選填）',()=>{card.candidates.push(Object.fromEntries(fields.map(([k])=>[k,''])));step=18;activeStage='2';localSave();render();},form);

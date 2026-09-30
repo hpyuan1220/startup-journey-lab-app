@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  PROMPT_VERSION,
+  SYSTEM_PROMPT,
   buildUserContent,
   checkFields,
   hashSource,
@@ -105,4 +107,43 @@ test('相同內容產生相同雜湊，內容改變後不同', () => {
   const c = hashSource(checkFields({ ...good, concern: '換了一個擔心。' }).fields, 'gpt-4o-mini');
   assert.equal(a, b);
   assert.notEqual(a, c);
+});
+
+// rubric 收緊後的防回歸檢查（離線，不呼叫模型）
+test('SYSTEM_PROMPT 明確禁止在無行動句時給同情分', () => {
+  assert.match(SYSTEM_PROMPT, /沒有任何行動句/);
+  assert.match(SYSTEM_PROMPT, /不得在 reason 裡描述任何/);
+  assert.match(SYSTEM_PROMPT, /不要因為學生「有寫字」或「方向看起來對」就給同情分/);
+});
+
+test('SYSTEM_PROMPT 先檢查事實欄本身是否含因果字', () => {
+  assert.match(SYSTEM_PROMPT, /先只看 known_fact 這一欄/);
+  assert.match(SYSTEM_PROMPT, /本項最高 2 分，不論假設欄寫得多好/);
+  assert.match(SYSTEM_PROMPT, /只是換句話說，本項最高 1 分/);
+});
+
+test('SYSTEM_PROMPT 要求受影響對象與問題一致', () => {
+  assert.match(SYSTEM_PROMPT, /必須和 observed_problem 指的是同一件事/);
+});
+
+test('五個維度都有 0 到 4 的分級描述', () => {
+  for (const key of ['problem_specificity', 'affected_user_clarity', 'fact_quality', 'fact_assumption_separation', 'next_validation_step']) {
+    assert.ok(SYSTEM_PROMPT.includes(key), `${key} 未出現在 rubric`);
+  }
+  assert.equal((SYSTEM_PROMPT.match(/^0：/gm) || []).length, 5, '應有五個 0 分錨點');
+  assert.equal((SYSTEM_PROMPT.match(/^4：/gm) || []).length, 5, '應有五個 4 分錨點');
+});
+
+test('rubric 版本已更新，快取會重新計分', () => {
+  assert.equal(PROMPT_VERSION, 'w1-2026-09-30');
+});
+
+test('合成評測卡不含真實學生內容，且每張都有預期分數', async () => {
+  const { cases } = await import('../scripts/eval-week1-rubric.mjs');
+  assert.equal(cases.length, 5);
+  for (const c of cases) {
+    assert.ok(Object.keys(c.expect).length > 0, `${c.id} 缺少預期分數`);
+    const check = checkFields(c.fields);
+    assert.equal(check.ok, true, `${c.id} 未通過欄位檢查`);
+  }
 });

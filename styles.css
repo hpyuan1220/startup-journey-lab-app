@@ -93,4 +93,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .primary-action{background:#183d2b;color:white;font-weight:700;border:2px solid #183d2b}
 #week-two button:focus-visible{outline:3px solid #d45032;outline-offset:3px}
 #week-two .week2-question{scroll-margin-top:100px}
+#week-two .week2-hint{margin:-4px 0 12px 18px;font-size:14px;color:#4a443c}
+#week-two .week2-hint>summary{cursor:pointer;color:#8a3b23;text-decoration:underline;width:max-content}
+#week-two .week2-hint>p{margin:6px 0;padding:6px 10px;border-radius:6px;border-left:4px solid #8c8578;background:#f7f5f0}
+#week-two .week2-hint-bad{border-left-color:#b23c17}
+#week-two .week2-hint-good{border-left-color:#1f6f63}
+#week-two .week2-hint-note{border-left-style:dashed;font-size:13px}
+#week-two .week2-honest{margin:0 0 14px 18px;padding:6px 12px;font-size:14px;background:#f3f0e9;border:1px dashed #8c8578;color:#4a443c;border-radius:6px;cursor:pointer;width:max-content}
 @media(max-width:600px){#week-two .journey{grid-template-columns:1fr 1fr}#week-two .workspace-actions{position:static}#week-two .journey button{font-size:15px;padding:10px}}
+@media(max-width:600px){#week-two .week2-hint,#week-two .week2-honest{margin-left:0}}

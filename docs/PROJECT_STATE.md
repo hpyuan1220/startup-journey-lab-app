@@ -218,3 +218,82 @@ Week 2 PPT 與 PDF 更新為 25 頁，新增第 9–13 頁。每頁包含 YC 影
   Week 1 或教師端；未操作正式學生資料。
 - 依據：a5391fc 之後的程式碼稽核，以及 34 位學生 64 筆 Week 1 AI 回饋的分析
   （問題具體度 50% 低分、事實品質修訂後 +0.0）—— 顯示問題不在分層，在所有人都缺同一個動作。
+
+### 2026-09-30：收緊 AI 評分 rubric，改證據欄問法，每個欄位加範例對照
+
+起點 dd18eed。依據是人工重評五份真實 Week 1 卡（最高、最低、三份中位）後與 AI 分數逐項比對。
+**學生內容只在教師會話中檢視，未匯出、未寫入本倉庫或任何檔案。**
+
+比對結果（人工分 ← AI 分，總分）：15←17、0←1、7←10、10←10、4←10。
+AI 的分層可信（頭尾都對），但中間三張被壓成同一個 10 分，掩蓋了實際差距。三個系統性偏差：
+
+1. **next_validation_step 送分。** 三張卡完全沒有行動句，AI 三張都給 2 分，理由是同一句樣板
+   「有可執行的訪談／觀察行動，但需更具體」——描述了不存在的東西。約等於每人白送 2 分。
+2. **fact_assumption_separation 過寬。** AI 實際判的是「假設欄有沒有寫字」，不是「事實欄有沒有
+   混進假設」。最明顯的一張把同一個因果在事實欄與假設欄各寫一次，仍得 3 分。
+   這修正了 2026-09-29 的推測：該維度看起來分數高，部分原因是評分寬鬆，不是學生真的分得清。
+3. **不做跨欄位一致性檢查。** 有一張的受影響對象與問題敘述指向兩個不同問題，仍得 3 分；
+   另一張問題具體度被低估到 1 分，卻同時給受影響對象 3 分，自相矛盾。
+
+#### A：rubric（validate.ts）
+
+- SYSTEM_PROMPT 的評分段由 278 字擴為 1487 字：五個維度各給 0–4 的明確錨點，
+  並在開頭寫明「證據不存在就給 0，不要給 1 或 2」。
+- next_validation_step 只看行動、不看意圖：沒有行動動詞就是 0；
+  並明文禁止在 reason 裡描述不存在的訪談計畫。
+- fact_assumption_separation 改為先只看 known_fact：含因果字上限 2 分；與假設欄重複上限 1 分。
+- affected_user_clarity 加跨欄位檢查：與 observed_problem 不一致上限 1 分，並在 missing_evidence 指出。
+- PROMPT_VERSION w1-2026-09-17 → w1-2026-09-30。版本是內容雜湊的一部分，
+  舊快取自動失效，學生下次請求會依新 rubric 重新評分。已重新產生 index.bundled.ts。
+- **尚未部署。** Dashboard 貼上新的 index.bundled.ts 之前，正式服務仍使用舊 rubric。
+
+#### A2：合成回歸測試
+
+- 新增 scripts/eval-week1-rubric.mjs：五張**合成**卡（非學生文字），每張對應一條要守住的規則，
+  各自標明預期分數區間。預設乾跑不呼叫模型、不花錢；加 --run 才實際評分，
+  並額外檢查 total 等於五項加總、以及 0 分時 reason 不得描述不存在的計畫。
+  結果寫入 .build/week1-rubric-eval.json。被 import 時不執行 CLI。
+- tests/ai-feedback.test.mjs 新增 6 項離線檢查：rubric 關鍵句存在、五個維度都有 0 與 4 的錨點、
+  版本已更新、五張合成卡都能通過欄位檢查。
+
+#### B：證據欄問法與誠實選項
+
+- fields 的 evidence 由二元組改為三元組：短標籤「已有觀察與來源」保留給清單與訊息，
+  新增第三個元素「你什麼時候、在哪裡，親眼看到這件事？」作為學生實際看到的題目。
+  其餘八個欄位不變；Object.fromEntries 仍只取前兩個元素，names 對照表不受影響。
+- 新增「我還沒親眼看過」按鈕：欄位空白時填入誠實說明，已有內容時附註一句，
+  重複點擊不會累加（HONEST_MARK 防呆，第二次會提示已標記過）。
+  目的是讓卡住的學生有一條不必編造證據的路；新 rubric 對「自己標示不確定」是加分的。
+- scripts/build-week2-worksheet.py 與 docs/WEEK2_LESSON_PLAN.md 同步改成同一句問法，
+  紙本學習單與螢幕一致。
+
+#### C：每個欄位的 ❌／✅ 範例對照
+
+- 九個欄位各加一個可收合的「看範例對照」，內容是 ❌ 這樣不夠／✅ 這樣可以，
+  並標註「範例只是說明寫法，不能當成你的證據」。所有範例都是合成的午餐排隊情境，
+  不引用任何學生作答。符號與文字皆可單獨辨識，不依賴顏色。
+- 範例與誠實按鈕放在 label **之外**（否則點擊會連帶聚焦 textarea）；
+  改以 wrap.week2Helpers 註冊，showStage 在逐題模式下讓它們跟著題目一起隱藏。
+
+#### 順手修掉的既有落差
+
+- supabase/functions/week2-api/index.bundled.ts 自 dd18eed 起就沒重新產生，
+  伺服器端仍在跑舊的 `mode==='challenge'` 檢查。本次重建已同步。
+- 新增防漂移測試：week2-core.mjs 的 fields／challengeFields／RULES_VERSION
+  必須出現在單檔版本中，否則測試失敗並提示執行 build script。
+
+#### 驗證
+
+- 48 項測試通過（新增 8 項）。node --input-type=module --check 通過。
+- 以 tests/serve-week2.mjs 合成 fixture＋Chromium 實際開頁驗證：
+  標準模式 9 題／9 個範例／1 個誠實按鈕；逐題模式 1 題／1 個範例，切換下一題時範例跟著走；
+  誠實按鈕空白與非空白兩條分支都冪等；375px 無水平溢位；無 console 或 page error。
+- week.html 與 week2.js 資源版本改為 v=20260930-rubric。
+- 未更動資料表、SQL、Week 1 前端或教師端；未以真實學生資料做測試。
+
+#### 待辦（需要人工操作）
+
+- 部署 ai-feedback：Dashboard 貼上新的 index.bundled.ts，否則新 rubric 不會生效。
+- 部署 week2-api：貼上重新產生的 index.bundled.ts，讓伺服器端與前端規則一致。
+- 部署後跑 `OPENAI_API_KEY=... node scripts/eval-week1-rubric.mjs --run`（五次模型呼叫），
+  確認新 rubric 的行為符合預期再讓全班使用。

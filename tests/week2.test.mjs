@@ -35,3 +35,25 @@ test('進階答案只要有填就送模型，與填答節奏無關',()=>{
  const sent=JSON.parse(aiInput(normalize(filled),'review'));
  assert.equal(sent.challenge[challengeFields[0][0]],'最大的反例是住宿生');
 });
+
+// B：欄位問法改成學生看得懂的問句，並保留短標籤給清單與訊息使用
+test('證據欄位改用問句呈現，短標籤仍保留給清單與提示訊息', () => {
+  const evidence = fields.find(([key]) => key === 'evidence');
+  assert.equal(evidence[1], '已有觀察與來源', '短標籤不可改，清單與訊息依賴它');
+  assert.equal(evidence[2], '你什麼時候、在哪裡，親眼看到這件事？');
+  const names = Object.fromEntries(fields);
+  assert.equal(names.evidence, '已有觀察與來源', '第三個元素不得污染 names 對照表');
+  assert.equal(fields.length, 9, '欄位數量不得改變');
+});
+
+// 防漂移：week2-core.mjs 改了但沒重新產生 Dashboard 單檔，正式服務會繼續用舊規則
+test('week2-api 單檔版本與 week2-core.mjs 同步', async () => {
+  const fsp = await import('node:fs/promises');
+  const core = await fsp.readFile(new URL('../week2-core.mjs', import.meta.url), 'utf8');
+  const bundled = await fsp.readFile(new URL('../supabase/functions/week2-api/index.bundled.ts', import.meta.url), 'utf8');
+  for (const line of core.split('\n')) {
+    const body = line.replace(/^export /, '').trim();
+    if (!body.startsWith('const fields=') && !body.startsWith('const challengeFields=') && !body.startsWith('const RULES_VERSION=')) continue;
+    assert.ok(bundled.includes(body), `單檔版本落後：請執行 node scripts/build-week2-function.mjs\n缺少：${body.slice(0, 60)}`);
+  }
+});

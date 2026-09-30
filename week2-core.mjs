@@ -1,7 +1,7 @@
 // Shared browser/server contract. No identity fields belong in this document.
 export const sourceOptions=[['observation','自己的親身經驗或觀察'],['conversation','與他人的非正式聊天'],['reference','網路或其他資料'],['hypothesis','尚無直接觀察，目前是假設']];
 export const RULES_VERSION='w2-20260927';
-export const fields=[['people','受到影響的人'],['context','何時何地發生'],['job','想完成的事情'],['problem','遇到的阻礙'],['frequency','頻率或待驗證'],['cost','代價或待驗證'],['workaround','目前處理方法'],['evidence','已有觀察與來源'],['assumption','待驗證假設']];
+export const fields=[['people','受到影響的人'],['context','何時何地發生'],['job','想完成的事情'],['problem','遇到的阻礙'],['frequency','頻率或待驗證'],['cost','代價或待驗證'],['workaround','目前處理方法'],['evidence','已有觀察與來源','你什麼時候、在哪裡，親眼看到這件事？'],['assumption','待驗證假設']];
 export const challengeFields=[['non_user','誰沒有這個問題'],['counterexample','最大的反例'],['acceptance','為何仍接受現在的方法'],['payer','使用者、受益者與付費者'],['risky_test','最危險的假設與低成本測試']];
 export const emptyCard=()=>({mode:'guided',candidates:[Object.fromEntries(fields.map(([k])=>[k,''])),Object.fromEntries(fields.map(([k])=>[k,'']))],selected:0,reason:'',reconsider:'',statement:'',interviewees:['','',''],questions:['',''],challenge:{},source:'我的親身觀察',ai_response:'',contact_confirmed:false,questions_checked:false});
 export function normalize(input){
