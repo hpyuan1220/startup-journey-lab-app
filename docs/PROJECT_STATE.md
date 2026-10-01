@@ -1128,3 +1128,14 @@ Week 2 也有同樣的限制。所以 index.html 的文案一併改寫：
 
 資源版本 ai-feedback.js v=20261001-privacy。**ai-feedback 需要重新部署**，
 新 bundle 雜湊 4ca65e9c…，否則線上送給模型的仍是未清洗的文字。
+
+#### B1 部署完成（2026-10-01）
+
+ai-feedback 線上雜湊 `4ca65e9c…`（＝本機＝GitHub 9d0e258），M 標記歸零，
+更新時間 a few seconds ago。部署前是 `76cfb2ef…`，與前一次驗過的相同，沒有漂移。
+零寫入檢查：GET 回 405、兩種無效權杖回 401 中文訊息，無 500。
+前端 `ai-feedback.js?v=20261001-privacy` 與兩句新文案都已在 GitHub Pages 上線。
+
+**副作用（已先告知使用者）**：PROMPT_VERSION 進版使既有 AI 建議快取失效，
+學生下次取得建議會真的重新呼叫模型一次。這是內容變更時必要的代價——
+不進版的話新舊行為共用同一個內容雜湊鍵，反而更糟。
