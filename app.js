@@ -136,6 +136,15 @@ document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('clic
 window.addEventListener('hashchange',()=>showMainView(location.hash.slice(1)));
 $('student-enter').onclick=()=>enterStudent(false);
 $('student-exit').onclick=()=>{localStorage.removeItem('sjl-student-session');studentSession=null;showStudent();};
+// Week 1 沒有自動存檔。學生等 AI 等太久而重新整理，新打的內容會被上次存的草稿蓋掉。
+// 至少讓瀏覽器先問一句。（Week 2 本來就有這個保護。）
+window.addEventListener('beforeunload',(e)=>{
+  if(!studentSession)return;
+  const gate=$('student-gate');
+  if(gate&&!gate.hidden)return;
+  if(savedSnapshot===snapshotOf(formData()))return;
+  e.preventDefault();e.returnValue='';
+});
 // 本班沒有這個學號時，不要默默開一張新卡 —— 先讓學生確認一次。
 // 打錯字的人在這裡被接住；真的第一次進入的人按「是」就進去，不會被擋。
 function askFirstTime(typedId){

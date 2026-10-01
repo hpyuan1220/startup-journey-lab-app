@@ -254,12 +254,19 @@
     go.textContent = '帶我做第一步';
     go.onclick = function () {
       example.hidden = false;
-      go.hidden = true;
       var field = form && form.elements ? form.elements[fieldKey] : null;
-      if (field) {
-        try { field.scrollIntoView({ block: 'center' }); } catch (e) { field.scrollIntoView(); }
-        field.focus();
+      if (!field) { return; }
+      // 範例原本留在 AI 面板裡（表單最下方），而目標欄位在表單上方 ——
+      // 捲動方向和範例位置相反，學生按完只看到一個空白輸入框。
+      // 把範例搬到那個欄位旁邊，兩者一起進入畫面。
+      var anchor = field.closest ? field.closest('label') : null;
+      if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(example, anchor.nextSibling);
+        example.classList.add('ai-help-example-moved');
       }
+      go.hidden = true;
+      try { (anchor || field).scrollIntoView({ block: 'start' }); } catch (e) { field.scrollIntoView(); }
+      field.focus({ preventScroll: true });
     };
     wrap.appendChild(go);
     wrap.appendChild(example);
@@ -316,12 +323,23 @@
     bodyEl.hidden = false;
   }
 
+  var AI_TIMEOUT_MS = 45000;
   function post(payload) {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, AI_TIMEOUT_MS) : null;
     return fetch(cfg.supabaseUrl + '/functions/v1/ai-feedback', {
       method: 'POST',
       headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: controller ? controller.signal : undefined,
+    }).catch(function (err) {
+      if (timer) clearTimeout(timer);
+      if (err && err.name === 'AbortError') {
+        throw new Error('這次等太久了，已經停止等待。你寫的內容完全沒有受影響，可以直接再按一次，或先儲存草稿。');
+      }
+      throw err;
     }).then(function (res) {
+      if (timer) clearTimeout(timer);
       return res.json().catch(function () { return {}; }).then(function (body) {
         if (!res.ok) throw new Error(body.error || '目前無法取得建議，你的內容仍已安全保存。');
         return body;
@@ -352,7 +370,17 @@
     busy = true;
     runButton.disabled = true;
     runButton.setAttribute('aria-busy', 'true');
-    setStatus('busy', '⏳', '正在分析你的觀察與證據……');
+    if (!runButton.dataset.defaultLabel) runButton.dataset.defaultLabel = runButton.textContent;
+    // 等待可能長達 40 秒。按鈕文字不動的話，學生會以為當掉而重新整理。
+    var waited = 0;
+    runButton.textContent = '分析中…（約 20 秒）';
+    clearInterval(runButton._tick);
+    runButton._tick = setInterval(function () {
+      waited += 5;
+      runButton.textContent = '分析中…已等待 ' + waited + ' 秒';
+      if (waited >= 20) setStatus('busy', '⏳', '還在分析中，請不要重新整理 —— 你寫的內容不會不見。');
+    }, 5000);
+    setStatus('busy', '⏳', '正在分析你的觀察與證據……大約 20 秒，請不要重新整理。');
 
     // 只送出六個欄位，不包含姓名、學號、班級邀請碼或登入權杖以外的身份資料。
     var submission = {};
@@ -371,6 +399,8 @@
       busy = false;
       runButton.disabled = false;
       runButton.removeAttribute('aria-busy');
+      clearInterval(runButton._tick);
+      if (runButton.dataset.defaultLabel) runButton.textContent = runButton.dataset.defaultLabel;
     });
   }
 

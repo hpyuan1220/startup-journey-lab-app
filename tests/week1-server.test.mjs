@@ -146,3 +146,38 @@ test('C1：提交結果要捲到學生眼前，成功與失敗都要', async () 
   assert.match(src.slice(fail, fail + 220), /showConfirmation\(\)/, '失敗也要捲，否則學生以為成功了');
   assert.match(src, /const target=\(box&&!box\.hidden\)\?box:msg/, '提交後優先顯示「已於 X 提交」那一塊');
 });
+
+// C3：按「帶我做第一步」之後，範例在 AI 面板裡（表單最下方）展開，
+// 畫面卻往反方向捲到上方的目標欄位 —— 實測範例落在畫面下方 1,342px 外，
+// 而且按鈕已經隱藏，學生只看到一個空白輸入框，沒有任何說明。
+// 這正是最需要幫助的那批學生會按的按鈕。
+test('C3：範例要跟著學生走到目標欄位旁邊', async () => {
+  const fsp = await import('node:fs/promises');
+  const src = await fsp.readFile(new URL('../ai-feedback.js', import.meta.url), 'utf8');
+  assert.match(src, /anchor\.parentNode\.insertBefore\(example, anchor\.nextSibling\)/,
+    '範例要搬到欄位旁邊，不能留在表單最下方');
+  assert.match(src, /field\.focus\(\{ preventScroll: true \}\)/, '捲動由錨點決定，不要再被 focus 拉走');
+  assert.ok(!/example\.hidden = false;\n      go\.hidden = true;\n      var field/.test(src),
+    '舊的「先藏按鈕再往反方向捲」寫法不該留著');
+});
+
+// C4：伺服器最壞情況三次模型呼叫 × 25 秒 ≈ 75 秒，前端沒有 timeout、
+// 按鈕文字完全不變。學生以為當掉就重新整理，而 Week 1 沒有自動存檔也沒有離開提醒，
+// 11 個欄位的新內容會被上次存的草稿蓋掉。
+test('C4：AI 等待要有上限、要有進度、重新整理前要先問', async () => {
+  const fsp = await import('node:fs/promises');
+  const ai = await fsp.readFile(new URL('../ai-feedback.js', import.meta.url), 'utf8');
+  const app = await fsp.readFile(new URL('../app.js', import.meta.url), 'utf8');
+
+  assert.match(ai, /var AI_TIMEOUT_MS = 45000;/, '要有等待上限');
+  assert.match(ai, /controller\.abort\(\)/);
+  assert.match(ai, /err\.name === 'AbortError'/, '逾時要有自己的訊息');
+  assert.match(ai, /你寫的內容完全沒有受影響/, '先講清楚內容沒丟');
+  assert.match(ai, /分析中…已等待 ' \+ waited \+ ' 秒/, '按鈕要顯示進度，否則看起來像當掉');
+  assert.match(ai, /請不要重新整理 —— 你寫的內容不會不見/, '要主動叫他不要重新整理');
+  assert.match(ai, /clearInterval\(runButton\._tick\)/, '結束要停掉計時器');
+
+  assert.match(app, /window\.addEventListener\('beforeunload'/, 'Week 1 要有離開提醒');
+  assert.match(app, /if\(savedSnapshot===snapshotOf\(formData\(\)\)\)return;/,
+    '沒有未存的修改就不要打擾學生');
+});
