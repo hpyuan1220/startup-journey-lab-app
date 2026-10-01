@@ -261,6 +261,11 @@ function qFocus(){const rememberedQuestion=[...form.querySelectorAll('.week2-que
 function addBackupDownload(){try{const backup=localStorage.getItem(cacheKey()+'-backup');if(backup&&!actions.querySelector('[data-backup]'))button('下載先前本機備份',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+backup],{type:'text/plain;charset=utf-8'}));a.download='Week2-本機備份.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}).dataset.backup='true';}catch{}}
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;throw e;}return b;}
+/** 每次 AI 回來就說還剩幾次 —— 不要讓學生在用完的那一刻才知道有上限。 */
+function remainingNote(r){
+ if(!r||typeof r.remaining!=='number')return '';
+ return r.remaining>0?`　這張卡的 AI 還剩 ${r.remaining} 次。`:'　這張卡的 AI 次數已經用完了；你仍然可以修改、保存與提交，需要更多次數請跟老師說。';
+}
 function button(label,fn,parent=actions){const b=el('button',label,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn(b);}catch(e){msg.textContent=e.message;}finally{b.disabled=b===previousStep&&activeStage==='0';}};return b;}
 let confirmOpen=false;
 function confirmAnonymous(content,automatic=false,after=null,trigger=null){
@@ -319,7 +324,7 @@ async function saveWithAuto(){
  if(privacyRisk(content)){autoStatus.textContent='草稿已保存；內容可能含個資，請改成角色代稱，這次沒有送 AI。';return;}
  if(content===lastAutoContent){if(lastAutoFeedback)showFeedback(lastAutoFeedback,true);autoStatus.textContent='草稿已保存；分析內容未變，沿用已有 AI 建議。';return;}
  autoBusy=true;autoStatus.textContent='草稿已保存，正在取得 AI 建議…';
- try{const r=await api({action:'ai',kind:'review',card:snapshot,privacy_confirmed:true});lastAutoContent=content;lastAutoFeedback=r.feedback;showFeedback(r.feedback,r.cached);autoStatus.textContent=r.cached?'草稿已保存，已取回相同內容的 AI 建議。':'草稿已保存，AI 建議已顯示在下方。';if(generation!==editGeneration)el('p','取得建議期間你又修改了答案；此建議針對先前儲存的內容。',feedback);}
+ try{const r=await api({action:'ai',kind:'review',card:snapshot,privacy_confirmed:true});lastAutoContent=content;lastAutoFeedback=r.feedback;showFeedback(r.feedback,r.cached);autoStatus.textContent=(r.cached?'草稿已保存，已取回相同內容的 AI 建議。':'草稿已保存，AI 建議已顯示在下方。')+remainingNote(r);if(generation!==editGeneration)el('p','取得建議期間你又修改了答案；此建議針對先前儲存的內容。',feedback);}
  catch(e){autoStatus.textContent=`草稿已保存；AI 暫時無法提供建議：${e.message}。仍可修改與提交。`;}
  finally{autoBusy=false;}
 }
@@ -570,7 +575,7 @@ for(const [kind,title]of [['explore','我卡住了，給我探索方向'],['revi
  if(!await confirmAnonymous(anonymous,false,aiControls,trigger)){msg.textContent='已取消傳送，內容保持不變。';return;}
  if(autoBusy)throw Error('已有 AI 請求處理中，請稍候。');
  autoBusy=true;try{await save('draft',requestCard);msg.textContent='正在取得 AI 建議…';
- const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});if(kind==='review'){lastAutoContent=anonymous;lastAutoFeedback=r.feedback;}showFeedback(r.feedback,r.cached);feedback.scrollIntoView({block:'start'});msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。';
+ const r=await api({action:'ai',kind,card:requestCard,privacy_confirmed:true});if(kind==='review'){lastAutoContent=anonymous;lastAutoFeedback=r.feedback;}showFeedback(r.feedback,r.cached);feedback.scrollIntoView({block:'start'});msg.textContent='AI 建議已顯示，請依真實觀察修訂；仍可直接保存或提交。'+remainingNote(r);
  }finally{autoBusy=false;}
 },aiControls);
 window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefault();e.returnValue='';}});
