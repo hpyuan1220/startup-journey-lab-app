@@ -111,8 +111,9 @@ test('送出前的確認面板：出現在按鈕旁邊，而且會留下線索',
   '面板要插在傳進來的位置之後，不是整張卡最上面');
  assert.match(src,/msg\.textContent='有一段內容在等你確認/,
   '狀態列要說有東西在等確認，否則變灰的按鈕沒有任何解釋');
- assert.match(src,/trigger\.textContent='↑ 請到上方確認送出內容'/,
-  '變灰的那顆按鈕要自己說明為什麼變灰');
+ // 面板插在這顆按鈕所在區塊的後面 —— 在下方。原本寫「↑ 到上方」是反的。
+ assert.match(src,/trigger\.textContent='↓ 請在下方確認送出內容'/,
+  '變灰的那顆按鈕要自己說明為什麼變灰，而且方向要對（面板在下方）');
  assert.match(src,/if\(confirmOpen\)throw Error/,
   '面板開著時再按另一顆，要給訊息而不是開第二個面板');
 });

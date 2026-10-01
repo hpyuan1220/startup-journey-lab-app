@@ -276,15 +276,20 @@ function confirmAnonymous(content,automatic=false,after=null,trigger=null){
  el('h3','確認交給 AI 的匿名內容',panel);if(automatic)el('p','啟用後，本卡日後儲存完整草稿時會自動傳送更新後的匿名痛點、選題理由與訪談題至 OpenAI API，不會每次再預覽。請勿填入個資，可隨時取消勾選關閉。啟用本身不會呼叫 AI。',panel);el('p','以下文字將傳送至 OpenAI API 取得建議。若仍有可識別個資，請取消並修改。',panel);const preview=JSON.parse(content);
  const names=Object.fromEntries([...fields,...challengeFields]);Object.assign(names,{candidates:'候選痛點',selected:'暫定選題（從 1 起算）',reason:'選擇理由',reconsider:'重新選題的條件',statement:'痛點描述',questions:'訪談問題',challenge:'進階挑戰'});
  const translated=value=>Array.isArray(value)?value.map(translated):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).map(([key,v])=>[names[key]||key,key==='selected'?Number(v)+1:translated(v)])):value;
- el('pre',JSON.stringify(translated(preview),null,2),panel);
+ // 真機量到這個面板在手機上高 2300px 以上（整份卡片的 JSON 全部攤開）。
+ // 以「置中」捲進畫面時，標題在畫面上方 700px 外、兩顆按鈕在畫面下方 600px 外，
+ // 學生只看到一片 JSON，以為「按了沒反應」。預覽改成固定高度可捲動，整個面板放得進一個螢幕。
+ const pre=el('pre',JSON.stringify(translated(preview),null,2),panel);
+ pre.style.maxHeight='38vh';pre.style.overflow='auto';pre.setAttribute('tabindex','0');pre.setAttribute('aria-label','將送出的內容（可捲動）');
+ el('p','上面的預覽可以捲動。確認沒有姓名、學號或聯絡方式後，按下面的按鈕。',panel).className='revision-skipped';
  const triggerLabel=trigger?trigger.textContent:null;
- if(trigger)trigger.textContent='↑ 請到上方確認送出內容';
+ if(trigger)trigger.textContent='↓ 請在下方確認送出內容';  // 面板插在這顆按鈕所在區塊的後面，是在下方不是上方
  const end=value=>{confirmOpen=false;panel.remove();if(trigger&&triggerLabel)trigger.textContent=triggerLabel;resolve(value);};button(automatic?'同意，啟用儲存後自動 AI':'確認內容，取得 AI 建議',()=>end(true),panel);button('取消，回去修改',()=>end(false),panel);
  // 面板要出現在「剛才按的那顆按鈕」旁邊。插在卡片最上面時，手機上距離可達六個螢幕，
  // 按鈕同時因為 await 變灰，學生看起來就是「按了沒反應」。
  if(after&&after.parentNode)after.parentNode.insertBefore(panel,after.nextSibling);
  else root.insertBefore(panel,workspace);
- panel.querySelector('button').focus();panel.scrollIntoView({block:'center'});
+ panel.scrollIntoView({block:'start'});panel.querySelector('button').focus({preventScroll:true});
  msg.textContent='有一段內容在等你確認：請按「確認內容，取得 AI 建議」或「取消，回去修改」。';
 });}
 function localSave(){submitResult.hidden=true;clearTimeout(rulesTimer);rulesTimer=setTimeout(updateLiveCheck,450);editGeneration++;dirty=true;refreshJourney();remember();try{localStorage.setItem(cacheKey(),JSON.stringify({card,version,savedAt:new Date().toISOString()}));msg.textContent='已暫存在此裝置；請按儲存草稿同步雲端。';}catch{msg.textContent='此裝置無法暫存，請立即儲存草稿或下載備份。';}}
