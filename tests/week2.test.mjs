@@ -178,3 +178,17 @@ test('載入失敗要給重試按鈕，並說清楚內容沒有遺失',async()=>
  assert.match(src,/Failed to fetch\|NetworkError\|Load failed/,'網路層失敗要用學生看得懂的話說，不要直接丟英文');
  assert.ok(!/你仍可閱讀本週藍圖與下載教材/.test(src),'舊的那句沒有出路，不該留著');
 });
+
+// 明天上課會發生的情境：還沒提交 Week 1 的學生打開 Week 2。
+// 原本只在整張卡最下面放一行純文字連結，實測在 y=1415px —— 手機要捲 1.7 個螢幕。
+// 學生看到「你還沒提交 Week 1」，畫面上卻沒有任何可以點的東西。
+test('還沒提交 Week 1 的學生，要看得到補交的入口', async () => {
+ const fsp = await import('node:fs/promises');
+ const src = await fsp.readFile(new URL('../week2.js', import.meta.url), 'utf8');
+ assert.match(src, /你還沒提交 Week 1，所以 Week 2 還不能開始。你填過的內容都還在。/,
+  '先講清楚資料還在，再講怎麼辦');
+ assert.match(src, /el\('a','前往補交 Week 1 起點卡',box\)/, '入口要在說明旁邊，不是卡片最下面');
+ assert.match(src, /go\.className='primary-link'/, '要有按鈕外觀，17px 的純文字連結找不到');
+ assert.match(src, /box\.scrollIntoView\(\{block:'center'\}\);go\.focus\(\)/, '要捲進畫面並取得焦點');
+ assert.ok(!/const a=el\('a','補交 Week 1'\)/.test(src), '舊的那行沒有出路，不該留著');
+});

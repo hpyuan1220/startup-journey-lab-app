@@ -543,7 +543,16 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  if(!session){msg.textContent='請先到學生起點卡輸入學號與班級邀請碼，再回來此頁。';const a=el('a','進入 Week 1 起點卡');a.href='index.html#student';return;}
  try{
  const data=await api({action:'load'});
- if(data.week1?.status!=='submitted'){msg.textContent='你尚未提交 Week 1。請先完成起點卡，提交後即可回來使用 Week 2。';const a=el('a','補交 Week 1');a.href='index.html#student';return;}
+ if(data.week1?.status!=='submitted'){
+  // 先前只在整張卡的最下面放一行純文字連結（實測 y=1415px，手機要捲 1.7 個螢幕）。
+  // 學生看到「你還沒提交 Week 1」，畫面上卻沒有任何可以點的東西。
+  msg.textContent='你還沒提交 Week 1，所以 Week 2 還不能開始。你填過的內容都還在。';
+  const box=el('section','',msg.parentElement||root);box.className='video-learning-card';
+  el('p','Week 2 要延續 Week 1 的觀察，所以要先把起點卡正式提交。提交後回到這一頁就能開始。',box);
+  const go=el('a','前往補交 Week 1 起點卡',box);go.href='index.html#student';go.className='primary-link';
+  try{box.scrollIntoView({block:'center'});go.focus();}catch{}
+  return;
+}
  week1Identity=[session.student_id,data.week1.student_name];
  try{autoAuthorized=localStorage.getItem(autoKey())==='enabled';autoToggle.checked=autoAuthorized;}catch{}
  if(autoToggle.checked)autoStatus.textContent='已啟用自動 AI：完整草稿儲存後取得建議，可隨時關閉。';
