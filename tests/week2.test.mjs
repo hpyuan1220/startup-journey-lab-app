@@ -192,3 +192,19 @@ test('還沒提交 Week 1 的學生，要看得到補交的入口', async () => 
  assert.match(src, /box\.scrollIntoView\(\{block:'center'\}\);go\.focus\(\)/, '要捲進畫面並取得焦點');
  assert.ok(!/const a=el\('a','補交 Week 1'\)/.test(src), '舊的那行沒有出路，不該留著');
 });
+
+// 兩台裝置或兩個分頁同時編輯時，伺服器回 409
+// 「另一個視窗已更新這張卡，請先下載目前內容再重新載入。」
+// 訊息叫學生做兩件事，但下載鈕收在「更多」的收合區裡、重新載入根本沒有按鈕。
+// 明天學生用手機＋筆電兩邊開就會遇到。
+test('存檔撞到版本衝突時，要給真的能按的按鈕', async () => {
+ const fsp = await import('node:fs/promises');
+ const src = await fsp.readFile(new URL('../week2.js', import.meta.url), 'utf8');
+ assert.match(src, /e\.status=r\.status;/, 'api\\(\\) 要把 HTTP 狀態帶出來，不要比對訊息字串');
+ assert.match(src, /if\(e&&e\.status===409\)/, '用狀態碼判斷衝突');
+ assert.match(src, /你現在打的內容還在畫面上/, '先講清楚內容沒丟');
+ assert.match(src, /下載目前內容（備份）/, '叫他下載就要有下載鈕');
+ assert.match(src, /重新載入最新版本/, '叫他重新載入就要有重新載入鈕');
+ assert.match(src, /rl\.className='primary-action'/, '重新載入是主要動作');
+ assert.match(src, /box\.scrollIntoView\(\{block:'center'\}\);dl\.focus\(\)/, '要捲進畫面');
+});

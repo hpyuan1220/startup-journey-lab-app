@@ -260,7 +260,7 @@ function qFocus(){const rememberedQuestion=[...form.querySelectorAll('.week2-que
  if(q&&q.offsetParent!==null){try{q.scrollIntoView({block:'center',behavior:'auto'});}catch{q.scrollIntoView();}}}
 function addBackupDownload(){try{const backup=localStorage.getItem(cacheKey()+'-backup');if(backup&&!actions.querySelector('[data-backup]'))button('下載先前本機備份',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+backup],{type:'text/plain;charset=utf-8'}));a.download='Week2-本機備份.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}).dataset.backup='true';}catch{}}
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
-async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok)throw Error(b.error||`連線失敗 ${r.status}`);return b;}
+async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;throw e;}return b;}
 function button(label,fn,parent=actions){const b=el('button',label,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn(b);}catch(e){msg.textContent=e.message;}finally{b.disabled=b===previousStep&&activeStage==='0';}};return b;}
 let confirmOpen=false;
 function confirmAnonymous(content,automatic=false,after=null,trigger=null){
@@ -521,6 +521,22 @@ async function save(status,snapshot=normalize(card)){
  try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;
  if(generation===editGeneration){dirty=false;localStorage.removeItem(cacheKey());msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'} · 版本 ${version} · ${readiness(row)}`;}
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
+ }catch(e){
+  if(e&&e.status===409){
+   // 兩台裝置或兩個分頁同時編輯。訊息要他做兩件事，那兩件事就必須有按鈕。
+   msg.textContent='這張卡在別的視窗或裝置上已經更新過，所以這次沒有存上去。你現在打的內容還在畫面上，先下載備份再重新載入。';
+   const box=el('section','',msg.parentElement||root);box.className='video-learning-card';
+   const dl=button('下載目前內容（備份）',()=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['\ufeff Week 2 衝突備份 '+new Date().toLocaleString('zh-TW')+'\n'+JSON.stringify(card,null,2)],{type:'text/plain;charset=utf-8'}));
+    a.download='Week2-衝突備份.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    msg.textContent='備份已下載。按「重新載入」取得最新版本，再把備份裡的內容補回去。';
+   },box);
+   const rl=button('重新載入最新版本',()=>location.reload(),box);rl.className='primary-action';
+   try{box.scrollIntoView({block:'center'});dl.focus();}catch{}
+   return;
+  }
+  throw e;
  }finally{saving=false;refreshJourney();}
 }
 const moreBox=el('details','',workspace);moreBox.className='card-more';el('summary','更多（檢查進度、下載內容）',moreBox);
