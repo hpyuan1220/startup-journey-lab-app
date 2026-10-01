@@ -16,7 +16,8 @@ export function draftRevision(card,feedback,keys){
 }
 export function applyRevision(card,patches,undo=false){
  if(!patches.length)throw Error('請至少勾選一個欄位。');
- const next=structuredClone(card),seen=new Set();
+ // structuredClone 在 iOS 15.3 以前的 Safari 不存在；卡片是純 JSON，用 JSON 複製一樣正確。
+ const next=JSON.parse(JSON.stringify(card)),seen=new Set();
  for(const p of patches){
  const field=revisionFields.find(([key])=>key===p.key);
  if(!field||seen.has(p.key))throw Error('修改欄位格式不正確。');seen.add(p.key);

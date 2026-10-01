@@ -1506,3 +1506,11 @@ harness 加上 `WEEK2_HANDLER=bundled`，可以用同一批測試測實際部署
 
 同時更正一個我自己的錯：單元測試裡把「↑ 上方」寫死成正確答案，
 等於把錯的方向鎖進測試。測試要測的是「按鈕有說明」和「方向正確」，不是字串本身。
+
+#### Safari 相容性掃描（無法取得 WebKit，改用靜態掃描）
+
+雲端環境下載不到 Playwright 的 WebKit，所以用靜態掃描前端程式碼找 Safari 不支援的 API：
+regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorted、:has()、dvh 等 —— 都沒有用到。
+只找到一處 `structuredClone`（iOS 15.3 以前沒有），改成 JSON 複製。
+`week2-revision.mjs` 的 import 原本沒有版本號，Safari 會吃快取；補上 `?v=`。
+真正的 iPhone Safari 仍然沒有實機測過。

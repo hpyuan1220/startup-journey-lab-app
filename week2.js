@@ -1,5 +1,5 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
-import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs';
+import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs?v=20261002-safari';
 import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
