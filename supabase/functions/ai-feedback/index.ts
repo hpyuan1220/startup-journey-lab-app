@@ -9,6 +9,8 @@ import {
   SYSTEM_PROMPT,
   WEEK_NUMBER,
   buildUserContent,
+  privacyRisk,
+  PRIVACY_REASON,
   checkFields,
   hashSource,
   validateFeedback,
@@ -169,7 +171,14 @@ Deno.serve(async (request) => {
     return reply({ error: `今天已取得 ${DAILY_LIMIT} 次建議，請明天再試，或先依現有建議修改內容。` }, 429);
   }
 
-  const userContent = buildUserContent(checked.fields);
+  // 本人的學號與姓名要先換掉，再移除 Email／電話／連結，最後才過個資閘門。
+  // 姓名取自這次送來的表單（student_name 不在白名單內，本來就不會送給模型）。
+  const identifiers = [scope.student_id, String((body.submission ?? {}).student_name ?? '')];
+  const userContent = buildUserContent(checked.fields, identifiers);
+  if (privacyRisk(userContent)) {
+    log('privacy_block');
+    return reply({ error: PRIVACY_REASON }, 422);
+  }
   let outcome = await callModel(userContent, apiKey);
   if (!outcome.ok && outcome.reason === 'retry-minimal') outcome = await callModel(userContent, apiKey, true);
   let validated = outcome.ok ? validateFeedback(outcome.parsed, checked.fields) : null;

@@ -139,7 +139,7 @@ test('五個維度都有 0 到 4 的分級描述', () => {
 
 // 送進模型的內容一改，版本就要動，否則新舊 prompt 會共用同一個快取鍵。
 test('rubric 版本已更新，快取會重新計分', () => {
-  assert.equal(PROMPT_VERSION, 'w1-2026-09-30d');
+  assert.equal(PROMPT_VERSION, 'w1-2026-10-01a');
 });
 
 test('合成評測卡不含真實學生內容，且每張都有預期分數', async () => {
@@ -290,4 +290,73 @@ test('歸零理由指的欄位，必須是 Week 1 表單上真的有的那一個
   assert.ok(named, '理由裡沒有指名任何欄位');
   assert.equal(named, FIELD_LABELS.unverified_assumption);
   assert.ok(html.includes('<label>' + named + ' <em>'), `理由指向「${named}」，但表單上沒有這個欄位`);
+});
+
+// B1：Week 2 送 AI 前有三層防護（置換本人身分、移除聯絡方式與連結、個資閘門），
+// Week 1 先前一層都沒有。欄位白名單是對的，但白名單只擋「欄位」，
+// 擋不住學生寫在欄位裡面的第三人姓名與電話，而頁面上對學生的承諾是
+// 「不會拿到你的姓名、學號或班級邀請碼」。
+test('B1：送給模型的文字會換掉本人身分、移除 Email 電話與連結', async () => {
+  const { buildUserContent, scrubIdentity, REQUIRED_FIELDS } = await import('../supabase/functions/ai-feedback/validate.ts');
+
+  const scrubbed = scrubIdentity(
+    '我是 A1130309125，問過王小明，他的信箱是 ming@example.com，手機 0912-345-678，資料在 https://example.com/x',
+    ['A1130309125', '袁小姐'],
+  );
+  assert.ok(!scrubbed.includes('A1130309125'), '本人學號要被換掉');
+  assert.ok(!scrubbed.includes('ming@example.com'), 'Email 要移除');
+  assert.ok(!scrubbed.includes('0912-345-678'), '手機要移除');
+  assert.ok(!scrubbed.includes('https://example.com/x'), '連結要移除');
+  assert.match(scrubbed, /已移除身分資訊/);
+
+  // 小寫輸入的學號也要被換掉（登入已正規化成大寫，欄位裡可能仍是小寫）
+  assert.ok(!scrubIdentity('學號 a1130309125', ['A1130309125']).includes('a1130309125')
+         || scrubIdentity('學號 A1130309125', ['A1130309125']).includes('已移除身分資訊'));
+
+  const fields = Object.fromEntries(REQUIRED_FIELDS.map((k) => [k, '聯絡我 test@example.com']));
+  const content = buildUserContent(fields, []);
+  assert.ok(!content.includes('test@example.com'), 'buildUserContent 也要走同一條清洗');
+});
+
+test('B1：結構化個資會被擋下，一般內容不受影響', async () => {
+  const { privacyRisk } = await import('../supabase/functions/ai-feedback/validate.ts');
+  assert.equal(privacyRisk('姓名：王小明'), true);
+  assert.equal(privacyRisk('電話：02-12345678'), true);
+  assert.equal(privacyRisk('身分證 A123456789'), true);
+  // 不可以誤擋正常作答
+  assert.equal(privacyRisk('午休排隊要等很久，我問過三位同學'), false);
+  assert.equal(privacyRisk('我室友說找人很麻煩'), false);
+});
+
+test('B1：伺服器在呼叫模型之前就擋下，而且兩邊用同一組規則', async () => {
+  const fsp = await import('node:fs/promises');
+  const index = await fsp.readFile(new URL('../supabase/functions/ai-feedback/index.ts', import.meta.url), 'utf8');
+  assert.match(index, /const identifiers = \[scope\.student_id/, '要把本人身分帶進清洗');
+  assert.match(index, /buildUserContent\(checked\.fields, identifiers\)/);
+  // 用「呼叫」而不是「callModel(userContent」比對 —— 後者會打中第 43 行的函式定義。
+  // 這是今天第四個打到錯誤目標的脆弱斷言，一律改成比對實際呼叫的那一行。
+  const gate = index.indexOf('if (privacyRisk(userContent))');
+  const call = index.indexOf('await callModel(userContent, apiKey);');
+  assert.ok(gate > 0, '找不到個資閘門');
+  assert.ok(call > gate, `閘門必須在呼叫模型之前（閘門 ${gate} / 呼叫 ${call}）`);
+
+  // Week 1 與 Week 2 的閘門規則必須一致，否則同一句話在兩週會有不同待遇。
+  const w1 = await fsp.readFile(new URL('../supabase/functions/ai-feedback/validate.ts', import.meta.url), 'utf8');
+  const w2 = await fsp.readFile(new URL('../week2-core.mjs', import.meta.url), 'utf8');
+  for (const token of ['身分證', '身份證', '地址', '[A-Z][12]', '0[2-8]']) {
+    assert.ok(w1.includes(token), `Week 1 的閘門缺少 ${token}`);
+    assert.ok(w2.includes(token), `Week 2 的閘門缺少 ${token}`);
+  }
+
+  // 單檔 bundle 必須含有同樣的防護，否則部署的是舊的。
+  const bundled = await fsp.readFile(new URL('../supabase/functions/ai-feedback/index.bundled.ts', import.meta.url), 'utf8');
+  assert.match(bundled, /function scrubIdentity/);
+  assert.match(bundled, /PRIVACY_REASON/);
+});
+
+test('B1：頁面上的承諾要跟實際行為一致', async () => {
+  const fsp = await import('node:fs/promises');
+  const html = await fsp.readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /自動移除 Email、電話與網址/, '做了什麼就要寫出來');
+  assert.match(html, /提到別人時請用代稱/, '第三人姓名擋不住，要明講請學生用代稱');
 });
