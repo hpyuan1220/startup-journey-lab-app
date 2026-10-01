@@ -1481,3 +1481,11 @@ harness 新增 `reserveNull` 選項，才能從行為上測到「同時送出」
 
 資源版本 week2.js v=20261002-ailimit。bundle 雜湊 73df05f9…
 教學上的提醒：預設只有 3 次（引導）／2 次（非引導），老師頁面可改 0–10。
+
+同日補記：測試一直測 `index.ts`，但部署到 Supabase 的是 build 出來的
+`index.bundled.ts`。兩者萬一不一致，測試全綠也不代表線上是對的。
+harness 加上 `WEEK2_HANDLER=bundled`，可以用同一批測試測實際部署的那一份。
+本次部署（雜湊 73df05f9…）兩邊都是 135 / 135。
+
+以後部署 Edge Function 的標準步驟多一步：
+`WEEK2_HANDLER=bundled node --test tests/week2-api.test.mjs`
