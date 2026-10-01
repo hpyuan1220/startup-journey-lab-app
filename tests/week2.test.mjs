@@ -208,3 +208,17 @@ test('存檔撞到版本衝突時，要給真的能按的按鈕', async () => {
  assert.match(src, /rl\.className='primary-action'/, '重新載入是主要動作');
  assert.match(src, /box\.scrollIntoView\(\{block:'center'\}\);dl\.focus\(\)/, '要捲進畫面');
 });
+
+// 使用者實際卡住的地方：第 3/5 步、本步驟第 8/8 題，「下一題」變灰。
+// 要繼續得去按另一顆「繼續下一步」，而它貼在畫面底部 773px（視窗 861px）很容易錯過。
+// 學生按到一半發現按鈕按不下去，會以為卡住了。
+test('每一步的最後一題，「下一題」不可以是死按鈕', async () => {
+ const fsp = await import('node:fs/promises');
+ const src = await fsp.readFile(new URL('../week2.js', import.meta.url), 'utf8');
+ assert.match(src, /const last=at===inStage\.length-1;/);
+ assert.match(src, /button\(last\?'這一步填完了，繼續下一步':'下一題'/,
+  '最後一題要改成帶他往前的按鈕，不是變灰');
+ assert.match(src, /if\(last\)moveStage\(1\);else jump/, '按下去要真的進入下一步');
+ assert.ok(!/nextBtn\.disabled=at===inStage\.length-1/.test(src),
+  '舊的「最後一題就變灰」寫法不該留著');
+});

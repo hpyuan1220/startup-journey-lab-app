@@ -439,8 +439,14 @@ function render(){
   const bar=el('nav','',form);bar.className='guided-nav-bar';bar.setAttribute('aria-label','上一題與下一題');
   el('p',`本步驟第 ${at+1}/${inStage.length} 題`,bar);
   button('上一題',()=>jump(questions.indexOf(inStage[at-1])),bar).disabled=at===0;
-  const nextBtn=button('下一題',()=>jump(questions.indexOf(inStage[at+1])),bar);
-  nextBtn.disabled=at===inStage.length-1;nextBtn.className='primary-action';
+  // 這一步的最後一題時，「下一題」原本直接變灰，而且沒有任何說明 ——
+  // 要繼續得去按另一顆「繼續下一步」，它貼在畫面最底部很容易錯過。
+  // 學生按到一半發現按鈕不能按，會以為卡住了。改成同一顆按鈕直接帶他往前。
+  const last=at===inStage.length-1;
+  const nextBtn=button(last?'這一步填完了，繼續下一步':'下一題',()=>{
+   if(last)moveStage(1);else jump(questions.indexOf(inStage[at+1]));
+  },bar);
+  nextBtn.className='primary-action';
  }
  showStage();
  // 每次 render 都試一次；函式自己有旗標，整個頁面生命週期只會真的跳一次。
