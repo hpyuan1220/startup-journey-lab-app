@@ -222,3 +222,16 @@ test('每一步的最後一題，「下一題」不可以是死按鈕', async ()
  assert.ok(!/nextBtn\.disabled=at===inStage\.length-1/.test(src),
   '舊的「最後一題就變灰」寫法不該留著');
 });
+
+// 掃過 29 個狀態之後，學生路徑上唯一剩下的變灰按鈕是每個步驟第一題的「上一題」——
+// 和「最後一題的下一題」是同一個問題的鏡像。學生想回去看上一步寫了什麼，按鈕是死的。
+// 最前面那一題確實沒有上一題，所以那一個是隱藏，不是變灰。
+test('步驟第一題的「上一題」不可以是死按鈕', async () => {
+ const fsp = await import('node:fs/promises');
+ const src = await fsp.readFile(new URL('../week2.js', import.meta.url), 'utf8');
+ assert.match(src, /const first=at===0, atFirstStage=/);
+ assert.match(src, /button\(first\?'回上一步':'上一題'/, '第一題要改成回上一步，不是變灰');
+ assert.match(src, /if\(first\)moveStage\(-1\);else jump/, '按下去要真的回到上一步');
+ assert.match(src, /prevBtn\.hidden=first&&atFirstStage/, '整張卡最前面那一題沒有上一步，隱藏而不是變灰');
+ assert.ok(!/bar\)\.disabled=at===0/.test(src), '舊的「第一題就變灰」寫法不該留著');
+});

@@ -438,7 +438,13 @@ function render(){
   // 每答一題都要往上捲才能按下一題，二十幾題就是二十幾次。
   const bar=el('nav','',form);bar.className='guided-nav-bar';bar.setAttribute('aria-label','上一題與下一題');
   el('p',`本步驟第 ${at+1}/${inStage.length} 題`,bar);
-  button('上一題',()=>jump(questions.indexOf(inStage[at-1])),bar).disabled=at===0;
+  // 步驟第一題時「上一題」原本直接變灰，和「下一題」在最後一題時是同一個問題的鏡像。
+  // 學生想回去看上一步寫了什麼，按鈕卻是死的。最前面那一題確實沒有「上一題」，就藏起來。
+  const first=at===0, atFirstStage=mainOrder.indexOf(activeStage)<=0&&!OPTIONAL_STEPS.includes(activeStage);
+  const prevBtn=button(first?'回上一步':'上一題',()=>{
+   if(first)moveStage(-1);else jump(questions.indexOf(inStage[at-1]));
+  },bar);
+  prevBtn.hidden=first&&atFirstStage;
   // 這一步的最後一題時，「下一題」原本直接變灰，而且沒有任何說明 ——
   // 要繼續得去按另一顆「繼續下一步」，它貼在畫面最底部很容易錯過。
   // 學生按到一半發現按鈕不能按，會以為卡住了。改成同一顆按鈕直接帶他往前。
