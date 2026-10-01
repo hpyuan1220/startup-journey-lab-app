@@ -235,3 +235,18 @@ test('步驟第一題的「上一題」不可以是死按鈕', async () => {
  assert.match(src, /prevBtn\.hidden=first&&atFirstStage/, '整張卡最前面那一題沒有上一步，隱藏而不是變灰');
  assert.ok(!/bar\)\.disabled=at===0/.test(src), '舊的「第一題就變灰」寫法不該留著');
 });
+
+// 使用者實際遇到：套用 AI 修改後按了儲存草稿，伺服器確實存成版本 28，
+// 但畫面同時留著「已套用 1 個欄位，但還沒存到雲端…請按『儲存草稿到雲端』」。
+// 兩句相反的話同時在畫面上，學生以為存檔卡住了。
+test('存檔成功要清掉「還沒存到雲端」那段過期訊息', async () => {
+ const fsp = await import('node:fs/promises');
+ const src = await fsp.readFile(new URL('../week2.js', import.meta.url), 'utf8');
+ assert.match(src, /if\(typeof saveAfterApply!=='undefined'&&!saveAfterApply\.hidden\)saveAfterApply\.hidden=true;/,
+  '存好之後「儲存草稿到雲端」那顆按鈕要收起來');
+ assert.match(src, /已存到雲端（版本 \$\{version\}）/, '要把狀態更新成已存，不是留著舊話');
+ // 兩句話不可以同時存在
+ const i = src.indexOf('已存到雲端（版本');
+ const j = src.indexOf("msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'}");
+ assert.ok(i > 0 && j > 0 && i > j, '清除動作要跟在存檔成功訊息之後');
+});

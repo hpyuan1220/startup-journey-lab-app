@@ -531,7 +531,14 @@ async function save(status,snapshot=normalize(card)){
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
  const generation=editGeneration;saving=true;msg.textContent='正在同步…';
  try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;
- if(generation===editGeneration){dirty=false;localStorage.removeItem(cacheKey());msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'} · 版本 ${version} · ${readiness(row)}`;}
+ if(generation===editGeneration){dirty=false;localStorage.removeItem(cacheKey());msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'} · 版本 ${version} · ${readiness(row)}`;
+  // 套用 AI 修改後會留下「但還沒存到雲端，請按儲存草稿到雲端」這句話。
+  // 存好之後它沒被清掉，畫面上就同時出現「已同步版本 N」和「還沒存到雲端」兩句相反的話，
+  // 學生會以為存檔卡住了。存成功就把那段狀態更新掉，並收起那顆按鈕。
+  if(typeof saveAfterApply!=='undefined'&&!saveAfterApply.hidden)saveAfterApply.hidden=true;
+  if(typeof revisionStatus!=='undefined'&&revisionStatus.textContent)
+   revisionStatus.textContent=`已存到雲端（版本 ${version}）。${undoButton&&!undoButton.hidden?'改壞了仍可按「復原上次套用」。':''}`;
+  }
  else{msg.textContent=`版本 ${version} 已同步；剛才新增的文字仍在本機，請再儲存。`;}
  }catch(e){
   if(e&&e.status===409){
