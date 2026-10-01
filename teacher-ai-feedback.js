@@ -214,6 +214,14 @@
   }
 
   function updateMetric(count) {
+    // app.js 清空教師資料時，這裡的 MutationObserver 會被觸發，
+    // 然後又把統計磚塞回 #metrics。儀表板沒顯示就不要寫進去。
+    var dash = document.getElementById('teacher-dashboard');
+    if (dash && dash.hidden) {
+      var stale = metrics && metrics.querySelector('.tai-metric');
+      if (stale) stale.remove();
+      return;
+    }
     if (!metrics || !loaded) return;
     var existing = metrics.querySelector('.tai-metric');
     if (!existing) {

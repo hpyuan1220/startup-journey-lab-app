@@ -111,9 +111,19 @@ async function restoreStudent(){
   }
 }
 
+function teacherViewActive(){const v=$('teacher');return !!v&&v.classList.contains('active');}
+// 切走教師頁時，.view 只是 display:none —— 全班姓名與學號仍在 DOM 裡，
+// 學生按一下「教師洞察」就看得到。離開就清空，回來再重畫。
+function clearTeacherData(){
+ const dash=$('teacher-dashboard');if(dash)dash.hidden=true;
+ const list=$('submission-list');if(list)list.innerHTML='';
+ const metrics=$('metrics');if(metrics)metrics.innerHTML='';
+}
 function showMainView(name){
  if(!['home','student','teacher'].includes(name))return;
  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));
+ if(name!=='teacher'){clearTeacherData();if(teacherToken)touchTeacherActivity(TEACHER_AWAY_MINUTES);return;}
+ if(teacherToken){$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;renderTeacher();touchTeacherActivity();}
 }
 document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>{location.hash=btn.dataset.view;showMainView(btn.dataset.view);}));
 window.addEventListener('hashchange',()=>showMainView(location.hash.slice(1)));
@@ -218,21 +228,29 @@ $('export-text').onclick=()=>{
 // 閒置逾時：老師離開電腦但沒登出時的第二道防線。
 // 只要有點擊、按鍵或捲動就重新計時，所以改作業中途不會被踢出去。
 const TEACHER_IDLE_MINUTES = 30;
+// 離開教師頁之後，沒有任何操作會重設計時器（學生在學生頁的動作不算）。
+// 那段期間的暴露時間不需要是 30 分鐘 —— 老師多半是切走就不回來了。
+const TEACHER_AWAY_MINUTES = 5;
 let teacherIdleTimer = null;
-function touchTeacherActivity(){
+let teacherIdleMinutes = TEACHER_IDLE_MINUTES;
+function touchTeacherActivity(minutes=TEACHER_IDLE_MINUTES){
  if(teacherIdleTimer)clearTimeout(teacherIdleTimer);
  if(!teacherToken)return;
+ teacherIdleMinutes=minutes;
  teacherIdleTimer=setTimeout(()=>{
   if(!teacherToken)return;
   storeTeacherSession(null);
-  const gate=$('teacher-gate'),dash=$('teacher-dashboard');
+  teacherRows=[];
+  const gate=$('teacher-gate');
   if(gate)gate.hidden=false;
-  if(dash)dash.hidden=true;
-  message('teacher-message',`閒置超過 ${TEACHER_IDLE_MINUTES} 分鐘，已自動登出。這是為了避免在共用電腦上留下班級資料。`);
- },TEACHER_IDLE_MINUTES*60*1000);
+  clearTeacherData();
+  message('teacher-message',`閒置超過 ${teacherIdleMinutes} 分鐘，已自動登出。這是為了避免在共用電腦上留下班級資料。`);
+ },minutes*60*1000);
 }
+// 活動監聽原本是全域的：學生在同一個分頁填卡，每次打字都會重設老師的閒置計時器，
+// 30 分鐘的保護等於永遠不會觸發。只有教師頁上的操作才算老師還在。
 for(const evt of ['click','keydown','scroll','pointerdown']){
- window.addEventListener(evt,()=>{if(teacherToken)touchTeacherActivity();},{passive:true});
+ window.addEventListener(evt,()=>{if(teacherToken&&teacherViewActive())touchTeacherActivity();},{passive:true});
 }
 
 function storeTeacherSession(session){
@@ -263,7 +281,10 @@ async function loadTeacher(canRefresh=true){
   if(!teacherToken)return;
   try{
     const rows=await api('/rest/v1/week1_submissions?select=*&order=updated_at.desc',{headers:{Authorization:`Bearer ${teacherToken}`}});
-    teacherRows=rows;renderTeacher();markTeacherSignedIn();touchTeacherActivity();message('teacher-message','');$('teacher-gate').hidden=true;$('teacher-dashboard').hidden=false;
+    teacherRows=rows;markTeacherSignedIn();message('teacher-message','');$('teacher-gate').hidden=true;
+    // 載入完成時人可能已經切到學生頁 —— 那就先不要把名單畫進 DOM。
+    if(teacherViewActive()){$('teacher-dashboard').hidden=false;renderTeacher();touchTeacherActivity();}
+    else clearTeacherData();
   }catch(e){
     if(canRefresh&&(e.status===401||/jwt|token|expired/i.test(e.message))){try{if(await refreshTeacherSession())return loadTeacher(false);}catch{message('teacher-message','目前網路無法更新登入，請稍後按教師頁重新載入；登入資料已保留。',true);return;}}
     if(e.status===401||/jwt|token|expired/i.test(e.message))storeTeacherSession(null);
@@ -272,7 +293,7 @@ async function loadTeacher(canRefresh=true){
   }
 }
 $('teacher-login').onclick=async()=>{if(!configured())return message('teacher-message','尚未設定 Supabase 連線資訊。',true);try{const r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('teacher-email').value,password:$('teacher-password').value})});storeTeacherSession(r);await loadTeacher();}catch(e){message('teacher-message',e.message,true);}};
-$('teacher-logout').onclick=()=>{storeTeacherSession(null);$('teacher-gate').hidden=false;$('teacher-dashboard').hidden=true;message('teacher-message','已登出。');};
+$('teacher-logout').onclick=()=>{storeTeacherSession(null);teacherRows=[];$('teacher-gate').hidden=false;clearTeacherData();message('teacher-message','已登出。');};
 // 提醒自己「現在是登入狀態」—— 不是安全機制，但成本極低，而且共用電腦上
 // 下一個人至少看得到這裡有人登入著。
 function markTeacherSignedIn(){
@@ -280,7 +301,11 @@ function markTeacherSignedIn(){
  if(label)label.textContent=`目前以教師身分登入中 · 閒置 ${TEACHER_IDLE_MINUTES} 分鐘會自動登出`;
 }
 function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderTeacher(){const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;// needs_follow_up 永遠是 false（沒有任何程式寫入過）。teacher-note.js 會用
+function renderTeacher(){
+ // teacher-note.js 的 sjl-attention-ready 事件也會呼叫這裡。
+ // 人不在教師頁時重畫，等於又把全班資料塞回 DOM。
+ if(!teacherViewActive()){clearTeacherData();return;}
+ const q=$('student-search').value.toLowerCase(),f=$('status-filter').value;// needs_follow_up 永遠是 false（沒有任何程式寫入過）。teacher-note.js 會用
 // 分數與是否已收過回饋算出真正需要老師看的名單，掛在 window.__sjlNeedsAttention。
 const attention=window.__sjlNeedsAttention instanceof Set?window.__sjlNeedsAttention:null;
 // 鑰匙必須和 teacher-note.js 的 publishAttention() 一致（class_id + ':' + student_id）。

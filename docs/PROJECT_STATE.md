@@ -1139,3 +1139,52 @@ ai-feedback 線上雜湊 `4ca65e9c…`（＝本機＝GitHub 9d0e258），M 標�
 **副作用（已先告知使用者）**：PROMPT_VERSION 進版使既有 AI 建議快取失效，
 學生下次取得建議會真的重新呼叫模型一次。這是內容變更時必要的代價——
 不進版的話新舊行為共用同一個內容雜湊鍵，反而更糟。
+
+### 2026-10-01（D2：教室共用電腦，老師的閒置登出永遠不會觸發）
+
+稽核 D2。兩件事疊在一起，把 `app.js` 開頭註解所要防的情境整個繞過：
+
+1. **活動監聽是全域的**：`window.addEventListener(evt,()=>{if(teacherToken)touchTeacherActivity()})`
+   不分目前在哪個 view。學生在同一個分頁填卡，每次打字、捲動都重設老師的計時器，
+   **30 分鐘的保護等於永遠不會觸發**。
+2. **`showMainView()` 只切 class**：`.view{display:none}` 只是視覺隱藏，
+   `#teacher-dashboard.hidden` 仍是 false，**全班姓名與學號完整留在 DOM 裡**。
+
+#### 改法
+
+- `teacherViewActive()`：判斷人在不在教師頁。活動監聽加上這個條件。
+- `clearTeacherData()`：離開教師頁就清空 `#submission-list` 與 `#metrics`，不是只隱藏。
+  手動登出與閒置登出也一併清空，並把 `teacherRows` 歸零。
+- `renderTeacher()` 自己守門：`teacher-note.js` 的 `sjl-attention-ready` 與搜尋框
+  都會在背景呼叫它，不守門就會把名單塞回 DOM。
+- `loadTeacher()` 完成時先確認人還在教師頁才畫。
+
+#### 清空 DOM 不是真正的防線
+
+**老師還登入著的話，學生按一下「教師洞察」名單就會重畫出來** ——
+清空只擋住「檢視原始碼」。真正的防線是閒置登出真的會觸發。
+既然離開教師頁之後沒有任何操作會重設計時器，那段暴露時間就不需要是 30 分鐘：
+新增 `TEACHER_AWAY_MINUTES = 5`，切走時改用短倒數重新起算，
+訊息也改成印出實際分鐘數（否則會說 30 但其實是 5）。
+
+#### 又一個跨模組衝突（與 D1 同一家族）
+
+清空 `#submission-list` 會觸發 `teacher-ai-feedback.js` 的 MutationObserver，
+它接著把「已取得 AI 建議」統計磚**塞回** `#metrics`。清了又被寫回來。
+改法：該模組在 `#teacher-dashboard.hidden` 時不寫入，並移除已存在的那一塊。
+
+**app.js 與 teacher-* 模組寫同一塊 DOM，是結構性問題，不是單點 bug。**
+D1（送出回饋會清掉別人未送的草稿）也是同一個根源，尚未處理。
+
+#### 瀏覽器實測（1280×900，攔截請求，合成資料）
+
+| 情境 | 結果 |
+| --- | --- |
+| 教師登入 | 名單 2 筆、儀表板顯示 |
+| 切到學生頁 | 名單 **0 筆**、metrics **0 字元**、儀表板隱藏，**整頁 HTML 找不到任何學生姓名或學號** |
+| 學生在學生頁打字 | 仍是 0 筆，沒有被重新塞回 |
+| 切回教師頁 | 名單 2 筆，正常恢復 |
+
+123 項測試通過（新增 6 項）。**把 D2 退回後，5 項確實會紅。**
+資源版本：app.js v=20261001-teacherview、teacher-ai-feedback.js v=20261001-teacherview。
+**純前端，不需要部署 Edge Function。**
