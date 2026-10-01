@@ -29,22 +29,29 @@ function snapshotOf(data){ return JSON.stringify(SUBMIT_FIELDS.map(k=>k==='conse
 
 function configured(){ return cfg.supabaseUrl && !cfg.supabaseUrl.includes('YOUR_') && cfg.supabaseAnonKey && !cfg.supabaseAnonKey.includes('YOUR_'); }
 function message(id, text, bad=false){ const el=$(id); el.textContent=text; el.classList.toggle('error',bad); }
+// 按鈕的原始文字只能記錄一次，而且要在任何改字之前。
+function rememberLabel(button){
+  if(button && !button.dataset.defaultLabel) button.dataset.defaultLabel=button.textContent;
+}
 function startAction(button, label){
   if(!button) return;
-  button.dataset.defaultLabel ||= button.textContent;
+  rememberLabel(button);
   button.classList.remove('action-success','action-failed');
   button.textContent=label;
   button.disabled=true;
 }
 function finishAction(button, label, failed=false){
   if(!button) return;
+  // 有三條路徑（缺欄位、內容未變更、已提交無法清除）不經過 startAction 就走到這裡。
+  // 先記下原始文字，否則還原時只能 fallback 到當下的錯誤標籤。
+  rememberLabel(button);
   button.disabled=false;
   button.textContent=label;
   button.classList.toggle('action-success',!failed);
   button.classList.toggle('action-failed',failed);
   clearTimeout(button._labelTimer);
   button._labelTimer=setTimeout(()=>{
-    button.textContent=button.dataset.defaultLabel || button.textContent;
+    if(button.dataset.defaultLabel) button.textContent=button.dataset.defaultLabel;
     button.classList.remove('action-success','action-failed');
   },2200);
 }
@@ -191,12 +198,25 @@ async function save(status, button, labels={}){
       : '已正式提交，老師現在可以查看。';
     message('form-message',labels.message || (status==='submitted'?submittedMessage:'草稿已儲存。'));
     finishAction(button,labels.done || (status==='submitted'?'已提交 ✓':'已儲存 ✓'));
+    // 成功訊息在表單最上方，距離提交鈕約 3000px（手機 3.6 個螢幕），
+    // 而按鈕只閃 2.2 秒就恢復原狀 —— 學生看不到任何提交成功的痕跡，會再按一次。
+    if(status==='submitted')showConfirmation();
     return true;
   }catch(e){
     message('form-message',e.message,true);
     finishAction(button,'請重試',true);
+    // 失敗更要看得到：原本錯誤訊息同樣寫在 3000px 之外，
+    // 按鈕閃 2.2 秒就恢復，學生會以為交出去了。
+    showConfirmation();
     return false;
   }
+}
+// 把提交結果捲到學生眼前。提交成功時優先顯示「已於 X 提交」那一塊。
+function showConfirmation(){
+  const box=$('submitted-state'),msg=$('form-message');
+  const target=(box&&!box.hidden)?box:msg;
+  if(!target)return;
+  try{target.scrollIntoView({block:'center'});target.tabIndex=-1;target.focus({preventScroll:true});}catch{}
 }
 $('save-draft').onclick=()=>save('draft',$('save-draft'));
 $('week1-form').onsubmit=(e)=>{e.preventDefault();save('submitted',e.submitter||$('week1-form').querySelector('[type="submit"]'));};

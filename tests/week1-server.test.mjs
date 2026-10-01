@@ -112,3 +112,37 @@ test('前端：409 要走確認流程，不是直接把錯誤訊息丟出來',as
  assert.match(src,/我要改學號/,'打錯的人也要有一條路');
  assert.match(src,/enterStudent\(true\)/,'按「是」之後要帶 confirm_new 重送');
 });
+
+// C2：defaultLabel 只在 startAction 記錄，但有三條路徑（缺欄位、內容未變更、
+// 已提交無法清除）直接呼叫 finishAction。回訪學生第一個動作就是按提交且沒改東西時，
+// defaultLabel 從未被設定 → 還原時 fallback 到當下的錯誤標籤 → 永久卡住。
+// 實測：之後真的改了內容再提交成功，2.2 秒後按鈕又變回「內容未變更」—— 按鈕在說謊。
+test('C2：按鈕的原始文字要在任何改字之前記錄，還原不可 fallback 到錯誤標籤', async () => {
+  const fsp = await import('node:fs/promises');
+  const src = await fsp.readFile(new URL('../app.js', import.meta.url), 'utf8');
+  assert.match(src, /function rememberLabel\(button\)/, '記錄原始文字要有單一入口');
+  assert.match(src, /if\(button && !button\.dataset\.defaultLabel\) button\.dataset\.defaultLabel=button\.textContent/);
+  // startAction 與 finishAction 都要先記
+  const start = src.indexOf('function startAction');
+  const finish = src.indexOf('function finishAction');
+  assert.match(src.slice(start, start + 200), /rememberLabel\(button\)/, 'startAction 要記');
+  assert.match(src.slice(finish, finish + 320), /rememberLabel\(button\)/, 'finishAction 也要記');
+  assert.match(src, /if\(button\.dataset\.defaultLabel\) button\.textContent=button\.dataset\.defaultLabel;/,
+    '沒有原始文字時就不要動它，不可 fallback 到當下的錯誤標籤');
+  assert.ok(!/button\.textContent=button\.dataset\.defaultLabel \|\| button\.textContent/.test(src),
+    '舊的 fallback 寫法正是卡住的原因');
+});
+
+// C1：提交成功訊息在表單最上方，距離提交鈕約 3,013px（390×844 實測，3.6 個螢幕），
+// 按鈕只閃 2.2 秒就恢復原狀。學生看不到任何成功痕跡，會再按一次；
+// 失敗時更糟 —— 畫面上一絲失敗的跡象都沒有，他會以為交出去了。
+test('C1：提交結果要捲到學生眼前，成功與失敗都要', async () => {
+  const fsp = await import('node:fs/promises');
+  const src = await fsp.readFile(new URL('../app.js', import.meta.url), 'utf8');
+  assert.match(src, /function showConfirmation\(\)/);
+  assert.match(src, /if\(status==='submitted'\)showConfirmation\(\)/, '提交成功要捲');
+  const fail = src.indexOf("finishAction(button,'請重試',true)");
+  assert.ok(fail > 0);
+  assert.match(src.slice(fail, fail + 220), /showConfirmation\(\)/, '失敗也要捲，否則學生以為成功了');
+  assert.match(src, /const target=\(box&&!box\.hidden\)\?box:msg/, '提交後優先顯示「已於 X 提交」那一塊');
+});
