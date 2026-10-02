@@ -52,6 +52,9 @@ const prior=el('details','',workspace);el('summary','我的 Week 1 起點與修�
 const actions=el('div','',workspace);actions.className='actions workspace-actions';
 const submitResult=el('section','',workspace);submitResult.hidden=true;submitResult.tabIndex=-1;submitResult.setAttribute('role','status');submitResult.setAttribute('aria-live','polite');submitResult.className='submission-result';
 const finalStage=el('section','',workspace);finalStage.hidden=true;el('h3','最後檢查與提交',finalStage);el('p','填齊欄位不代表題目已驗證或教師已核准。提交成功後會顯示雲端版本。',finalStage);
+// 課堂實況：學生提交後停在這一頁，整張表單都是隱藏的，他以為自己寫的東西不見了。
+// 這一頁一定要有一條回去看答案的路，不能只靠上面收起來的「跳到其他步驟」。
+const backToAnswers=button('回去看／修改我填的內容',()=>goStage('0',0),finalStage);backToAnswers.className='primary-link';
 // 誠信揭露：external_ai 原本只在「來源確認」那個選用步驟裡，幾乎不會有人看到。
 // 這裡不改成必填 —— 用了外部 AI 不是作弊，重點是被問到、可以誠實回答。
 const aiDisclosure=el('section','',finalStage);aiDisclosure.className='ai-disclosure';
@@ -610,7 +613,9 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  try{const savedUndo=JSON.parse(localStorage.getItem(undoKey())||'null');if(Array.isArray(savedUndo)&&savedUndo.length){revisionUndo=savedUndo;undoButton.hidden=false;}}catch{}
  card.mode=adoptPacing(card.mode);
  try{remembered=JSON.parse(localStorage.getItem(progressKey(session))||'null');}catch{}
- if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
+ if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';
+  // 上次停在「檢查與提交」就不要回到那裡：那一頁把整張表單藏起來，重新開頁的學生會以為答案全沒了。
+  if(activeStage==='submit'){activeStage='0';remembered.question=0;}if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
  workspace.hidden=false;render();msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}

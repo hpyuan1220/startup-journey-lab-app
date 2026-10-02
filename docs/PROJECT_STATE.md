@@ -1514,3 +1514,19 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 只找到一處 `structuredClone`（iOS 15.3 以前沒有），改成 JSON 複製。
 `week2-revision.mjs` 的 import 原本沒有版本號，Safari 會吃快取；補上 `?v=`。
 真正的 iPhone Safari 仍然沒有實機測過。
+
+#### 2026-10-02 課堂實況：學生提交 Week 2 後「看不到自己寫的東西」
+
+機制：提交時停在「檢查與提交」那一步，`remember()` 把 stage='submit' 記進 localStorage；
+那一步 `form.hidden=true`，整張表單都藏起來。重新開頁又回到同一步 → 學生只看到「已提交 · 版本 N」，
+一格答案都看不到，以為資料不見了。唯一的路是收起來的「跳到其他步驟」，沒人找得到。
+
+改法（純前端）：
+1. 提交頁加一顆「回去看／修改我填的內容」→ 回第一步。
+2. 重新開頁時若上次停在 submit，改落在第一步。
+`tests/after-submit.mjs`：修正前提交後與重開頁後可見答案格都是 0；修正後重開頁可見 1（引導模式一次一題）。紅→綠。
+
+同日課堂數據：Week 1 已交 44，Week 2 有卡 29（已交 15／草稿 14）。
+兩位同學把邀請碼貼進學號欄（A113270021、A113270032 後面多了 " SJL-W1-2026-TAIPEI"），
+內容完整，下課後改學號並把學號欄的空白擋掉。
+待做：教師頁把每位學生的 Week 1 與 Week 2 合在同一張卡看。
