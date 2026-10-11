@@ -1,6 +1,7 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs?v=20261002-safari';
 import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
+import {completion,chips,questionIndex,assess,SOLUTION_WORDS} from './week2-quality.mjs?v=20261011-quality';
 const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
@@ -41,6 +42,44 @@ let removedCandidate=null,activeStage='0',aiSkipped=false,remembered=null,pendin
 const welcome=el('section','',workspace);welcome.hidden=true;welcome.className='video-learning-card';
 // 步驟列原本是七顆常駐按鈕。實測每一步畫面上有 16 顆按鈕，卻只有 1 題要答。
 // 收進可展開區之後，平常只剩「第 N/5 步：…」那一行標題；要跳步驟再展開。
+// 三階完成度：學生只在意「完成」，所以把「完成」長在對的地方 —— 交了 → 能拿去問人了 → 老師說 OK。
+// 永遠不擋提交；差哪一件事就只講那一件，旁邊給可以直接點的寫法。
+const qualityBox=el('section','',workspace);qualityBox.className='video-learning-card quality-box';qualityBox.id='week2-quality';qualityBox.hidden=true;
+function refreshQuality(){
+ if(!row){qualityBox.hidden=true;return;}
+ qualityBox.hidden=false;qualityBox.replaceChildren();
+ const q=completion(card,row);
+ const track=el('ol','',qualityBox);track.className='quality-track';
+ q.labels.slice(1).forEach((label,i)=>{const li=el('li',label,track);const lv=i+1;li.dataset.state=q.level>=lv?'done':q.level+1===lv?'next':'later';});
+ el('p',q.level>=2?`你在第 ${q.level} 格。`+q.next:q.next,qualityBox).className='quality-next';
+ // 老師指路：老師那句話變成一顆可以跳過去的按鈕
+ if(row.teacher_note||row.teacher_target){
+  const tbox=el('section','',qualityBox);tbox.className='quality-teacher';
+  if(row.teacher_note)el('p','老師：'+row.teacher_note,tbox);
+  const item=row.teacher_target&&q.assess.items.find(x=>x.key===row.teacher_target);
+  if(item){const b=button(`老師要你改：${item.label} →`,()=>{const idx=questionIndex(card,item.field);if(!gotoTarget({index:idx}))msg.textContent='找不到那一格，請用「跳到其他步驟」。';},tbox);b.className='primary-action';}
+ }
+ // 差的那一格：給可以點的寫法，點了就填進去並跳過去
+ const focus=q.level===1?q.todo[0]:q.level===2?q.stage2[0]:null;
+ if(focus){
+  const fb=el('section','',qualityBox);fb.className='quality-fix';
+  el('p',`${focus.ask}　${focus.reason}`,fb).className='quality-why';
+  const row_=el('div','',fb);row_.className='quality-chips';
+  for(const chip of chips(focus,card)){
+   const b=el('button',chip.text,row_);b.type='button';b.className='quality-chip';
+   b.onclick=()=>{applyChip(focus,chip);const idx=questionIndex(card,focus.field);gotoTarget({index:idx});};
+  }
+  const go=el('button','帶我去改這一格 →',row_);go.type='button';go.onclick=()=>{const idx=questionIndex(card,focus.field);if(!gotoTarget({index:idx}))msg.textContent='找不到那一格，請用「跳到其他步驟」。';};
+ }
+ if(q.level===2&&q.stage2.length)el('p','這幾件要等訪談回來才答得出來，現在不用急。',qualityBox).className='quality-note';
+}
+function applyChip(item,chip){
+ const f=item.field;const pick=Math.max(0,selectedIndex(card)),chosen=card.candidates[pick];
+ const target=f.cand!==undefined&&f.key&&f.key!=='statement'?[card.candidates[f.cand],f.key]:f.depth?[chosen,f.depth]:f.key?[card,f.key]:null;
+ if(chip.mode==='strip'){for(const [obj,k] of [[chosen,'problem'],[chosen,'job'],[card,'statement']]){obj[k]=String(obj[k]||'').replace(SOLUTION_WORDS,'').replace(/\s{2,}/g,' ').trim();}}
+ else if(target){const [obj,k]=target;const cur=String(obj[k]||'').trim();obj[k]=chip.mode==='set'||!cur?chip.text:cur+'；'+chip.text;}
+ localSave();render();
+}
 // 不移除步驟這個概念 —— 學生會分好幾天回來，「我在第幾步」對他有用。
 const journeyBox=el('details','',workspace);journeyBox.className='journey-box';
 el('summary','跳到其他步驟',journeyBox);
@@ -208,6 +247,7 @@ const stageButtons=new Map(steps.map(([key,title])=>[key,button(OPTIONAL_STEPS.i
 journey.appendChild(optionalBox); // 收合區放在主步驟之後，不要擋在最前面
 function remember(){if(!session)return;try{localStorage.setItem(progressKey(session),JSON.stringify({stage:activeStage,question:step,mode:card.mode,skipped:aiSkipped}));}catch{}}
 function refreshJourney(){
+ try{refreshQuality();}catch(e){console.warn('quality',e);}
  const states=stepState(card,row,{ai:!!latestFeedback,skipped:aiSkipped});
  const labels=stateLabels;
  if(OPTIONAL_STEPS.includes(activeStage))optionalBox.open=true;
@@ -361,7 +401,7 @@ const HONEST_TAIL='（以上不是我親眼看到的，還需要自己確認。�
 const HONEST_MARK=/還沒親眼看過|不是我親眼看到/;
 
 function render(){
- updateLiveCheck();
+ updateLiveCheck();queueMicrotask(()=>{try{refreshQuality();}catch(e){}});
  form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
  // 填答節奏：只影響一次顯示幾題，不影響必填內容。仍沿用既有的 mode 欄位（guided／standard），不需要資料遷移。
  const pacingLabel=el('label','',form),pacing=el('input','',pacingLabel);
@@ -616,7 +656,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';
   // 上次停在「檢查與提交」就不要回到那裡：那一頁把整張表單藏起來，重新開頁的學生會以為答案全沒了。
   if(activeStage==='submit'){activeStage='0';remembered.question=0;}if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
- workspace.hidden=false;render();msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
+ workspace.hidden=false;render();if(row&&(row.submitted_at||row.status==='submitted'))queueMicrotask(()=>{try{qualityBox.scrollIntoView({block:'start'});}catch{}});msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}
  if(local&&!sameAnswers(local.card,card)){

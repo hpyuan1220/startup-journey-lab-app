@@ -1,4 +1,5 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
+import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261011-quality';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -24,6 +25,9 @@ button('載入／更新 Week 2',load,controls);
 // 篩選列：只有載入後才有意義，但先建好。
 const filterBar=el('div','',controls);filterBar.className='tw2-filters';
 const filterButtons=FILTERS.map(([key,label])=>{const b=el('button',label,filterBar);b.type='button';b.dataset.filter=key;b.onclick=()=>{filter=key;if(data)render();};return b;});
+const sortLabel=el('label','排序',controls);const sortSel=el('select','',sortLabel);
+for(const [v,t] of [['priority','需要你先看的'],['quality-asc','品質分數 低 → 高'],['quality-desc','品質分數 高 → 低'],['name','姓名']]){const o=el('option',t,sortSel);o.value=v;}
+let sortBy='priority';sortSel.onchange=()=>{sortBy=sortSel.value;if(data)render();};
 const searchLabel=el('label','搜尋姓名或學號',controls);const search=el('input','',searchLabel);search.type='search';search.placeholder='例：A113270021 或 何';
 search.oninput=()=>{query=search.value.trim().toLowerCase();if(data)render();};
 
@@ -59,10 +63,18 @@ function render(){
   button('保存班級 AI 上限',async()=>{await call({action:'teacher_settings',class_id:c.id,limit:limit.value===''?null:Number(limit.value)});status.textContent='班級上限已更新。';},settings);
   button('匯出 Week 2 CSV',()=>exportCsv(c,students,usage),settings);
 
+  for(const s of students){s.q=s.r?assess(s.r.card):null;s.lv=s.r?completion(s.r.card,s.r).level:0;}
+  const byName=(a,b)=>String(a.w1?.student_name||a.id).localeCompare(String(b.w1?.student_name||b.id),'zh-Hant');
   const ordered=students.sort((a,b)=>{
+   if(sortBy==='quality-asc')return ((a.q?.total??-1)-(b.q?.total??-1))||byName(a,b);
+   if(sortBy==='quality-desc')return ((b.q?.total??-1)-(a.q?.total??-1))||byName(a,b);
+   if(sortBy==='name')return byName(a,b);
    const pa=a.r?priority(a.r):7,pb=b.r?priority(b.r):7;if(pa!==pb)return pa-pb;
-   return String(a.w1?.student_name||a.id).localeCompare(String(b.w1?.student_name||b.id),'zh-Hant');
+   return byName(a,b);
   });
+  // 進度行補上品質分布
+  const qs=students.filter(x=>x.q).map(x=>x.q.total);
+  if(qs.length)el('p',`品質分數（8 項，滿分 16）：A 級（≥12）${qs.filter(t=>t>=12).length} 人 · B 級（8–11）${qs.filter(t=>t>=8&&t<12).length} 人 · C 級（≤7）${qs.filter(t=>t<8).length} 人 · 能拿去問人了 ${students.filter(x=>x.lv>=2).length} 人`,section).className='tw2-progress';
   for(const s of ordered){
    total++;
    const b=bucket(s.r);
@@ -87,6 +99,7 @@ function renderStudent(section,c,s,name,b,usage){
  const sum=el('summary','',box);
  el('b',name,sum);el('span',` · ${s.id} · ${w1Tag} · ${w2Tag} · `,sum);
  const badge=el('span',r?REVIEW_LABEL[r.review_status]||r.review_status:'—',sum);badge.className='tw2-badge tw2-badge-'+b;
+ if(s.q){const qb=el('span',` 品質 ${s.q.total}/16 · 第 ${s.lv} 格`,sum);qb.className='tw2-score tw2-score-'+(s.q.total>=12?'a':s.q.total>=8?'b':'c');}
  if(r?.ai_help)el('span',' · AI 建議先找老師',sum).className='tw2-flag';
 
  // ---- Week 1 ----
@@ -126,6 +139,11 @@ function renderStudent(section,c,s,name,b,usage){
  if(r.card.external_ai)el('p','使用的外部 AI：'+r.card.external_ai,core);
  if(r.card.ai_response)el('p','學生回應 AI：'+r.card.ai_response,core);
  const result=check(r.card);el('p','規則檢查：'+(result.ok?'完整':result.errors.join('；')),core).className='tw2-check';result.warnings.forEach(t=>el('p',t,core).className='tw2-warn');
+ // 8 項品質：系統算的，老師可以不同意；按鈕在下面的審核區。
+ const qbox=el('section','',w2Box);qbox.className='tw2-quality';
+ el('h5',`痛點品質 ${s.q.total}/16（系統依 8 項標準自動算，只是建議）`,qbox);
+ const ul=el('ul','',qbox);
+ for(const it of s.q.items){const li=el('li','',ul);li.dataset.score=it.score;el('b',`${it.score}/2 ${it.label}`,li);el('span',`　${it.reason}${it.score<2&&it.fix?'　→ '+it.fix:''}`,li);}
  const ai=latestAI(usage,c.id,s.id);
  if(ai){const ab=el('section','',w2Box);ab.className='tw2-ai';el('h5','Week 2 AI 建議（形成性，不計成績）',ab);if(ai.feedback.strength)el('p','做得好：'+ai.feedback.strength,ab);for(const g of ai.feedback.gaps||[])el('p','缺口：'+g,ab);if(ai.feedback.next_action)el('p','下一步：'+ai.feedback.next_action,ab);if(ai.submission_version!==r.version)el('p',`此建議針對版本 ${ai.submission_version}，學生之後又改過。`,ab).className='tw2-warn';}
 
@@ -134,11 +152,15 @@ function renderStudent(section,c,s,name,b,usage){
  el('h4','你的審核',review);
  el('p',`目前：${REVIEW_LABEL[r.review_status]||r.review_status}${r.teacher_note?' · 回饋：'+r.teacher_note:''}`,review).className='tw2-current';
  const label=el('label','老師的一句具體回饋（學生會在卡片上看到）',review),note=el('textarea','',label);note.maxLength=600;note.value=r.teacher_note||'';
+ const tLabel=el('label','指路：要學生先改哪一格（學生會看到一顆「老師要你改：__」的按鈕）',review),tSel=el('select','',tLabel);
+ {const o0=el('option','不指定',tSel);o0.value='';for(const [k,t] of TARGETS){const o=el('option',t,tSel);o.value=k;}
+  const worst=[...s.q.items].sort((a,b)=>a.score-b.score)[0];
+  tSel.value=r.teacher_target||(worst&&worst.score<2?worst.key:'');}
  const actions=el('div','',review);actions.className='tw2-actions';
  for(const [v,t] of [['approved','確認進入訪談'],['revision','需要小幅修訂'],['hold','請先與老師討論']]){
   const btn=button(t,async()=>{
    if(v==='approved'&&r.status!=='submitted'){status.textContent='這位學生還沒正式提交，不能確認。';return;}
-   await call({action:'teacher_review',class_id:c.id,student_id:s.id,version:r.version,review_status:v,note:note.value});
+   await call({action:'teacher_review',class_id:c.id,student_id:s.id,version:r.version,review_status:v,note:note.value,target:tSel.value});
    openKeys.add(key);await load();status.textContent=`${name}：已標為「${t}」。`;
   },actions);
   btn.className=v==='approved'?'primary-action':'';
@@ -150,10 +172,10 @@ function renderStudent(section,c,s,name,b,usage){
 
 function exportCsv(c,students,usage){
  const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const head=['姓名','學號','Week1','Week2 狀態','版本','審核','老師回饋','暫定痛點','痛點陳述','受訪者','訪談問題1','訪談問題2','AI 次數'];
+ const head=['姓名','學號','Week1','Week2 狀態','版本','審核','老師回饋','品質分數','完成度','暫定痛點','痛點陳述','受訪者','訪談問題1','訪談問題2','AI 次數'];
  const lines=[head.map(esc).join(',')];
  for(const s of students){const r=s.r,pick=r?selectedIndex(r.card):-1,cand=r&&pick>=0?r.card.candidates[pick]:null;
-  lines.push([s.w1?.student_name||'',s.id,s.w1?.status||'',r?r.status:'未開始',r?r.version:'',r?REVIEW_LABEL[r.review_status]:'',r?.teacher_note||'',cand?`${cand.people}｜${cand.problem}`:'',r?.card.statement||'',(r?.card.interviewees||[]).filter(Boolean).join('；'),r?.card.questions?.[0]||'',r?.card.questions?.[1]||'',usage.filter(u=>u.student_id===s.id).length].map(esc).join(','));}
+  lines.push([s.w1?.student_name||'',s.id,s.w1?.status||'',r?r.status:'未開始',r?r.version:'',r?REVIEW_LABEL[r.review_status]:'',r?.teacher_note||'',s.q?s.q.total:'',s.lv,cand?`${cand.people}｜${cand.problem}`:'',r?.card.statement||'',(r?.card.interviewees||[]).filter(Boolean).join('；'),r?.card.questions?.[0]||'',r?.card.questions?.[1]||'',usage.filter(u=>u.student_id===s.id).length].map(esc).join(','));}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Week2-${c.name}-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  status.textContent='已產生 Week 2 CSV。';
 }

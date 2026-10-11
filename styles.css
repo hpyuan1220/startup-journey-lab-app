@@ -215,3 +215,28 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 #teacher-week2 .tw2-actions button[aria-pressed=true]{outline:3px solid #1f4e3d}
 #teacher-week2 details>summary{cursor:pointer}
+
+/* 三階完成度（學生端） */
+#week-two .quality-box{padding:14px 18px}
+#week-two .quality-track{display:flex;gap:8px;list-style:none;padding:0;margin:0 0 8px;counter-reset:q}
+#week-two .quality-track li{flex:1;padding:8px 10px;border-radius:8px;border:2px solid #d9d3c5;background:#fbfaf7;font-size:14px;font-weight:700;color:#8a857a;position:relative}
+#week-two .quality-track li::before{counter-increment:q;content:counter(q) ' ';opacity:.6}
+#week-two .quality-track li[data-state=done]{border-color:#1f4e3d;background:#1f4e3d;color:#fff}
+#week-two .quality-track li[data-state=next]{border-color:#c58a2a;background:#fff7e6;color:#5b3d10}
+#week-two .quality-next{font-size:15px;font-weight:700;margin:6px 0}
+#week-two .quality-teacher{margin:8px 0;padding:8px 12px;background:#e6efc2;border-radius:8px}
+#week-two .quality-fix{margin:8px 0 0}
+#week-two .quality-why{font-size:14px;color:#5b5548;margin:0 0 6px}
+#week-two .quality-chips{display:flex;flex-wrap:wrap;gap:6px}
+#week-two .quality-chip{font-size:14px;padding:6px 10px;border:1px solid #1f4e3d;background:#fff;border-radius:999px;margin:0}
+#week-two .quality-chip:hover{background:#f2f8f6}
+#week-two .quality-note{font-size:13px;color:#5b5548;margin:6px 0 0}
+#teacher-week2 .tw2-score{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12px;background:#e6e1d6}
+#teacher-week2 .tw2-score-a{background:#d6eadf;color:#1f4e3d}
+#teacher-week2 .tw2-score-b{background:#f6e3c2}
+#teacher-week2 .tw2-score-c{background:#f3d9cf}
+#teacher-week2 .tw2-quality ul{list-style:none;padding:0;margin:4px 0}
+#teacher-week2 .tw2-quality li{font-size:14px;margin:3px 0;padding:4px 8px;border-radius:6px;background:#fff}
+#teacher-week2 .tw2-quality li[data-score="0"]{background:#f3d9cf}
+#teacher-week2 .tw2-quality li[data-score="1"]{background:#fff2cc}
+#teacher-week2 .tw2-controls select{padding:6px 8px}

@@ -1553,3 +1553,14 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 `tests/teacher-week2-view.mjs` 真的開瀏覽器走完：載入→篩選→寫回饋→確認→徽章與進度更新→伺服器狀態不變。6/6。
 驗收伺服器現在接受 teacher-token，教師端也能跑瀏覽器測試。
 純前端：index.html 引用 teacher-week2.js?v=20261009-onecard、styles.css?v=20261009-onecard。
+
+#### 2026-10-11 三階完成度＋分階段關卡＋可點選項＋老師一鍵指路＋自動評分
+背景：學生只在意「完成」，卡住會讓他放棄。所以不擋，改「完成」的定義。
+- `week2-quality.mjs`：品質引擎（8 項 0/1/2，規則可預測），學生端算三階、老師端算 8 項，同一份程式。
+- 學生端：卡片最上面「交了 → 能拿去問人了 → 老師說 OK」；差哪一件只講那一件，旁邊是可點的寫法
+  （點了填進那一格並跳過去）；「交了」看 submitted_at（改成草稿不熄燈，只提醒重新提交）。
+- 老師端：摘要列「品質 N/16 · 第 N 格」，卡內 8 項清單（0 分紅、1 分黃），排序可依品質；
+  審核多一個「指路」下拉（預設最低分那一格）→ 存進新欄位 `teacher_target` → 學生看到「老師要你改：__ →」按鈕。
+- 後端：migration `20261011_teacher_target.sql`（新增欄位＋版本觸發器排除此欄）；week2-api teacher_review 接 `target`。
+測試：單元 143（含 bundle 版 143）、quality-box 6/6、teacher-week2-view 9/9、驗收 12/12、死按鈕 0、提交後／面板／存檔訊息 3/3。
+上線順序：push → 跑 migration → 部署 week2-api（bundle 雜湊 eeec5a6a…）。

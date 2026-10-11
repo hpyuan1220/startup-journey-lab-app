@@ -95,10 +95,13 @@ Deno.serve(async req=>{
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
   if(b.action==='teacher_review'){
    if(!['approved','revision','hold'].includes(b.review_status)||typeof b.note!=='string'||b.note.length>600)return reply({error:'審查格式不正確。'},422);
+   // 老師指路：回饋可以指向學生卡上的一格。空字串＝不指。
+   const target=typeof b.target==='string'?b.target:'';
+   if(!['','people','cost','evidence','frequency','workaround','solution','context','interviewees'].includes(target))return reply({error:'指路的欄位不正確。'},422);
    if(b.review_status==='hold'&&!b.note.trim())return reply({error:'請填寫要先討論的原因與下一步。'},422);
    const current=must(await db.from('week2_submissions').select('*').match({class_id:b.class_id,student_id:b.student_id}).maybeSingle());
    if(b.review_status==='approved'&&(!current||current.status!=='submitted'||!check(normalize(current.card)).ok))return reply({error:'請學生先完成核心內容並正式提交。'},422);
-   const row=must(await db.from('week2_submissions').update({review_status:b.review_status,teacher_note:b.note}).match({class_id:b.class_id,student_id:b.student_id,version:b.version}).select().maybeSingle());
+   const row=must(await db.from('week2_submissions').update({review_status:b.review_status,teacher_note:b.note,teacher_target:target}).match({class_id:b.class_id,student_id:b.student_id,version:b.version}).select().maybeSingle());
    return row?reply({row}):reply({error:'學生已更新內容，請重新載入再檢查。'},409);
   }
   if(b.action==='teacher_settings'){

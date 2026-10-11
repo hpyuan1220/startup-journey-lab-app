@@ -38,12 +38,22 @@ const detail=await p.evaluate(()=>{const d=[...document.querySelectorAll('.tw2-s
   痛點陳述:(d.querySelector('.tw2-statement')||{}).textContent?.slice(0,30), 訪談題:[...d.querySelectorAll('.tw2-core p')].some(p=>/訪談問題：\(1\)/.test(p.textContent)),
   審核按鈕:[...d.querySelectorAll('.tw2-actions button')].map(b=>b.textContent.trim())};});
 ok('展開後 Week 1＋Week 2＋審核都在同一張卡', /甲同學 第 4 格/.test(detail.Week1一句||'') && detail.候選數===2 && detail.有暫定標記 && /甲同學：午休/.test(detail.痛點陳述||'') && detail.訪談題 && detail.審核按鈕.length===3, detail);
+// 品質分數與 8 項清單、指路下拉
+const quality=await p.evaluate(()=>{const d=document.querySelector('.tw2-student[data-student-id="A113270901"]');d.open=true;
+ return {摘要有分數:/品質 \d+\/16 · 第 \d 格/.test(d.querySelector('summary').textContent), 八項:d.querySelectorAll('.tw2-quality li').length,
+  零分項目:[...d.querySelectorAll('.tw2-quality li[data-score="0"]')].map(li=>li.textContent.slice(0,30)),
+  指路預設:(d.querySelector('.tw2-review select')||{}).value, 指路選項數:(d.querySelector('.tw2-review select')||{}).length};});
+ok('每張卡有品質分數、8 項清單、指路下拉（預設指向最低分那一格）', quality.摘要有分數&&quality.八項===8&&quality.指路選項數===9, quality);
+await p.evaluate(()=>{const s=document.querySelector('#teacher-week2 .tw2-controls select');s.value='quality-asc';s.dispatchEvent(new Event('change'));});await p.waitForTimeout(300);
+const sorted=await p.evaluate(()=>[...document.querySelectorAll('.tw2-student')].map(d=>d.dataset.studentId));
+ok('可以依品質分數排序（沒有卡的排最前）', sorted[0]==='A113270903', sorted);
+await p.evaluate(()=>{const s=document.querySelector('#teacher-week2 .tw2-controls select');s.value='priority';s.dispatchEvent(new Event('change'));});await p.waitForTimeout(300);
 // 篩選「已交、還沒審」只剩一張
 await p.evaluate(()=>[...document.querySelectorAll('.tw2-filters button')].find(b=>b.textContent==='已交、還沒審').click());await p.waitForTimeout(300);
 ok('篩選只顯示還沒審的', (await read()).卡片.length===1);
 await p.evaluate(()=>[...document.querySelectorAll('.tw2-filters button')].find(b=>b.textContent==='全部').click());await p.waitForTimeout(300);
 // 寫回饋並確認進入訪談
-await p.evaluate(()=>{const d=[...document.querySelectorAll('.tw2-student')].find(x=>x.dataset.bucket==='todo');d.open=true;d.querySelector('.tw2-review textarea').value='痛點很具體，下週訪談時請追問時間代價。';});
+await p.evaluate(()=>{const d=[...document.querySelectorAll('.tw2-student')].find(x=>x.dataset.bucket==='todo');d.open=true;d.querySelector('.tw2-review textarea').value='痛點很具體，下週訪談時請追問時間代價。';d.querySelector('.tw2-review select').value='cost';});
 await click('確認進入訪談');await p.waitForTimeout(1800);
 const after=await read();
 const card=after.卡片.find(c=>c.id==='A113270901');
@@ -52,6 +62,8 @@ ok('確認後：徽章變已確認、進度已確認 1、卡片仍展開、回�
 // 伺服器端真的存了
 const st=await fetch(`${BASE}/_state`).then(r=>r.json());
 ok('Week 2 卡在伺服器上仍是 submitted（審核不改學生版本）', st.week2.find(r=>r.sid==='A113270901')?.status==='submitted');
+const targetSaved=await p.evaluate(()=>{const d=document.querySelector('.tw2-student[data-student-id="A113270901"]');return (d.querySelector('.tw2-review select')||{}).value;});
+ok('指路欄位有存進去（重新載入後下拉仍是「代價」）', targetSaved==='cost', targetSaved);
 // 草稿那張不能被確認
 await p.evaluate(()=>{const d=document.querySelector('.tw2-student[data-student-id="A113270902"]');d.open=true;});
 await p.evaluate(()=>{const d=document.querySelector('.tw2-student[data-student-id="A113270902"]');[...d.querySelectorAll('.tw2-actions button')].find(b=>b.textContent==='確認進入訪談').click();});await p.waitForTimeout(800);
