@@ -19,12 +19,24 @@ Deno.serve(async (request) => {
     const studentId = String(body.student_id || '').trim().toUpperCase();
     const inviteCode = String(body.invite_code || '');
     if(!studentId||studentId.length>60||inviteCode.length>200)return reply({error:'學號或邀請碼格式不正確。'},422);
+    // 課堂實況：有人把邀請碼貼進學號欄，變成「A113270021 SJL-W1-2026-TAIPEI」這種學號。
+    if(/\s/.test(studentId))return reply({error:'學號不能有空白。學號欄只填學號（例如 A113270021），邀請碼填在下面那一格。'},422);
     const { data: classId } = await db.rpc('validate_class_invite', { p_invite_code: inviteCode });
     if (!studentId || !classId) return reply({ error: '學號或班級邀請碼不正確。' }, 401);
+    // 名單閘門：老師匯入過班級名單的班，不在名單上的學號直接擋在門口，
+    // 不再問「是不是第一次」—— 那個問題對打錯學號的人沒有用，他會按「是」。
+    // 沒有名單的班維持原本流程。
+    const { data: rosterRows } = await db.from('class_roster').select('student_id').eq('class_id', classId);
+    const roster = (rosterRows||[]).map((r:any)=>String(r.student_id).toUpperCase());
+    if (roster.length && !roster.includes(studentId)) return reply({
+      error: `本班名單裡沒有「${studentId}」。請核對學生證上的學號再輸入一次；如果你確定沒打錯，請找老師。`,
+      not_on_roster: true, student_id: studentId,
+    }, 422);
     // 打錯一個字就是另一個人。本班沒有這個學號的紀錄時先問一次，
     // 否則學生會進到一張全新的空白卡，以為自己的作業不見了。
     // 真的第一次進入的人按「是」再送一次即可，不會被擋住。
-    if (body.confirm_new !== true) {
+    // 名單上的人不必再被問「是不是第一次」—— 名單已經證明他是本班的。
+    if (!roster.length && body.confirm_new !== true) {
       const { data: known } = await db.from('week1_submissions')
         .select('student_id').eq('class_id', classId).eq('student_id', studentId).maybeSingle();
       if (!known) return reply({

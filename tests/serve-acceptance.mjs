@@ -8,7 +8,7 @@ import * as core from '../week2-core.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), port=Number(process.env.PORT||4210);
 const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],
  week1_submissions:[],week2_submissions:[],week1_ai_feedback:[],week1_ai_feedback_latest:[],
- learning_versions:[],week2_ai_requests:[],week2_settings:[]};
+ learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[]};
 let seq=0;
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 

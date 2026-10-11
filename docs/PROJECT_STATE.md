@@ -1572,3 +1572,11 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 - 提交過的人回來預設整個步驟攤開（showAll 顯示旗標，不碰 card.mode）；第一次填的人維持一次一題
 - 「先從生活場景選擇」只在情境還是空的時候出現
 after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showall。
+
+#### 2026-10-11 名單閘門＋四筆學號修正
+- `class_roster` 表（migration 只建表；名單資料在 docs/private/roster_import_2026.sql，含老師測試帳號，不進 git）。
+- student-api login：學號含空白直接 422（講清楚哪一格填什麼）；班上有名單時不在名單的學號 422 且不給「第一次進入」旗標；
+  名單上的人不再被問「是不是第一次」；沒名單的班維持舊流程。
+- docs/private/fix_student_ids_20261011.sql：三筆改名（含 session，一起改所以學生不會被登出）、一筆多出來的刪除，前有保險檢查。
+順序：push → migration（建表）→ 部署 student-api → fix_student_ids → roster_import（最後匯入，匯入後閘門才生效）。
+單元 147。

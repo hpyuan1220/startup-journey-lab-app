@@ -8,7 +8,7 @@ export const fullCard=()=>Object.fromEntries(FIELDS.map(k=>[k,`${k} 的內容`])
 export const blankCard=()=>Object.fromEntries(FIELDS.map(k=>[k,'']));
 
 export async function harness(){
- const tables={week1_submissions:[],student_sessions:[],classes:[{id:'class-a'},{id:'class-b'}]};
+ const tables={week1_submissions:[],student_sessions:[],classes:[{id:'class-a'},{id:'class-b'}],class_roster:[]};
  const hash=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(i=>i.toString(16).padStart(2,'0')).join('');
  async function student(id='TEST-1',classId='class-a'){
   const token='fixture-'+classId+'-'+id;
