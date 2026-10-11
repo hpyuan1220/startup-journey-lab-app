@@ -47,3 +47,28 @@ test('同一份內容還在處理中：要說會等多久，且不多算次數',
  assert.match(r.body.error,/不會多算次數/);
  assert.ok(!/請稍後查看/.test(r.body.error),'不要只叫學生「稍後查看」卻不說看哪裡');
 });
+
+test('老師端名單：加人會正規化學號、改名用同一個動作；teacher_load 帶回名單；別班 403', async () => {
+ const h=await harness();
+ const bad=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'a113 270021',student_name:'王'},'teacher-token');
+ assert.equal(bad.status,422);
+ const a=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:' a113270021 ',student_name:'王小明'},'teacher-token');
+ assert.equal(a.status,200);assert.deepEqual(a.body.roster.map(r=>[r.student_id,r.student_name]),[['A113270021','王小明']]);
+ const b=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021',student_name:'王大明'},'teacher-token');
+ assert.equal(b.body.roster.length,1);assert.equal(b.body.roster[0].student_name,'王大明');
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-b',op:'add',student_id:'A113270021'},'teacher-token')).status,403);
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021'},'expired')).status,401);
+ const load=await h.call({action:'teacher_load'},'teacher-token');
+ assert.deepEqual(load.body.roster.map(r=>r.student_id),['A113270021']);
+});
+test('老師端名單：移除只能移除還沒有作業資料的人', async () => {
+ const h=await harness();await h.student('A113270021');
+ await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021',student_name:'有作業'},'teacher-token');
+ await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270099',student_name:'還沒來'},'teacher-token');
+ const blocked=await h.call({action:'teacher_roster',class_id:'class-a',op:'remove',student_id:'A113270021'},'teacher-token');
+ assert.equal(blocked.status,422);assert.match(blocked.body.error,/已經有作業資料/);
+ const ok=await h.call({action:'teacher_roster',class_id:'class-a',op:'remove',student_id:'A113270099'},'teacher-token');
+ assert.equal(ok.status,200);assert.deepEqual(ok.body.roster.map(r=>r.student_id),['A113270021']);
+ assert.equal(h.tables.week1_submissions.length,1,'移除名單不會動到作業');
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'nuke',student_id:'A113270021'},'teacher-token')).status,400);
+});

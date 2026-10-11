@@ -17,10 +17,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -38,6 +38,21 @@ Deno.serve(async req=>{
   if(b.action==='teacher_settings'){
    if(b.limit!==null&&(!Number.isInteger(b.limit)||b.limit<0||b.limit>10))return reply({error:'每人 AI 次數請設 0–10。'},422);
    must(await db.from('week2_settings').upsert({class_id:b.class_id,weekly_ai_limit:b.limit}));return reply({ok:true});
+  }
+  if(b.action==='teacher_roster'){
+   // 老師端維護班級名單：加人（或改名）、移除。名單只決定「這個學號能不能進門」，不碰任何作業資料。
+   const sid=String(b.student_id||'').trim().toUpperCase(),name=String(b.student_name||'').trim();
+   if(!/^[A-Z0-9]{5,20}$/.test(sid))return reply({error:'學號只能有英文字母和數字（5–20 字），不能有空白，也不要把邀請碼貼進來。'},422);
+   if(name.length>40)return reply({error:'姓名太長。'},422);
+   if(b.op==='add'){must(await db.from('class_roster').upsert({class_id:b.class_id,student_id:sid,student_name:name}));}
+   else if(b.op==='remove'){
+    const has=must(await db.from('week1_submissions').select('student_id').match({class_id:b.class_id,student_id:sid}).maybeSingle());
+    if(has)return reply({error:'這位同學已經有作業資料，不能從名單移除（避免誤刪）。'},422);
+    must(await db.from('class_roster').delete().match({class_id:b.class_id,student_id:sid}));
+   }
+   else return reply({error:'未知名單操作。'},400);
+   const roster=must(await db.from('class_roster').select('class_id,student_id,student_name').eq('class_id',b.class_id).order('student_id'));
+   return reply({roster});
   }
   return reply({error:'未知教師操作。'},400);
  }

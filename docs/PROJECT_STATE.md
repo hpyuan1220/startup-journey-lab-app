@@ -1583,3 +1583,11 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-10-11 上線完成（實證）：class_roster 建表 → student-api 部署（83a5f7ff…，7134 B，三方雜湊一致）→ 四筆學號修正（week1 44→43、week2 40 不變、三位改名後版本號不變、舊學號殘留 0；觸發器全 O）→ 名單匯入 47 列、不在名單 0、名單上還沒進系統 4。
   線上探針：不在名單 422 not_on_roster（帶 confirm_new 也擋）、舊錯學號 A113270039 擋、含空白 422、錯邀請碼 401、GET 405、空 body 400、假 token 401。
   踩到的坑：student_sessions 有 unique(class_id,student_id)，改名會撞已存在的正確學號 session → 改成刪舊學號 session；pg_trigger.tgenabled 是 "char"，拼字串要 ::text。
+
+#### 2026-10-11 老師端班級名單（加選／移除）
+- 教師洞察每班多一個「班級名單」面板：幾人、誰還沒進過系統、加入（學號＋姓名；同學號再加＝改名）、移除（只限還沒有作業資料的人，按兩次才生效）。
+- 名單上還沒登入過的同學也有卡（新桶「還沒進過系統」，有篩選）；姓名先用名單上的。
+- week2-api：`teacher_load` 多回 `roster`；新動作 `teacher_roster {op:add|remove}`，學號正規化成大寫無空白、格式 ^[A-Z0-9]{5,20}$，別班 403、沒登入 401。
+- 空名單＝不擋人；面板會用紅字提醒「加入第一位之後就會開始擋」。
+- 測試：單元 149（含 2 個 teacher_roster）、bundle 模式 34、瀏覽器 tests/teacher-roster.mjs 6/6（含端到端：名單一有人，Student-api 真的擋 422）、teacher-week2-view 9/9。
+- 部署：week2-api bundle 7f855af8…（23,062 B）。

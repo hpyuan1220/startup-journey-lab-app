@@ -12,10 +12,10 @@ const status=el('p','按下載入即可查看授權班級。');status.setAttribu
 const controls=el('div','');controls.className='tw2-controls';
 const list=el('div','');let data;
 // 記住哪些卡是展開的、目前篩選什麼，重新載入後不要全部收起來。
-let openKeys=new Set(),filter='all',query='';
+let openKeys=new Set(),rosterOpen=new Set(),filter='all',query='';
 
 const REVIEW_LABEL={pending:'尚未審核',approved:'已確認進入訪談',revision:'需要小幅修訂',hold:'請先與老師討論'};
-const FILTERS=[['all','全部'],['todo','已交、還沒審'],['approved','已確認'],['revision','需修訂'],['hold','請先討論'],['draft','草稿中'],['notstarted','尚未開始 Week 2']];
+const FILTERS=[['all','全部'],['todo','已交、還沒審'],['approved','已確認'],['revision','需修訂'],['hold','請先討論'],['draft','草稿中'],['notstarted','尚未開始 Week 2'],['absent','還沒進過系統']];
 
 async function call(body,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(body,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
 function button(text,fn,parent=root){const b=el('button',text,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){status.textContent=e.message;}finally{b.disabled=false;}};return b;}
@@ -35,8 +35,8 @@ function latestAI(usage,classId,studentId){return usage.filter(u=>u.class_id===c
 function keyOf(classId,studentId){return classId+'|'+studentId;}
 
 /** 每位學生的狀態桶，給篩選和進度用。 */
-function bucket(r){
- if(!r)return 'notstarted';
+function bucket(r,w1){
+ if(!r)return w1?'notstarted':'absent';
  if(r.status!=='submitted')return 'draft';
  return r.review_status==='pending'?'todo':r.review_status;
 }
@@ -49,22 +49,25 @@ function render(){
  for(const c of data.classes){
   const section=el('section','',list);section.className='tw2-class';el('h3',c.name,section);
   const rows=data.rows.filter(r=>r.class_id===c.id),w1=data.week1.filter(r=>r.class_id===c.id),usage=data.usage.filter(r=>r.class_id===c.id);
-  // 學生名單 = Week 1 有紀錄的人 ∪ Week 2 有卡的人
-  const ids=[...new Set([...w1.map(w=>w.student_id),...rows.map(r=>r.student_id)])];
-  const students=ids.map(id=>({id,w1:w1.find(w=>w.student_id===id),r:rows.find(r=>r.student_id===id)}));
-  const counts={submitted:0,approved:0,revision:0,hold:0,todo:0,draft:0,notstarted:0};
-  for(const s of students){const b=bucket(s.r);counts[b]=(counts[b]||0)+1;if(s.r&&s.r.status==='submitted')counts.submitted++;}
+  const roster=(data.roster||[]).filter(r=>r.class_id===c.id).sort((a,b)=>a.student_id.localeCompare(b.student_id));
+  // 學生名單 = 班級名單 ∪ Week 1 有紀錄的人 ∪ Week 2 有卡的人（名單上還沒進過系統的人也要看得到）
+  const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(w=>w.student_id),...rows.map(r=>r.student_id)])];
+  const students=ids.map(id=>({id,w1:w1.find(w=>w.student_id===id),r:rows.find(r=>r.student_id===id),roster:roster.find(r=>r.student_id===id)}));
+  const counts={submitted:0,approved:0,revision:0,hold:0,todo:0,draft:0,notstarted:0,absent:0};
+  for(const s of students){const b=bucket(s.r,s.w1);counts[b]=(counts[b]||0)+1;if(s.r&&s.r.status==='submitted')counts.submitted++;}
   // 進度：這是老師最需要先看到的一行
-  const progress=el('p',`已交 ${counts.submitted} 人 · 已確認進入訪談 ${counts.approved} · 需修訂 ${counts.revision} · 請先討論 ${counts.hold} · 還沒審 ${counts.todo} · 草稿中 ${counts.draft} · 尚未開始 ${counts.notstarted} · AI 嘗試 ${usage.length} 次`,section);
+  const progress=el('p',`已交 ${counts.submitted} 人 · 已確認進入訪談 ${counts.approved} · 需修訂 ${counts.revision} · 請先討論 ${counts.hold} · 還沒審 ${counts.todo} · 草稿中 ${counts.draft} · 尚未開始 ${counts.notstarted}${counts.absent?` · 還沒進過系統 ${counts.absent}`:''} · AI 嘗試 ${usage.length} 次`,section);
   progress.className='tw2-progress';
   const bar=el('div','',section);bar.className='tw2-bar';const fill=el('i','',bar);fill.style.width=(counts.submitted?Math.round(counts.approved/counts.submitted*100):0)+'%';bar.title=`已確認 ${counts.approved} / 已交 ${counts.submitted}`;
   const settings=el('details','',section);el('summary','班級設定（AI 上限）',settings);
   const label=el('label','每人 Week 2 AI 上限（0–10 次，留白依路徑 3／2／2 次）',settings),limit=el('input','',label);limit.type='number';limit.min=0;limit.max=10;limit.value=data.settings.find(s=>s.class_id===c.id)?.weekly_ai_limit??'';
   button('保存班級 AI 上限',async()=>{await call({action:'teacher_settings',class_id:c.id,limit:limit.value===''?null:Number(limit.value)});status.textContent='班級上限已更新。';},settings);
   button('匯出 Week 2 CSV',()=>exportCsv(c,students,usage),settings);
+  renderRoster(section,c,roster,w1);
 
   for(const s of students){s.q=s.r?assess(s.r.card):null;s.lv=s.r?completion(s.r.card,s.r).level:0;}
-  const byName=(a,b)=>String(a.w1?.student_name||a.id).localeCompare(String(b.w1?.student_name||b.id),'zh-Hant');
+  const nameOf=s=>s.w1?.student_name||s.roster?.student_name||'';
+  const byName=(a,b)=>String(nameOf(a)||a.id).localeCompare(String(nameOf(b)||b.id),'zh-Hant');
   const ordered=students.sort((a,b)=>{
    if(sortBy==='quality-asc')return ((a.q?.total??-1)-(b.q?.total??-1))||byName(a,b);
    if(sortBy==='quality-desc')return ((b.q?.total??-1)-(a.q?.total??-1))||byName(a,b);
@@ -77,9 +80,9 @@ function render(){
   if(qs.length)el('p',`品質分數（8 項，滿分 16）：A 級（≥12）${qs.filter(t=>t>=12).length} 人 · B 級（8–11）${qs.filter(t=>t>=8&&t<12).length} 人 · C 級（≤7）${qs.filter(t=>t<8).length} 人 · 能拿去問人了 ${students.filter(x=>x.lv>=2).length} 人`,section).className='tw2-progress';
   for(const s of ordered){
    total++;
-   const b=bucket(s.r);
+   const b=bucket(s.r,s.w1);
    if(filter!=='all'&&b!==filter)continue;
-   const name=s.w1?.student_name||'（Week 1 無姓名）';
+   const name=nameOf(s)||'（Week 1 無姓名）';
    if(query&&!(name.toLowerCase().includes(query)||s.id.toLowerCase().includes(query)))continue;
    shown++;
    renderStudent(section,c,s,name,b,usage);
@@ -105,7 +108,7 @@ function renderStudent(section,c,s,name,b,usage){
  // ---- Week 1 ----
  const w1Box=el('section','',box);w1Box.className='tw2-week1';
  el('h4','Week 1 起點卡',w1Box);
- if(!w){el('p','這位學生沒有 Week 1 紀錄。',w1Box);}
+ if(!w){el('p',s.roster?'在班級名單上，但還沒進入過系統（沒有 Week 1 紀錄）。':'這位學生沒有 Week 1 紀錄。',w1Box);}
  else{
   el('p',w.observed_problem||'（未填觀察到的問題）',w1Box).className='tw2-lead';
   const full=el('details','',w1Box);el('summary','展開 Week 1 全文',full);
@@ -170,12 +173,39 @@ function renderStudent(section,c,s,name,b,usage){
  button('載入最近 30 個版本',async()=>{const r2=await call({action:'teacher_history',class_id:c.id,student_id:s.id});history.querySelectorAll('.saved-version').forEach(x=>x.remove());for(const v of r2.versions){const d=el('details','',history);d.className='saved-version';el('summary',`Week ${v.week} 版本 ${v.version} · ${new Date(v.created_at).toLocaleString('zh-TW')}`,d);el('pre',JSON.stringify(v.snapshot?.card||v.snapshot,null,2),d);}},history);
 }
 
+/** 班級名單：決定哪些學號能進門。加選、轉班從這裡加；學號打錯的人不是加名單，是請他重打。 */
+function renderRoster(section,c,rows,w1){
+ const box=el('details','',section);box.className='tw2-roster';
+ if(rosterOpen.has(c.id))box.open=true;box.ontoggle=()=>{if(box.open)rosterOpen.add(c.id);else rosterOpen.delete(c.id);};
+ const entered=new Set(w1.map(w=>w.student_id));
+ const missing=rows.filter(r=>!entered.has(r.student_id));
+ el('summary',`班級名單（${rows.length} 人${rows.length?` · 還沒進過系統 ${missing.length} 人`:''}）`,box);
+ if(!rows.length)el('p','這班還沒有名單：任何學號都能進入。加入第一位之後，不在名單上的學號就會被擋在門口，所以要加就把全班一次加齊。',box).className='tw2-warn';
+ else el('p',missing.length?'還沒進過系統：'+missing.map(r=>`${r.student_name||'（無姓名）'} ${r.student_id}`).join('、'):'名單上的同學都進入過系統了。',box).className='tw2-roster-missing';
+ const form=el('div','',box);form.className='tw2-roster-add';
+ const idL=el('label','學號',form),idI=el('input','',idL);idI.placeholder='A113270021';idI.autocapitalize='characters';idI.autocomplete='off';
+ const nmL=el('label','姓名',form),nmI=el('input','',nmL);nmI.placeholder='王小明';nmI.autocomplete='off';
+ const add=button('加入名單',async()=>{const sid=idI.value.trim().toUpperCase();if(!sid){status.textContent='請先填學號。';idI.focus();return;}
+  await call({action:'teacher_roster',class_id:c.id,op:'add',student_id:sid,student_name:nmI.value});idI.value='';nmI.value='';rosterOpen.add(c.id);await load();status.textContent=`已把 ${sid} 加進名單。`;},form);
+ add.className='primary-action';
+ el('p','同一個學號再加一次＝改姓名。被擋在門口的同學如果學號沒打錯，才需要加進來。',box).className='tw2-hint';
+ const ul=el('ul','',box);ul.className='tw2-roster-list';
+ for(const r of rows){
+  const li=el('li','',ul);li.dataset.studentId=r.student_id;const inSys=entered.has(r.student_id);
+  el('span',`${r.student_id}　${r.student_name||''}`,li);
+  el('span',inSys?' · 已進入':' · 還沒進過系統',li).className=inSys?'tw2-ok':'tw2-warn';
+  if(!inSys){const rm=button('移除',async()=>{
+   if(rm.dataset.armed!=='1'){rm.dataset.armed='1';rm.textContent='再按一次確定移除';setTimeout(()=>{rm.dataset.armed='';rm.textContent='移除';},4000);return;}
+   await call({action:'teacher_roster',class_id:c.id,op:'remove',student_id:r.student_id});rosterOpen.add(c.id);await load();status.textContent=`已從名單移除 ${r.student_id}。`;},li);rm.className='tw2-remove';}
+ }
+}
+
 function exportCsv(c,students,usage){
  const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
  const head=['姓名','學號','Week1','Week2 狀態','版本','審核','老師回饋','品質分數','完成度','暫定痛點','痛點陳述','受訪者','訪談問題1','訪談問題2','AI 次數'];
  const lines=[head.map(esc).join(',')];
  for(const s of students){const r=s.r,pick=r?selectedIndex(r.card):-1,cand=r&&pick>=0?r.card.candidates[pick]:null;
-  lines.push([s.w1?.student_name||'',s.id,s.w1?.status||'',r?r.status:'未開始',r?r.version:'',r?REVIEW_LABEL[r.review_status]:'',r?.teacher_note||'',s.q?s.q.total:'',s.lv,cand?`${cand.people}｜${cand.problem}`:'',r?.card.statement||'',(r?.card.interviewees||[]).filter(Boolean).join('；'),r?.card.questions?.[0]||'',r?.card.questions?.[1]||'',usage.filter(u=>u.student_id===s.id).length].map(esc).join(','));}
+  lines.push([s.w1?.student_name||s.roster?.student_name||'',s.id,s.w1?.status||'',r?r.status:'未開始',r?r.version:'',r?REVIEW_LABEL[r.review_status]:'',r?.teacher_note||'',s.q?s.q.total:'',s.lv,cand?`${cand.people}｜${cand.problem}`:'',r?.card.statement||'',(r?.card.interviewees||[]).filter(Boolean).join('；'),r?.card.questions?.[0]||'',r?.card.questions?.[1]||'',usage.filter(u=>u.student_id===s.id).length].map(esc).join(','));}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`Week2-${c.name}-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
  status.textContent='已產生 Week 2 CSV。';
 }

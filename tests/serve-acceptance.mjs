@@ -26,6 +26,7 @@ const db={
    insert(v){op='insert';values=v;return chain},
    upsert(v){op='upsert';values=v;return chain},
    update(v){op='update';values=v;return chain},
+   delete(){op='delete';return chain},
    then(res,rej){try{
     const t=tables[name];if(!t)throw Error('unknown table '+name);
     let rows=t.filter(filter);
@@ -36,6 +37,7 @@ const db={
       if(JSON.stringify(found)!==before)found.version=(found.version||1)+1;rows=[found];}
      else{const r={id:'id'+(++seq),version:1,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),...structuredClone(values)};t.push(r);rows=[r];}
     }
+    if(op==='delete')rows.forEach(r=>t.splice(t.indexOf(r),1));
     if(op==='update')rows.forEach(r=>Object.assign(r,structuredClone(values),{version:(r.version||0)+1,updated_at:new Date().toISOString()}));
     if(name==='week2_submissions'&&op!=='select')rows.forEach(r=>tables.learning_versions.push({class_id:r.class_id,student_id:r.student_id,week:2,version:r.version,snapshot:structuredClone(r),created_at:new Date().toISOString()}));
     if(sortKey)rows.sort((a,b)=>String(a[sortKey]).localeCompare(String(b[sortKey]))*(asc?1:-1));

@@ -240,3 +240,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-quality li[data-score="0"]{background:#f3d9cf}
 #teacher-week2 .tw2-quality li[data-score="1"]{background:#fff2cc}
 #teacher-week2 .tw2-controls select{padding:6px 8px}
+
+/* 教師洞察 · 班級名單 */
+#teacher-week2 .tw2-roster{margin:8px 0 12px;padding:8px 12px;border:1px solid #d9d3c7;border-radius:10px;background:#fbf9f4}
+#teacher-week2 .tw2-roster>summary{cursor:pointer;font-weight:700}
+#teacher-week2 .tw2-roster-missing{margin:6px 0}
+#teacher-week2 .tw2-roster-add{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:8px 0}
+#teacher-week2 .tw2-roster-add label{display:flex;flex-direction:column;font-size:.9rem;gap:2px}
+#teacher-week2 .tw2-roster-add input{padding:6px 8px;min-width:10em}
+#teacher-week2 .tw2-hint{font-size:.9rem;color:#5b5648;margin:4px 0 8px}
+#teacher-week2 .tw2-roster-list{list-style:none;padding:0;margin:0;columns:2;column-gap:24px;font-size:.92rem}
+#teacher-week2 .tw2-roster-list li{break-inside:avoid;padding:2px 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#teacher-week2 .tw2-ok{color:#2f6b3a}
+#teacher-week2 .tw2-remove{font-size:.8rem;padding:2px 8px;margin-left:auto}
+@media (max-width:700px){#teacher-week2 .tw2-roster-list{columns:1}}
