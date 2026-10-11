@@ -1625,3 +1625,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 學習頁 week.html 兩週各多一個 .yc-guide 區塊（一重點一個可展開 details）。
 - 簡報改用通用腳本 scripts/build-slides.py（範本固定 materials/_slide_template.pptx，JSON 新式 header+slides[{template,texts}]，可重複版面、自動頁碼、複製深色頁背景）：Week 2 → 29 頁、Week 3 → 27 頁；接觸表目視檢查過，溢出的兩頁已縮短。
 - PROMPT_PACK 加 P9（之後每週做導讀的指令）。單元 158。無後端改動，不用部署；push 後 GitHub Pages 即生效（版本號 20261013）。
+
+## 2026-10-11 Week 3 課前預習影片（OpenMAIC 生成 → 老師 YouTube）
+- 用 open.maic.chat（訪客）依 Week 3 導讀七個重點生成 10 幕課；老師匯出 mp4（1080p，17:22）、srt、PPTX、影片原始專案，存在 116 資料夾 `OpenMAIC_week3/`（不進 repo）。
+- srt 兩處簡體字修正後，老師上傳到自己的 YouTube，設「不公開」、字幕中文（台灣）已發布：https://youtu.be/1kf8RoPCq5g。
+- `week.html` Week 3 教材區最上方新增 `.preclass` 區塊：youtube-nocookie 內嵌＋備用連結＋說明「AI 講師生成，以原片與導讀為準」；`styles.css?v=20261014-preclass`。
+- 實證：容器內 Playwright 390px／1100px 版面正常、無橫向捲動；單元測試見上一行數字。Week 2 的 OpenMAIC 提示詞在 `OpenMAIC_week2/`，尚未生成。

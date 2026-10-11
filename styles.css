@@ -340,3 +340,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .yc-guide .yc-point summary small{font-weight:400;color:#5b5548}
 .yc-guide .yc-point ul{margin:6px 0 2px;padding-left:1.2rem}
 .yc-guide .yc-point li{margin:4px 0;line-height:1.5}
+.preclass{margin:0 0 20px;padding:14px 18px;background:#eef6f1;border:2px solid var(--ink)}
+.preclass h2{margin:.2rem 0 .4rem}
+.preclass .preclass-video{position:relative;width:100%;max-width:720px;aspect-ratio:16/9;margin:10px 0;background:#000}
+.preclass .preclass-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.preclass .yc-sub{font-size:.92rem;color:#5b5548;margin:6px 0 0}
