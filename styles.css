@@ -170,3 +170,48 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #week-two .journey-box>summary,#week-two .card-more>summary{cursor:pointer;font-size:14px;color:#5b5548}
 #week-two .journey-box .journey{margin-top:10px}
 #week-two .card-more>button{margin:8px 8px 0 0}
+
+/* 教師洞察 · Week 2：每位學生一張卡 */
+#teacher-week2 .tw2-intro{font-size:14px;color:#5b5548;margin:0 0 8px}
+#teacher-week2 .tw2-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 16px}
+#teacher-week2 .tw2-controls label{display:flex;flex-direction:column;font-size:13px;color:#5b5548;margin:0}
+#teacher-week2 .tw2-controls input[type=search]{min-width:220px;padding:6px 8px}
+#teacher-week2 .tw2-filters{display:flex;flex-wrap:wrap;gap:6px}
+#teacher-week2 .tw2-filters button{font-size:13px;padding:4px 10px;border:1px solid #b9b2a2;background:#fbfaf7;border-radius:999px}
+#teacher-week2 .tw2-filters button[aria-pressed=true]{background:#1f4e3d;color:#fff;border-color:#1f4e3d}
+#teacher-week2 .tw2-class{margin:12px 0 28px}
+#teacher-week2 .tw2-progress{font-weight:700;margin:4px 0}
+#teacher-week2 .tw2-bar{height:10px;background:#e6e1d6;border-radius:999px;overflow:hidden;margin:4px 0 12px}
+#teacher-week2 .tw2-bar i{display:block;height:100%;background:#1f4e3d}
+#teacher-week2 .tw2-student{margin:10px 0;border:1px solid #b9b2a2;border-radius:8px;padding:8px 14px;background:#fffdf8}
+#teacher-week2 .tw2-student[data-bucket=todo]{border-left:6px solid #c58a2a}
+#teacher-week2 .tw2-student[data-bucket=approved]{border-left:6px solid #1f4e3d}
+#teacher-week2 .tw2-student[data-bucket=revision]{border-left:6px solid #8a3b23}
+#teacher-week2 .tw2-student[data-bucket=hold]{border-left:6px solid #7a1f1f}
+#teacher-week2 .tw2-student[data-bucket=draft],#teacher-week2 .tw2-student[data-bucket=notstarted]{border-left:6px solid #b9b2a2;color:#5b5548}
+#teacher-week2 .tw2-student>summary{cursor:pointer;font-size:15px;line-height:1.5}
+#teacher-week2 .tw2-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:#e6e1d6}
+#teacher-week2 .tw2-badge-todo{background:#f6e3c2}
+#teacher-week2 .tw2-badge-approved{background:#d6eadf;color:#1f4e3d}
+#teacher-week2 .tw2-badge-revision{background:#f3d9cf}
+#teacher-week2 .tw2-badge-hold{background:#f0cfcf}
+#teacher-week2 .tw2-flag{color:#7a1f1f;font-weight:700}
+#teacher-week2 .tw2-week1,#teacher-week2 .tw2-week2,#teacher-week2 .tw2-review{margin:12px 0;padding:10px 12px;border-radius:8px}
+#teacher-week2 .tw2-week1{background:#f3f1ea}
+#teacher-week2 .tw2-week2{background:#fbfaf7;border:1px dashed #b9b2a2}
+#teacher-week2 .tw2-review{background:#e6efc2}
+#teacher-week2 h4{margin:0 0 6px;font-size:15px}
+#teacher-week2 h5{margin:8px 0 4px;font-size:14px}
+#teacher-week2 p{margin:4px 0;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+#teacher-week2 .tw2-lead{font-weight:700;font-size:15px}
+#teacher-week2 .tw2-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+#teacher-week2 .tw2-candidate{padding:8px 10px;border:1px solid #d9d3c5;border-radius:6px;background:#fff}
+#teacher-week2 .tw2-picked{border:2px solid #1f4e3d;background:#f2f8f6}
+#teacher-week2 .tw2-statement{font-weight:700}
+#teacher-week2 .tw2-warn{color:#8a3b23}
+#teacher-week2 .tw2-ai p{color:#3b4a44}
+#teacher-week2 .tw2-current{font-weight:700}
+#teacher-week2 .tw2-review textarea{width:100%;min-height:64px}
+#teacher-week2 .tw2-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+#teacher-week2 .tw2-actions button[aria-pressed=true]{outline:3px solid #1f4e3d}
+#teacher-week2 details>summary{cursor:pointer}

@@ -4,3 +4,6 @@ Claude.dmg
 node_modules/
 
 .build/
+
+# 學生個資（姓名＋學號）不進公開 repo
+docs/private/

@@ -6,14 +6,14 @@ import * as core from '../week2-core.mjs';
 
 // 專案根目錄：路徑含空白時 URL.pathname 會是 %20，必須用 fileURLToPath 還原。
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), port=Number(process.env.PORT||4210);
-const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[],student_sessions:[],
+const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],
  week1_submissions:[],week2_submissions:[],week1_ai_feedback:[],week1_ai_feedback_latest:[],
  learning_versions:[],week2_ai_requests:[],week2_settings:[]};
 let seq=0;
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 
 const db={
- auth:{getUser:async()=>({data:{user:null},error:'no'})},
+ auth:{getUser:async jwt=>({data:{user:jwt==='teacher-token'?{id:'teacher-a'}:null},error:jwt==='teacher-token'?null:'expired'})},
  from(name){let filter=()=>true,op='select',values,one=false,sortKey,asc=true,limit=Infinity;
   const chain={
    select(){return chain},
