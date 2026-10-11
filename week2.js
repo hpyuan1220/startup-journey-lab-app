@@ -6,6 +6,8 @@ const root=document.querySelector('#week-two');
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
 let card=emptyCard(),version=null,row=null,step=0,dirty=false,session,week1Identity=[],editGeneration=0,saving=false;
+// 提交過的人回來看卡，預設整張攤開；一次一題只給第一次填的人。這是顯示設定，不碰 card.mode（那是資料，影響 AI 上限）。
+let showAll=false;const paced=()=>card.mode==='guided'&&!showAll;
 try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
 // 前四步的缺項總數：全空 25（篩選 5+5、選題與深入 8、準備訪談 7）、填完 0。
@@ -60,6 +62,11 @@ function refreshQuality(){
   if(item){const b=button(`老師要你改：${item.label} →`,()=>{const idx=questionIndex(card,item.field);if(!gotoTarget({index:idx}))msg.textContent='找不到那一格，請用「跳到其他步驟」。';},tbox);b.className='primary-action';}
  }
  // 差的那一格：給可以點的寫法，點了就填進去並跳過去
+ if(q.level===0){
+  const t=missingTargets();const fb=el('section','',qualityBox);fb.className='quality-fix';
+  if(t.length){el('p',`還缺 ${t.length} 格必填，第一格：${t[0].label}`,fb).className='quality-why';const go=el('button','帶我去補這一格 →',fb);go.type='button';go.className='primary-action';go.onclick=()=>{if(!gotoTarget(t[0]))checks(true);};}
+  else{el('p','必填都齊了。',fb).className='quality-why';const go=el('button','前往正式提交 →',fb);go.type='button';go.className='primary-action';go.onclick=()=>goStage('submit');}
+ }
  const focus=q.level===1?q.todo[0]:q.level===2?q.stage2[0]:null;
  if(focus){
   const fb=el('section','',qualityBox);fb.className='quality-fix';
@@ -234,7 +241,6 @@ const historyBox=el('details','',workspace);el('summary','歷次保存與提交'
 const journeyControls=el('div','',workspace);journeyControls.className='journey-controls';
 const previousStep=button('上一步',()=>moveStage(-1),journeyControls);
 const nextStep=button('繼續下一步',()=>moveStage(1),journeyControls);nextStep.className='primary-action';
-const helpButton=button('我不知道下一步',()=>helpNext(),journeyControls);
 // 七步裡有兩步（來源確認、AI 建議）是選用的，一直攤在步驟列上，
 // 會讓這張卡看起來比實際要做的多 40%。預設收進「選用步驟」，需要時再展開。
 const OPTIONAL_STEPS=['source','ai'];
@@ -258,8 +264,6 @@ function refreshJourney(){
  const missingTotal=steps.slice(0,4).reduce((n,[key])=>n+states[key].missing.length,0);
  const stuck=missingTotal>=STUCK_THRESHOLD&&states.submit.state!=='submitted';
  nextStep.classList.toggle('primary-action',!stuck);
- helpButton.classList.toggle('primary-action',stuck);
- helpButton.textContent=stuck?'我不知道下一步（建議先從這裡開始）':'我不知道下一步';
 
  journeyTitle.textContent=info?(OPTIONAL_STEPS.includes(activeStage)?`選用步驟：${info[1]}`:`第 ${stepNumber(activeStage)}/${mainOrder.length} 步：${info[1]}`):activeStage==='2'?'選填：第三個痛點':'選填：進階探索';
  journeyHint.textContent=(info?.[2]||'可自由探索，不增加所有學生的必經步驟。')+(states[activeStage]?.missing.length?` 尚缺：${states[activeStage].missing.slice(0,3).join('、')}。`:'');
@@ -272,11 +276,11 @@ function showStage(){
  form.hidden=['ai','submit'].includes(activeStage);aiStep.hidden=activeStage!=='ai';finalStage.hidden=activeStage!=='submit';if(activeStage==='submit')renderDisclosure();liveCheck.hidden=activeStage!=='submit';report.hidden=activeStage!=='submit';
  const qs=[...form.querySelectorAll('.week2-question')],group=form.querySelector(`[data-stage="${activeStage}"]`);
  if(group){const current=qs[step];if(!current||!group.contains(current))step=qs.findIndex(q=>group.contains(q));
- qs.forEach((q,i)=>{const hide=card.mode==='guided'&&i!==step;q.hidden=hide;for(const helper of q.week2Helpers||[])helper.hidden=hide;});
+ qs.forEach((q,i)=>{const hide=paced()&&i!==step;q.hidden=hide;for(const helper of q.week2Helpers||[])helper.hidden=hide;});
  // 上一題／下一題永遠緊接在當前題目後面，桌機與手機都一樣。
  // 固定放在表單開頭或結尾，總有一種螢幕會讓按鈕離題目很遠。
  const bar=form.querySelector('.guided-nav-bar'),shown=qs[step];
- if(bar&&shown&&card.mode==='guided'&&!shown.hidden)shown.after(bar);
+ if(bar&&shown&&paced()&&!shown.hidden)shown.after(bar);
  }
  refreshJourney();
 }
@@ -289,15 +293,6 @@ function goStage(key,question){activeStage=key;if(Number.isInteger(question))ste
   if(!target||target.hidden)return;const r=target.getBoundingClientRect();
   if(r.top>innerHeight-140||r.bottom<0)target.scrollIntoView({block:'center'});});}
 function moveStage(delta){let index=steps.findIndex(x=>x[0]===activeStage);if(activeStage==='ai'&&!latestFeedback){aiSkipped=true;disableAuto();}goStage(steps[Math.max(0,Math.min(6,index<0?2:index+delta))][0]);}
-function helpNext(){
- journeyHelp.replaceChildren();
- if(dirty){el('p','有修改尚未保存。請先儲存草稿。',journeyHelp);button('儲存草稿',()=>saveWithAuto(),journeyHelp);}
- else if(row?.status==='submitted'&&sameAnswers(card,row.card)){el('p',`已提交版本 ${version}，不必重複提交。${readiness(row)}`,journeyHelp);}
- else {const states=stepState(card,row);const missing=steps.slice(0,4).find(([k])=>states[k].missing.length);
- if(missing){const key=missing[0];el('p',`${missing[1]}還需補充：${states[key].missing[0]}。`,journeyHelp);button('前往補充',()=>{goStage(key);const group=form.querySelector(`[data-stage="${key}"]`);const qs=[...form.querySelectorAll('.week2-question')];const q=qs.find(q=>group.contains(q)&&q.querySelector('textarea')&&!q.querySelector('textarea').value.trim());if(q){goStage(key,qs.indexOf(q));qFocus();}else group.querySelector('input[type="checkbox"]:not(:checked)')?.focus();},journeyHelp);}
- else{el('p',aiSkipped||latestFeedback?'可前往最後檢查，正式提交。':'核心填答已完成，可選擇 AI 建議或略過後提交。',journeyHelp);button('前往下一步',()=>goStage(aiSkipped||latestFeedback?'submit':'ai'),journeyHelp);}}
- journeyHelp.scrollIntoView({block:'center'});
-}
 function qFocus(){const rememberedQuestion=[...form.querySelectorAll('.week2-question')][step];const q=rememberedQuestion&&!rememberedQuestion.closest('[hidden]')?rememberedQuestion:form.querySelector('[data-stage="'+activeStage+'"] .week2-question:not([hidden])');q?.closest('details')?.setAttribute('open','');q?.querySelector('input,textarea')?.focus();
  // 換題時把題目捲到畫面中央：題目高度不一，不捲的話下一題按鈕會慢慢漂出畫面。
  if(q&&q.offsetParent!==null){try{q.scrollIntoView({block:'center',behavior:'auto'});}catch{q.scrollIntoView();}}}
@@ -405,9 +400,9 @@ function render(){
  form.replaceChildren();report.replaceChildren();responseInput.value=card.ai_response||'';previousResponseText.textContent=card.ai_response||'';previousResponse.hidden=!card.ai_response||!responseBox.hidden;el('h3','開始填答',form);
  // 填答節奏：只影響一次顯示幾題，不影響必填內容。仍沿用既有的 mode 欄位（guided／standard），不需要資料遷移。
  const pacingLabel=el('label','',form),pacing=el('input','',pacingLabel);
- pacing.type='checkbox';pacing.checked=card.mode==='guided';
+ pacing.type='checkbox';pacing.checked=paced();
  pacingLabel.append(document.createTextNode('一次只顯示一題（第一次填建議打開）'));
- pacing.onchange=()=>{card.mode=pacing.checked?'guided':'standard';localSave();render();remember();};
+ pacing.onchange=()=>{showAll=false;card.mode=pacing.checked?'guided':'standard';localSave();render();remember();};
  // 進階探索：獨立選填，與填答節奏無關。已填過內容者一律保持開啟。
  const extraLabel=el('label','',form),extraToggle=el('input','',extraLabel);
  extraToggle.type='checkbox';extraToggle.checked=showChallenge();
@@ -419,7 +414,8 @@ function render(){
  card.candidates.forEach((c,i)=>{
   const box=el('details','',form);box.className='candidate';box.dataset.stage=String(i);box.open=true;el('summary',`痛點 ${i+1}${i===2?'（選填）':''}：${i===0?'延續 Week 1 的困擾':i===1?'另一個不同困擾':'額外比較的困擾'}`,box);
   el('p',i===0?'已帶入可用的 Week 1 內容；請在下面的文字框確認並補充。':'請在下面的文字框填寫另一個困擾，不是上一題的解決方法。',box);
-  if(card.mode==='guided'){
+  // 場景下拉只是起手式，情境已經寫了就不要再擺一個「請選擇」在那裡，看起來像沒填。
+  if(paced()&&!String(c.context||'').trim()){
    const q=el('label','先從生活場景選擇（可自行填寫）',box),s=el('select','',q);for(const text of ['請選擇','吃飯','通勤','上課','租屋','打工','分組','行政流程']){el('option',text,s);}s.onchange=()=>{if(s.selectedIndex){const hint=el('p',`你選了「${s.value}」。請在「何時何地發生」補充自己的時間、地點與事件；不會覆蓋原答案。`,box);hint.setAttribute('role','status');}};
   }
   const examples={people:'例如：午休只有 50 分鐘、下午要換教室的同學',context:'例如：週二中午 12 點，在學校餐廳；請填自己的事件',job:'例如：下一堂課開始前，買到並吃完午餐（不是開發 App）',problem:'例如：排隊時間不確定，無法判斷是否來得及吃完',frequency:'不確定可寫：待驗證，訪談最近一週發生幾次',cost:'不確定可寫：待驗證，上次多花多久、放棄了什麼',workaround:'例如：改買麵包、提早出門、群組詢問，或暫時忍耐',evidence:'請寫自己真的看過的事件、時間與來源；例子不能當成證據',assumption:'例如：我猜其他同學也困擾，但尚未問過他們'};
@@ -477,7 +473,7 @@ function render(){
 
  const questions=[...form.querySelectorAll('.week2-question')];
  const group=form.querySelector(`[data-stage="${activeStage}"]`);
- if(group&&card.mode==='guided'){
+ if(group&&paced()){
   const inStage=questions.filter(q=>group.contains(q));
   if(!inStage.includes(questions[step]))step=questions.indexOf(inStage[0]);
   const nav=el('nav','',form);nav.className='guided-nav';nav.setAttribute('aria-label','本步驟題目');
@@ -551,9 +547,9 @@ function checks(full=false){
  const here=targets.filter(t=>t.index===step);
  const shown=full||card.mode!=='guided'?targets:(here.length?here:targets.slice(0,3));
  el('h3',c.ok?'必要內容已填齊':full?'提交前：還有哪些內容需要補充？':'目前填答進度',report);
- el('p',`尚有 ${targets.length} 個文字欄位待填。可先保存草稿，不必一次完成。${!full&&card.mode==='guided'&&targets.length>shown.length?'下面先列出前幾項；完整清單可按最下面的按鈕。':''}`,report);
+ el('p',`尚有 ${targets.length} 個文字欄位待填。可先保存草稿，不必一次完成。${!full&&paced()&&targets.length>shown.length?'下面先列出前幾項；完整清單可按最下面的按鈕。':''}`,report);
  shown.forEach(t=>button(`前往填寫：${t.label}`,()=>gotoTarget(t),report));
- if(!full&&card.mode==='guided')button('查看整張卡還缺什麼',()=>checks(true),report);
+ if(!full&&paced())button('查看整張卡還缺什麼',()=>checks(true),report);
  if(full){for(const [key,label]of [['contact_confirmed','確認受訪者的接觸方式'],['questions_checked','確認訪談問題不引導']])if(!card[key])button('前往確認：'+label,()=>{goStage('interview');form.querySelector(`[data-confirmation="${key}"]`).focus();},report);for(const t of c.errors.filter(t=>!t.includes('請填寫')))el('p',t+' 請至「準備訪談」或相關步驟確認。',report);if(c.warnings.length){const tips=el('details','',report);el('summary','改善提醒（不會阻擋提交）',tips);c.warnings.forEach(t=>el('p',t,tips));}}
  report.hidden=false;report.scrollIntoView({block:'nearest'});return c;
 }
@@ -656,6 +652,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  if(remembered){activeStage=[...steps.map(x=>x[0]),'2','challenge'].includes(remembered.stage)?remembered.stage:'0';
   // 上次停在「檢查與提交」就不要回到那裡：那一頁把整張表單藏起來，重新開頁的學生會以為答案全沒了。
   if(activeStage==='submit'){activeStage='0';remembered.question=0;}if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
+ if(row&&(row.submitted_at||row.status==='submitted'))showAll=true;
  workspace.hidden=false;render();if(row&&(row.submitted_at||row.status==='submitted'))queueMicrotask(()=>{try{qualityBox.scrollIntoView({block:'start'});}catch{}});msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}

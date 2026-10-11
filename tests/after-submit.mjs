@@ -21,10 +21,11 @@ await p.evaluate(async()=>{const g=[...document.querySelectorAll('input[type=che
  const sb=[...document.querySelectorAll('button')].find(x=>/^正式提交$/.test(x.textContent.trim()));sb.click();await new Promise(r=>setTimeout(r,2500));});
 const vis=()=>p.evaluate(()=>{const v=n=>n.offsetParent!==null&&!n.closest('details:not([open])');
  const back=[...document.querySelectorAll('button')].find(b=>v(b)&&/回去看／修改我填的內容/.test(b.textContent));
- return {看得到的答案格:[...document.querySelectorAll('.week2-question textarea')].filter(t=>v(t)&&t.value.trim()).length, 已提交:/已提交/.test(document.body.innerText), 有回去看答案的按鈕:!!back, 按鈕在畫面內:!!(back&&back.getBoundingClientRect().top<innerHeight&&back.getBoundingClientRect().bottom>0)};});
+ return {看得到的答案格:[...document.querySelectorAll('.week2-question textarea')].filter(t=>v(t)&&t.value.trim()).length, 還有我不知道下一步:[...document.querySelectorAll('button')].some(b=>/我不知道下一步/.test(b.textContent)), 一次一題勾選:(()=>{const c=[...document.querySelectorAll('input[type=checkbox]')].find(c=>/一次只顯示一題/.test((c.closest('label')||{}).innerText||''));return c?c.checked:null;})(), 空的場景下拉:[...document.querySelectorAll('select')].filter(v).some(s=>s.value==='請選擇'), 已提交:/已提交/.test(document.body.innerText), 有回去看答案的按鈕:!!back, 按鈕在畫面內:!!(back&&back.getBoundingClientRect().top<innerHeight&&back.getBoundingClientRect().bottom>0)};});
 const afterSubmit=await vis();
 await p.reload();await p.waitForTimeout(3000);
 const afterReload=await vis();
-const pass=afterSubmit.有回去看答案的按鈕 && afterReload.看得到的答案格>0 && afterReload.已提交;
+// 提交過的人回來：這一步整個攤開（5 格都看得到，不是一次一題）、沒有舊的「我不知道下一步」、場景下拉不會空著擺在那裡
+const pass=afterSubmit.有回去看答案的按鈕 && afterReload.看得到的答案格>=5 && afterReload.已提交 && !afterReload.還有我不知道下一步 && afterReload.一次一題勾選===false && !afterReload.空的場景下拉;
 console.log(JSON.stringify({提交後:afterSubmit,重新開頁後:afterReload,結論:pass?'✅ 提交後與重新開頁後都看得到自己的答案':'❌ 學生提交後看不到自己寫的東西'},null,1));
 await b.close();process.exit(pass?0:1);

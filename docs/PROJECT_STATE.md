@@ -1564,3 +1564,11 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 - 後端：migration `20261011_teacher_target.sql`（新增欄位＋版本觸發器排除此欄）；week2-api teacher_review 接 `target`。
 測試：單元 143（含 bundle 版 143）、quality-box 6/6、teacher-week2-view 9/9、驗收 12/12、死按鈕 0、提交後／面板／存檔訊息 3/3。
 上線順序：push → 跑 migration → 部署 week2-api（bundle 雜湊 eeec5a6a…）。
+
+#### 2026-10-11 收掉重疊的「下一步」
+老師看自己的卡：三階完成度、「我不知道下一步」、一次一題的「本步驟 1/5 題」三樣並存，
+痛點 2 明明填滿卻因為一次一題＋空的「請選擇」場景下拉，看起來像沒填完。
+- 拿掉「我不知道下一步」（功能併入完成度卡：「還沒交」階段改講「還缺 N 格必填，第一格：__ →」）
+- 提交過的人回來預設整個步驟攤開（showAll 顯示旗標，不碰 card.mode）；第一次填的人維持一次一題
+- 「先從生活場景選擇」只在情境還是空的時候出現
+after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showall。
