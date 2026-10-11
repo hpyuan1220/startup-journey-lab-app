@@ -330,3 +330,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-survey-table{width:100%;border-collapse:collapse;font-size:.92rem;margin:8px 0}
 #teacher-week2 .tw2-survey-table th,#teacher-week2 .tw2-survey-table td{text-align:left;padding:5px 8px;border-bottom:1px solid #d9d3c5;vertical-align:top}
 #teacher-week2 .tw2-survey-table th{background:#e8ede3}
+
+/* 影片中文導讀 */
+.yc-guide{margin:16px 0 24px;padding:14px 18px;background:#fffdf8;border:2px solid var(--ink)}
+.yc-guide h2{margin:.2rem 0 .4rem}
+.yc-guide .yc-sub{font-size:.92rem;color:#5b5548;margin:0 0 10px}
+.yc-guide .yc-point{margin:6px 0;padding:6px 10px;border:1px solid #d9d3c5;border-radius:8px;background:#fff}
+.yc-guide .yc-point summary{cursor:pointer;font-weight:700}
+.yc-guide .yc-point summary small{font-weight:400;color:#5b5548}
+.yc-guide .yc-point ul{margin:6px 0 2px;padding-left:1.2rem}
+.yc-guide .yc-point li{margin:4px 0;line-height:1.5}
