@@ -127,6 +127,70 @@ function week3Completion(record,row){
  return {level,labels,done:n,next};
 }
 
+// ---- 全班痛點普查 ----
+// 一份表單、每人填一次：每題只問事實（遇過嗎、上次何時、多花多少、現在怎麼辦），最後勾「願意被同學訪談」。
+// 用途是替訪談找受訪者、讓老師看哪些題目全班真的有感；不是作業，也不算訪談次數。
+// 預設題目只是起點，老師在教師洞察可以改字、關題、加題；題目裡沒有任何學生姓名。
+const DEFAULT_SURVEY_TOPICS=[
+ ['分組：約第一次開會時間','跨年級／跨系分組，LINE 來回好幾天才敲定'],
+ ['分組：組員已讀不回、拖到截止','組長在截止前熬夜替人收尾'],
+ ['分組：找不到組員','通識／外系課自由分組，不認識人只能碰運氣'],
+ ['午餐排隊太久、來不及吃','午休短，排 20 分鐘以上，有時直接放棄'],
+ ['午餐吃什麼決定不了','跟朋友討論半天，最後隨便選'],
+ ['早上穿搭花太久','搭 20–30 分鐘還不滿意，甚至遲到'],
+ ['早八起不來','鬧鐘按掉好幾次、睡過頭'],
+ ['想買國外品牌買不到','官網刷不過或要實名，代購貴很多'],
+ ['打工排班、換班','班表太晚出、衝堂要私訊換班'],
+ ['衣服版型不合身','好看的版型穿不下或不舒服'],
+ ['考前找不到讀書座位','圖書館、咖啡廳沒位子或太吵'],
+ ['網購比價看到不敢下單','評價分散又業配，開一堆分頁'],
+ ['逛街選擇困難','比較半小時沒買，同行的人乾等'],
+ ['出國旅行沒人願意規劃','大家都想去，沒人排行程'],
+ ['線上訂的服裝道具不合','收到才發現尺寸、品質不對'],
+ ['錢不知道花到哪','月底沒錢、記帳記不住'],
+ ['訂票流程太麻煩','演唱會、車票要搶、步驟多'],
+ ['外語內容看不懂、翻譯不準','上課或自學卡在語言'],
+ ['機車找不到停車位','校園或超商周邊'],
+ ['找不到可以抽菸的地方','校園周邊吸菸區'],
+ ['打工交班漏記、重複盤點','上一班沒記，下一班重做'],
+ ['陌生開發開不了口','推銷、擺攤、拉人入社'],
+].map((t,i)=>({topic_id:i+1,label:t[0],hint:t[1],active:true,sort:i+1}));
+const ALIAS_BAD=/[A-Z][12]\d{8}|\b0[2-9][- ]?\d{6,8}\b|@\w+\.\w+/;
+function normalizeTopics(input){
+ const list=Array.isArray(input)?input:[];const out=[];const seen=new Set();
+ list.forEach((t,i)=>{if(!t||typeof t!=='object')return;const id=Number(t.topic_id);if(!Number.isInteger(id)||id<1||id>99||seen.has(id))return;seen.add(id);
+  const label=str(t.label).slice(0,40),hint=str(t.hint).slice(0,80);if(!label)return;
+  out.push({topic_id:id,label,hint,active:t.active!==false,sort:Number.isInteger(t.sort)?t.sort:i+1});});
+ return out;
+}
+/** 學生的一份回答：只保留題目表裡有的題，字數截短；沒遇過的題不留細節。 */
+function normalizeSurvey(input,topics){
+ const src=input&&typeof input==='object'?input:{};
+ const alias=str(src.alias).slice(0,20);
+ const ids=new Set(topics.map(t=>t.topic_id));
+ const answers=[];const seen=new Set();
+ for(const a of Array.isArray(src.answers)?src.answers:[]){
+  const id=Number(a?.topic_id);if(!ids.has(id)||seen.has(id))continue;seen.add(id);
+  const exp=a.experienced===true;
+  answers.push({topic_id:id,experienced:exp,last_time:exp?str(a.last_time).slice(0,60):'',cost:exp?str(a.cost).slice(0,60):'',workaround:exp?str(a.workaround).slice(0,60):'',willing:exp&&a.willing===true});
+ }
+ return {alias,answers};
+}
+function checkSurvey(s){
+ const errors=[];
+ if(s.answers.some(a=>a.willing)&&!s.alias)errors.push('勾了「願意被同學訪談」就要填一個代稱，同學才找得到你（例：座號 12、小魚）');
+ if(ALIAS_BAD.test(s.alias+' '+s.answers.map(a=>a.last_time+a.cost+a.workaround).join(' ')))errors.push('請不要填學號、電話或 Email');
+ return {ok:errors.length===0,errors};
+}
+/** 全班彙總：每題幾人遇過、誰願意被問（只給代稱）。 */
+function surveySummary(topics,responses){
+ return topics.filter(t=>t.active).sort((a,b)=>a.sort-b.sort).map(t=>{
+  const rows=responses.filter(r=>r.topic_id===t.topic_id);
+  const exp=rows.filter(r=>r.experienced);
+  return {topic_id:t.topic_id,label:t.label,hint:t.hint,answered:rows.length,experienced:exp.length,willing:exp.filter(r=>r.willing&&r.alias).map(r=>r.alias)};
+ });
+}
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
@@ -145,10 +209,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -182,6 +246,18 @@ Deno.serve(async req=>{
    const roster=must(await db.from('class_roster').select('class_id,student_id,student_name').eq('class_id',b.class_id).order('student_id'));
    return reply({roster});
   }
+  if(b.action==='teacher_survey_topics'){
+   // 老師整份覆寫題目表：沒送來的題目一律關掉（不刪，回答還在）。
+   const topics=normalizeTopics(b.topics);
+   if(!topics.length)return reply({error:'至少要有一題。'},422);
+   const existing=must(await db.from('week3_survey_topics').select('topic_id').eq('class_id',b.class_id));
+   const keep=new Set(topics.map(t=>t.topic_id));
+   const rows=topics.map(t=>({class_id:b.class_id,...t,updated_at:new Date().toISOString()}));
+   for(const e of existing)if(!keep.has(e.topic_id))rows.push({class_id:b.class_id,topic_id:e.topic_id,label:'（已關閉）',hint:'',active:false,sort:999,updated_at:new Date().toISOString()});
+   must(await db.from('week3_survey_topics').upsert(rows,{onConflict:'class_id,topic_id'}));
+   const saved=must(await db.from('week3_survey_topics').select('*').eq('class_id',b.class_id).order('sort'));
+   return reply({topics:saved});
+  }
   return reply({error:'未知教師操作。'},400);
  }
  const token=String(b.token||'');if(token.length<20)return reply({error:'請先進入學生起點卡。'},401);
@@ -214,6 +290,22 @@ Deno.serve(async req=>{
   if(w3){if(w3.version!==b.version)return reply({error:'另一個視窗已更新這張卡，請重新載入。'},409);saved=must(await db.from('week3_submissions').update(values).match({...scope,version:b.version}).select().maybeSingle());}
   else saved=must(await db.from('week3_submissions').insert(values).select().single());
   return saved?reply({row:saved,checks}):reply({error:'內容已更新，請重新載入。'},409);
+ }
+ // ---- 全班痛點普查（每人一份，上課填）----
+ if(b.action==='survey_load'||b.action==='survey_save'){
+  const topics=must(await db.from('week3_survey_topics').select('*').eq('class_id',s.class_id).order('sort')).filter((t:any)=>t.active);
+  if(b.action==='survey_save'){
+   if(!topics.length)return reply({error:'老師還沒開放普查。'},409);
+   const sv=normalizeSurvey(b.survey,topics),checks=checkSurvey(sv);
+   if(!checks.ok)return reply({error:checks.errors.join('；')},422);
+   if(!sv.answers.length)return reply({error:'至少回答一題。'},422);
+   const now=new Date().toISOString();
+   must(await db.from('week3_survey_responses').upsert(sv.answers.map(a=>({...scope,...a,alias:sv.alias,updated_at:now})),{onConflict:'class_id,student_id,topic_id'}));
+  }
+  const all=must(await db.from('week3_survey_responses').select('topic_id,student_id,experienced,willing,alias').eq('class_id',s.class_id));
+  const mine=must(await db.from('week3_survey_responses').select('*').match(scope));
+  const answered=new Set(all.map((r:any)=>r.student_id)).size;
+  return reply({topics,mine,summary:surveySummary(topics,all),answered});
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){

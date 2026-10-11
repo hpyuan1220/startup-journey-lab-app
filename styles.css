@@ -302,3 +302,31 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-interview summary{cursor:pointer;font-weight:700}
 #teacher-week2 .tw2-quote{font-weight:700;color:#1f4e3d}
 #teacher-week2 .tw2-week3-after{margin-top:8px}
+
+/* Week 3 普查 */
+#week-three .week3-survey-lead{margin:0 0 8px}
+#week-three .week3-survey-form>summary{cursor:pointer;font-weight:700;font-size:1.05rem}
+#week-three .week3-survey-topics{display:grid;gap:8px;margin:10px 0}
+#week-three .week3-survey-topic{border:1px solid #d9d3c5;border-radius:8px;padding:8px 12px;margin:0;background:#fffdf8}
+#week-three .week3-survey-topic legend{padding:0 4px}
+#week-three .week3-survey-topic small{color:#5b5548}
+#week-three .week3-survey-choice{display:flex;gap:16px;margin:4px 0}
+#week-three .week3-survey-choice label{display:inline-flex;align-items:center;gap:4px;margin:0;font-weight:400}
+#week-three .week3-survey-choice input{width:auto}
+#week-three .week3-survey-detail{display:grid;gap:6px;margin:6px 0 2px;padding-left:10px;border-left:3px solid var(--coral)}
+#week-three .week3-survey-detail label{display:grid;gap:2px;margin:0;font-size:.92rem}
+#week-three .week3-survey-detail input{width:100%;box-sizing:border-box;padding:6px 8px}
+#week-three .week3-survey-willing{display:flex!important;align-items:center;gap:6px;font-weight:700}
+#week-three .week3-survey-willing input{width:auto}
+#week-three .week3-survey-result table{width:100%;border-collapse:collapse;font-size:.95rem}
+#week-three .week3-survey-result th,#week-three .week3-survey-result td{text-align:left;padding:6px 8px;border-bottom:1px solid #d9d3c5;vertical-align:top}
+#week-three .week3-survey-result th{background:#f4f1ea}
+
+/* 教師洞察 · 普查 */
+#teacher-week2 .tw2-survey{margin:8px 0 12px;padding:8px 12px;border:1px solid #d9d3c7;border-radius:10px;background:#f4f7f1}
+#teacher-week2 .tw2-survey>summary{cursor:pointer;font-weight:700}
+#teacher-week2 .tw2-survey-edit{margin:6px 0;padding:6px 10px;border:1px dashed #b9b3a6;border-radius:8px}
+#teacher-week2 .tw2-survey-textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:.92rem;padding:8px}
+#teacher-week2 .tw2-survey-table{width:100%;border-collapse:collapse;font-size:.92rem;margin:8px 0}
+#teacher-week2 .tw2-survey-table th,#teacher-week2 .tw2-survey-table td{text-align:left;padding:5px 8px;border-bottom:1px solid #d9d3c5;vertical-align:top}
+#teacher-week2 .tw2-survey-table th{background:#e8ede3}

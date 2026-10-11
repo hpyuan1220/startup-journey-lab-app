@@ -56,3 +56,67 @@ export function week3Completion(record,row){
  else if(level<3)next='等老師看；期間可以繼續補原話';
  return {level,labels,done:n,next};
 }
+
+// ---- 全班痛點普查 ----
+// 一份表單、每人填一次：每題只問事實（遇過嗎、上次何時、多花多少、現在怎麼辦），最後勾「願意被同學訪談」。
+// 用途是替訪談找受訪者、讓老師看哪些題目全班真的有感；不是作業，也不算訪談次數。
+// 預設題目只是起點，老師在教師洞察可以改字、關題、加題；題目裡沒有任何學生姓名。
+export const DEFAULT_SURVEY_TOPICS=[
+ ['分組：約第一次開會時間','跨年級／跨系分組，LINE 來回好幾天才敲定'],
+ ['分組：組員已讀不回、拖到截止','組長在截止前熬夜替人收尾'],
+ ['分組：找不到組員','通識／外系課自由分組，不認識人只能碰運氣'],
+ ['午餐排隊太久、來不及吃','午休短，排 20 分鐘以上，有時直接放棄'],
+ ['午餐吃什麼決定不了','跟朋友討論半天，最後隨便選'],
+ ['早上穿搭花太久','搭 20–30 分鐘還不滿意，甚至遲到'],
+ ['早八起不來','鬧鐘按掉好幾次、睡過頭'],
+ ['想買國外品牌買不到','官網刷不過或要實名，代購貴很多'],
+ ['打工排班、換班','班表太晚出、衝堂要私訊換班'],
+ ['衣服版型不合身','好看的版型穿不下或不舒服'],
+ ['考前找不到讀書座位','圖書館、咖啡廳沒位子或太吵'],
+ ['網購比價看到不敢下單','評價分散又業配，開一堆分頁'],
+ ['逛街選擇困難','比較半小時沒買，同行的人乾等'],
+ ['出國旅行沒人願意規劃','大家都想去，沒人排行程'],
+ ['線上訂的服裝道具不合','收到才發現尺寸、品質不對'],
+ ['錢不知道花到哪','月底沒錢、記帳記不住'],
+ ['訂票流程太麻煩','演唱會、車票要搶、步驟多'],
+ ['外語內容看不懂、翻譯不準','上課或自學卡在語言'],
+ ['機車找不到停車位','校園或超商周邊'],
+ ['找不到可以抽菸的地方','校園周邊吸菸區'],
+ ['打工交班漏記、重複盤點','上一班沒記，下一班重做'],
+ ['陌生開發開不了口','推銷、擺攤、拉人入社'],
+].map((t,i)=>({topic_id:i+1,label:t[0],hint:t[1],active:true,sort:i+1}));
+const ALIAS_BAD=/[A-Z][12]\d{8}|\b0[2-9][- ]?\d{6,8}\b|@\w+\.\w+/;
+export function normalizeTopics(input){
+ const list=Array.isArray(input)?input:[];const out=[];const seen=new Set();
+ list.forEach((t,i)=>{if(!t||typeof t!=='object')return;const id=Number(t.topic_id);if(!Number.isInteger(id)||id<1||id>99||seen.has(id))return;seen.add(id);
+  const label=str(t.label).slice(0,40),hint=str(t.hint).slice(0,80);if(!label)return;
+  out.push({topic_id:id,label,hint,active:t.active!==false,sort:Number.isInteger(t.sort)?t.sort:i+1});});
+ return out;
+}
+/** 學生的一份回答：只保留題目表裡有的題，字數截短；沒遇過的題不留細節。 */
+export function normalizeSurvey(input,topics){
+ const src=input&&typeof input==='object'?input:{};
+ const alias=str(src.alias).slice(0,20);
+ const ids=new Set(topics.map(t=>t.topic_id));
+ const answers=[];const seen=new Set();
+ for(const a of Array.isArray(src.answers)?src.answers:[]){
+  const id=Number(a?.topic_id);if(!ids.has(id)||seen.has(id))continue;seen.add(id);
+  const exp=a.experienced===true;
+  answers.push({topic_id:id,experienced:exp,last_time:exp?str(a.last_time).slice(0,60):'',cost:exp?str(a.cost).slice(0,60):'',workaround:exp?str(a.workaround).slice(0,60):'',willing:exp&&a.willing===true});
+ }
+ return {alias,answers};
+}
+export function checkSurvey(s){
+ const errors=[];
+ if(s.answers.some(a=>a.willing)&&!s.alias)errors.push('勾了「願意被同學訪談」就要填一個代稱，同學才找得到你（例：座號 12、小魚）');
+ if(ALIAS_BAD.test(s.alias+' '+s.answers.map(a=>a.last_time+a.cost+a.workaround).join(' ')))errors.push('請不要填學號、電話或 Email');
+ return {ok:errors.length===0,errors};
+}
+/** 全班彙總：每題幾人遇過、誰願意被問（只給代稱）。 */
+export function surveySummary(topics,responses){
+ return topics.filter(t=>t.active).sort((a,b)=>a.sort-b.sort).map(t=>{
+  const rows=responses.filter(r=>r.topic_id===t.topic_id);
+  const exp=rows.filter(r=>r.experienced);
+  return {topic_id:t.topic_id,label:t.label,hint:t.hint,answered:rows.length,experienced:exp.length,willing:exp.filter(r=>r.willing&&r.alias).map(r=>r.alias)};
+ });
+}

@@ -1,6 +1,6 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261011-quality';
-import {interviewFields,fitsOptions,judgmentOptions,doneCount} from './week3-core.mjs?v=20261012';
+import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261012-survey';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -13,7 +13,7 @@ const status=el('p','按下載入即可查看授權班級。');status.setAttribu
 const controls=el('div','');controls.className='tw2-controls';
 const list=el('div','');let data;
 // 記住哪些卡是展開的、目前篩選什麼，重新載入後不要全部收起來。
-let openKeys=new Set(),rosterOpen=new Set(),filter='all',query='';
+let openKeys=new Set(),rosterOpen=new Set(),surveyOpen=new Set(),filter='all',query='';
 
 const REVIEW_LABEL={pending:'尚未審核',approved:'已確認進入訪談',revision:'需要小幅修訂',hold:'請先與老師討論'};
 const FILTERS=[['all','全部'],['todo','已交、還沒審'],['approved','已確認'],['revision','需修訂'],['hold','請先討論'],['draft','草稿中'],['notstarted','尚未開始 Week 2'],['absent','還沒進過系統']];
@@ -66,6 +66,7 @@ function render(){
   button('保存班級 AI 上限',async()=>{await call({action:'teacher_settings',class_id:c.id,limit:limit.value===''?null:Number(limit.value)});status.textContent='班級上限已更新。';},settings);
   button('匯出 Week 2 CSV',()=>exportCsv(c,students,usage),settings);
   renderRoster(section,c,roster,w1);
+  renderSurveyPanel(section,c,(data.survey_topics||[]).filter(t=>t.class_id===c.id),(data.survey_responses||[]).filter(r=>r.class_id===c.id),students);
 
   for(const s of students){s.q=s.r?assess(s.r.card):null;s.lv=s.r?completion(s.r.card,s.r).level:0;}
   const nameOf=s=>s.w1?.student_name||s.roster?.student_name||'';
@@ -191,6 +192,49 @@ function renderWeek3(box,w3){
  });
  const j=(judgmentOptions.find(([k])=>k===rec.judgment)||[])[1];
  if(j||rec.statement||rec.learned){const after=el('div','',sec);after.className='tw2-week3-after';if(j)el('p','判斷：'+j,after);if(rec.learned)el('p','理解改變：'+rec.learned,after);if(rec.statement)el('p','修正後的痛點陳述：'+rec.statement,after).className='tw2-statement';}
+}
+
+/** 全班痛點普查：老師改題目、看每題幾人遇過、誰願意被問。回答是找受訪者用的，不是成績。 */
+function renderSurveyPanel(section,c,topics,responses,students){
+ const box=el('details','',section);box.className='tw2-survey';
+ if(surveyOpen.has(c.id))box.open=true;box.ontoggle=()=>{if(box.open)surveyOpen.add(c.id);else surveyOpen.delete(c.id);};
+ const active=topics.filter(t=>t.active).sort((a,b)=>a.sort-b.sort);
+ const answered=new Set(responses.map(r=>r.student_id)).size;
+ el('summary',`全班痛點普查（${active.length?`${active.length} 題 · ${answered} 人已填`:'還沒開放'}）`,box);
+ el('p','上課請全班填一次（約 5 分鐘）。結果給學生看「誰遇過、誰願意被問」來找受訪者；給你看哪些題目全班真的有感。不算訪談次數、不算成績。',box).className='tw2-hint';
+ // 題目編輯：一行一題「編號 題目｜提示」。刪掉的行會被關閉（回答保留）。
+ const ed=el('details','',box);ed.className='tw2-survey-edit';el('summary',active.length?'改題目':'設定題目',ed);
+ el('p','一行一題：「編號 題目｜提示」。改字直接改；刪掉一行＝關閉那一題（已填的回答還在）；新增一行不寫編號會自動給。題目裡不要放學生姓名。',ed).className='tw2-hint';
+ const ta=el('textarea','',ed);ta.rows=12;ta.className='tw2-survey-textarea';
+ const toText=list=>list.map(t=>`${t.topic_id} ${t.label}${t.hint?'｜'+t.hint:''}`).join('\n');
+ ta.value=toText(active);
+ const bar=el('div','',ed);bar.className='tw2-actions';
+ if(!active.length)button('載入預設 22 題',()=>{ta.value=toText(DEFAULT_SURVEY_TOPICS);status.textContent='預設題目已填入，看過之後按「儲存題目」才會開放。';},bar);
+ const saveBtn=button('儲存題目並開放',async()=>{
+  const used=new Set(topics.map(t=>t.topic_id));let next=1;const parsed=[];
+  for(const raw of ta.value.split('\n')){const line=raw.trim();if(!line)continue;const m=line.match(/^(\d{1,2})\s+(.+)$/);let id=m?Number(m[1]):null;let rest=m?m[2]:line;
+   if(!id){while(used.has(next)||parsed.some(p=>p.topic_id===next))next++;id=next;}
+   const [label,hint='']=rest.split(/[｜|]/);parsed.push({topic_id:id,label:label.trim(),hint:hint.trim(),active:true,sort:parsed.length+1});}
+  if(!parsed.length){status.textContent='至少要有一題。';return;}
+  await call({action:'teacher_survey_topics',class_id:c.id,topics:parsed});surveyOpen.add(c.id);await load();status.textContent=`普查題目已儲存（${parsed.length} 題），學生端現在看得到。`;
+ },bar);saveBtn.className='primary-action';
+ if(!active.length)return;
+ // 結果
+ const sum=surveySummary(active,responses);
+ const nameOf=id=>{const s=students.find(x=>x.id===id);return s?.w1?.student_name||s?.roster?.student_name||id;};
+ const table=el('table','',box);table.className='tw2-survey-table';const hr=el('tr','',el('thead','',table));for(const h of ['題目','遇過','願意被問','誰遇過（只有你看得到）'])el('th',h,hr);
+ const tb=el('tbody','',table);
+ for(const sm of [...sum].sort((a,b)=>b.experienced-a.experienced)){
+  const tr=el('tr','',tb);tr.dataset.topicId=sm.topic_id;el('td',sm.label,tr);el('td',`${sm.experienced} / ${sm.answered}`,tr);el('td',sm.willing.join('、')||'—',tr);
+  const who=responses.filter(r=>r.topic_id===sm.topic_id&&r.experienced).map(r=>nameOf(r.student_id)+(r.cost?`（${r.cost}）`:''));
+  const td=el('td','',tr);if(who.length){const d=el('details','',td);el('summary',`${who.length} 人`,d);el('p',who.join('、'),d);}else td.textContent='—';
+ }
+ button('匯出普查 CSV',()=>{
+  const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const lines=[['題目編號','題目','學生姓名','學號','遇過','上次何時','代價','目前做法','願意被問','代稱'].map(esc).join(',')];
+  for(const r of responses){const t=topics.find(x=>x.topic_id===r.topic_id);lines.push([r.topic_id,t?.label||'',nameOf(r.student_id),r.student_id,r.experienced?'是':'否',r.last_time,r.cost,r.workaround,r.willing?'是':'否',r.alias].map(esc).join(','));}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'}));a.download=`痛點普查-${c.name}-${new Date().toISOString().slice(0,10)}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ },box);
 }
 
 /** 班級名單：決定哪些學號能進門。加選、轉班從這裡加；學號打錯的人不是加名單，是請他重打。 */

@@ -8,7 +8,7 @@ import * as core from '../week2-core.mjs';import * as core3 from '../week3-core.
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), port=Number(process.env.PORT||4210);
 const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],
  week1_submissions:[],week2_submissions:[],week1_ai_feedback:[],week1_ai_feedback_latest:[],
- learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[]};
+ learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[],week3_survey_topics:[],week3_survey_responses:[]};
 let seq=0;
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 
@@ -31,16 +31,17 @@ const db={
     const t=tables[name];if(!t)throw Error('unknown table '+name);
     let rows=t.filter(filter);
     if(op==='insert'||op==='upsert'){
-     const key=values.student_id!==undefined?['class_id','student_id']:['class_id'];
-     const found=op==='upsert'?t.find(r=>key.every(k=>r[k]===values[k])):null;
-     if(found){const before=JSON.stringify(found);Object.assign(found,structuredClone(values));
-      if(JSON.stringify(found)!==before)found.version=(found.version||1)+1;rows=[found];}
-     else{const r={id:'id'+(++seq),version:1,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),...structuredClone(values)};t.push(r);rows=[r];}
+     rows=[];for(const v of (Array.isArray(values)?values:[values])){
+     const key=['class_id',...(v.student_id!==undefined?['student_id']:[]),...(v.topic_id!==undefined?['topic_id']:[])];
+     const found=op==='upsert'?t.find(r=>key.every(k=>r[k]===v[k])):null;
+     if(found){const before=JSON.stringify(found);Object.assign(found,structuredClone(v));
+      if(JSON.stringify(found)!==before)found.version=(found.version||1)+1;rows.push(found);}
+     else{const r={id:'id'+(++seq),version:1,created_at:new Date().toISOString(),updated_at:new Date().toISOString(),...structuredClone(v)};t.push(r);rows.push(r);}}
     }
     if(op==='delete')rows.forEach(r=>t.splice(t.indexOf(r),1));
     if(op==='update')rows.forEach(r=>Object.assign(r,structuredClone(values),{version:(r.version||0)+1,updated_at:new Date().toISOString()}));
     if(name==='week2_submissions'&&op!=='select')rows.forEach(r=>tables.learning_versions.push({class_id:r.class_id,student_id:r.student_id,week:2,version:r.version,snapshot:structuredClone(r),created_at:new Date().toISOString()}));
-    if(sortKey)rows.sort((a,b)=>String(a[sortKey]).localeCompare(String(b[sortKey]))*(asc?1:-1));
+    if(sortKey)rows.sort((a,b)=>(typeof a[sortKey]==='number'&&typeof b[sortKey]==='number'?a[sortKey]-b[sortKey]:String(a[sortKey]).localeCompare(String(b[sortKey])))*(asc?1:-1));
     rows=rows.slice(0,limit);
     return Promise.resolve({data:structuredClone(one?rows[0]||null:rows),error:null}).then(res,rej);
    }catch(e){return Promise.reject(e).then(res,rej);}}};

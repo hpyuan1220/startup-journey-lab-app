@@ -24,3 +24,23 @@ test('week3Completion：0 還沒交 → 1 交了 → 2 三次都記了 → 3 老
  const nojudge=full();nojudge.judgment='';c=week3Completion(nojudge,{status:'submitted'});assert.equal(c.level,1);assert.match(c.next,/選一個判斷/);
  c=week3Completion(full(),{status:'submitted',review_status:'approved'});assert.equal(c.level,3);
 });
+import {DEFAULT_SURVEY_TOPICS,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../week3-core.mjs';
+test('普查：預設題目沒有姓名學號；normalizeTopics 去重、截短、空標題丟掉',()=>{
+ assert.equal(DEFAULT_SURVEY_TOPICS.length,22);
+ for(const t of DEFAULT_SURVEY_TOPICS)assert.doesNotMatch(t.label+t.hint,/[A-Z]\d{9}|同學 ?[A-Z]/);
+ const t=normalizeTopics([{topic_id:1,label:' 午餐 ',hint:'x'},{topic_id:1,label:'重複'},{topic_id:2,label:''},{topic_id:'3',label:'y'.repeat(80),active:false},{topic_id:100,label:'超過'}]);
+ assert.deepEqual(t.map(x=>[x.topic_id,x.label.length,x.active]),[[1,2,true],[3,40,false]]);
+});
+test('普查：回答只留題目表裡的題、沒遇過不留細節；勾願意要有代稱；代稱不能是學號電話',()=>{
+ const topics=DEFAULT_SURVEY_TOPICS.slice(0,3);
+ const s=normalizeSurvey({alias:' 小魚 ',answers:[{topic_id:1,experienced:true,last_time:'上週',cost:'3 天',workaround:'硬約',willing:true},{topic_id:2,experienced:false,last_time:'不該留',willing:true},{topic_id:9,experienced:true},{topic_id:1,experienced:false}]},topics);
+ assert.equal(s.alias,'小魚');assert.deepEqual(s.answers.map(a=>[a.topic_id,a.experienced,a.last_time,a.willing]),[[1,true,'上週',true],[2,false,'',false]]);
+ assert.equal(checkSurvey(s).ok,true);
+ const noAlias=normalizeSurvey({answers:[{topic_id:1,experienced:true,willing:true}]},topics);assert.match(checkSurvey(noAlias).errors[0],/代稱/);
+ const bad=normalizeSurvey({alias:'0912345678',answers:[{topic_id:1,experienced:true}]},topics);assert.match(checkSurvey(bad).errors[0],/學號、電話/);
+});
+test('普查：彙總每題幾人遇過、願意的代稱；關掉的題不出現',()=>{
+ const topics=[{topic_id:1,label:'a',hint:'',active:true,sort:2},{topic_id:2,label:'b',hint:'',active:false,sort:1},{topic_id:3,label:'c',hint:'',active:true,sort:1}];
+ const rs=[{topic_id:1,student_id:'x',experienced:true,willing:true,alias:'甲'},{topic_id:1,student_id:'y',experienced:true,willing:false,alias:'乙'},{topic_id:1,student_id:'z',experienced:false},{topic_id:2,student_id:'x',experienced:true,willing:true,alias:'甲'}];
+ const sum=surveySummary(topics,rs);assert.deepEqual(sum.map(s=>[s.topic_id,s.answered,s.experienced,s.willing]),[[3,0,0,[]],[1,3,2,['甲']]]);
+});

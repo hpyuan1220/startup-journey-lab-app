@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '../../../week2-core.mjs';
-import {normalizeRecord,checkRecord,WEEK3_RULES} from '../../../week3-core.mjs';
+import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
 const sha=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -18,10 +18,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -55,6 +55,18 @@ Deno.serve(async req=>{
    const roster=must(await db.from('class_roster').select('class_id,student_id,student_name').eq('class_id',b.class_id).order('student_id'));
    return reply({roster});
   }
+  if(b.action==='teacher_survey_topics'){
+   // 老師整份覆寫題目表：沒送來的題目一律關掉（不刪，回答還在）。
+   const topics=normalizeTopics(b.topics);
+   if(!topics.length)return reply({error:'至少要有一題。'},422);
+   const existing=must(await db.from('week3_survey_topics').select('topic_id').eq('class_id',b.class_id));
+   const keep=new Set(topics.map(t=>t.topic_id));
+   const rows=topics.map(t=>({class_id:b.class_id,...t,updated_at:new Date().toISOString()}));
+   for(const e of existing)if(!keep.has(e.topic_id))rows.push({class_id:b.class_id,topic_id:e.topic_id,label:'（已關閉）',hint:'',active:false,sort:999,updated_at:new Date().toISOString()});
+   must(await db.from('week3_survey_topics').upsert(rows,{onConflict:'class_id,topic_id'}));
+   const saved=must(await db.from('week3_survey_topics').select('*').eq('class_id',b.class_id).order('sort'));
+   return reply({topics:saved});
+  }
   return reply({error:'未知教師操作。'},400);
  }
  const token=String(b.token||'');if(token.length<20)return reply({error:'請先進入學生起點卡。'},401);
@@ -87,6 +99,22 @@ Deno.serve(async req=>{
   if(w3){if(w3.version!==b.version)return reply({error:'另一個視窗已更新這張卡，請重新載入。'},409);saved=must(await db.from('week3_submissions').update(values).match({...scope,version:b.version}).select().maybeSingle());}
   else saved=must(await db.from('week3_submissions').insert(values).select().single());
   return saved?reply({row:saved,checks}):reply({error:'內容已更新，請重新載入。'},409);
+ }
+ // ---- 全班痛點普查（每人一份，上課填）----
+ if(b.action==='survey_load'||b.action==='survey_save'){
+  const topics=must(await db.from('week3_survey_topics').select('*').eq('class_id',s.class_id).order('sort')).filter((t:any)=>t.active);
+  if(b.action==='survey_save'){
+   if(!topics.length)return reply({error:'老師還沒開放普查。'},409);
+   const sv=normalizeSurvey(b.survey,topics),checks=checkSurvey(sv);
+   if(!checks.ok)return reply({error:checks.errors.join('；')},422);
+   if(!sv.answers.length)return reply({error:'至少回答一題。'},422);
+   const now=new Date().toISOString();
+   must(await db.from('week3_survey_responses').upsert(sv.answers.map(a=>({...scope,...a,alias:sv.alias,updated_at:now})),{onConflict:'class_id,student_id,topic_id'}));
+  }
+  const all=must(await db.from('week3_survey_responses').select('topic_id,student_id,experienced,willing,alias').eq('class_id',s.class_id));
+  const mine=must(await db.from('week3_survey_responses').select('*').match(scope));
+  const answered=new Set(all.map((r:any)=>r.student_id)).size;
+  return reply({topics,mine,summary:surveySummary(topics,all),answered});
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){

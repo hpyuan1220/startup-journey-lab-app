@@ -88,3 +88,25 @@ test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存�
  const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week3.length,1);assert.equal(t.body.week3[0].student_id,'A113270021');
  assert.equal((await h.call({action:'week3_load',token:'not-a-real-token-xxxxxxxx'})).status,401);
 });
+
+test('普查：老師設題目（整份覆寫、沒送的關掉）；學生載入／作答／改答；彙總只給代稱；沒題目不能答；別班 403', async () => {
+ const h=await harness(),token=await h.student('A113270021'),token2=await h.student('A113270022');
+ assert.equal((await h.call({action:'survey_save',token,survey:{answers:[{topic_id:1,experienced:true}]}})).status,409,'老師還沒設題目');
+ const t=await h.call({action:'teacher_survey_topics',class_id:'class-a',topics:[{topic_id:1,label:'午餐排隊',hint:'h'},{topic_id:2,label:'早八'},{topic_id:3,label:'穿搭'}]},'teacher-token');
+ assert.equal(t.status,200);assert.equal(t.body.topics.length,3);
+ assert.equal((await h.call({action:'teacher_survey_topics',class_id:'class-b',topics:[{topic_id:1,label:'x'}]},'teacher-token')).status,403);
+ const l=await h.call({action:'survey_load',token});assert.equal(l.body.topics.length,3);assert.equal(l.body.answered,0);assert.deepEqual(l.body.mine,[]);
+ const a=await h.call({action:'survey_save',token,survey:{alias:'座號 3',answers:[{topic_id:1,experienced:true,last_time:'上週三',cost:'20 分鐘',willing:true},{topic_id:2,experienced:false},{topic_id:3,experienced:true,willing:false}]}});
+ assert.equal(a.status,200);assert.equal(a.body.answered,1);assert.deepEqual(a.body.summary.map(s=>[s.topic_id,s.experienced,s.willing]),[[1,1,['座號 3']],[2,0,[]],[3,1,[]]]);
+ const b=await h.call({action:'survey_save',token:token2,survey:{alias:'小魚',answers:[{topic_id:1,experienced:true,willing:true},{topic_id:2,experienced:true,willing:true}]}});
+ assert.deepEqual(b.body.summary.map(s=>[s.experienced,s.willing]),[[2,['座號 3','小魚']],[1,['小魚']],[1,[]]]);
+ // 改答：同一人改成沒遇過，列數不變、彙總更新
+ const c=await h.call({action:'survey_save',token,survey:{alias:'座號 3',answers:[{topic_id:1,experienced:false}]}});
+ assert.equal(c.body.summary[0].experienced,1);assert.equal(h.tables.week3_survey_responses.length,5);
+ // 老師關掉第 3 題：回答還在，學生看不到該題
+ const t2=await h.call({action:'teacher_survey_topics',class_id:'class-a',topics:[{topic_id:1,label:'午餐排隊'},{topic_id:2,label:'早八'}]},'teacher-token');
+ assert.equal(t2.body.topics.find(x=>x.topic_id===3).active,false);
+ const l2=await h.call({action:'survey_load',token});assert.equal(l2.body.topics.length,2);
+ const tl=await h.call({action:'teacher_load'},'teacher-token');assert.equal(tl.body.survey_topics.length,3);assert.equal(tl.body.survey_responses.length,5);
+ assert.equal((await h.call({action:'survey_save',token,survey:{alias:'A113270021',answers:[{topic_id:1,experienced:true}]}})).status,422,'代稱不能是學號');
+});

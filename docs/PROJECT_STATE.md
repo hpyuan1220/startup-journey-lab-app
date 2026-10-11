@@ -1607,3 +1607,12 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 還沒做：給受訪者填的問卷（第 5 項）。
 - 2026-10-12 上線（實證）：migration week3_submissions 建表（week3_rows 0）；week2-api 部署 b1cf8411…（29,504 B，雜湊不變、M 歸零）；探針 GET 405／week3_load 無 token 401／假 token 401／week3_save 假 token 401；GitHub Pages 已有 week3.js、Week 3 教材 pptx/pdf 200；正式站 week.html?week=3#card 用老師測試帳號載入：準備單從 Week 2 卡帶出、三階燈在「還沒交」、三個訪談區塊＋判斷區塊都在。
   另：Week3 簡報 pptx/pdf、教案、好痛點 8 個標準 已複製到「116 AI start up class」資料夾（與 Week2_教學簡報.pptx 同層）。
+
+#### 2026-10-12 全班痛點普查（找受訪者用，不算訪談、不算成績）
+- 學生端 week.html?week=3#card 最上面：一份表單每人填一次——每題「遇過嗎」，遇過才展開「上次何時／多花多少／現在怎麼辦／願意被同學訪談」；代稱自填（不能是學號電話）。送出後看到每題幾人遇過、願意被問的代稱名單（依人數排序）。可改答。
+- 教師洞察每班「全班痛點普查」面板：題目編輯（一行一題「編號 題目｜提示」，刪行＝關閉、新行自動編號）、「載入預設 22 題」、結果表（遇過／已答、願意的代稱、展開看學生姓名與代價）、匯出 CSV。
+- week3-core：DEFAULT_SURVEY_TOPICS（22 題，依 39 張卡的分群整理，不含任何姓名）、normalizeTopics／normalizeSurvey／checkSurvey／surveySummary。
+- week2-api：survey_load／survey_save（學生）、teacher_survey_topics（整份覆寫、沒送的關掉）；teacher_load 多回 survey_topics／survey_responses。
+- 資料表 week3_survey_topics、week3_survey_responses（migration 20261012_week3_survey.sql）。
+- 測試：單元 158（+4）、bundle 36、瀏覽器 tests/week3-survey.mjs 11/11（老師改題／關題／加題、學生擋代稱、兩人彙總、重新開頁、老師看姓名），其餘瀏覽器測試全綠。
+- 上線順序：push → migration → 部署 bundle df6b4d88…（36,203 B）→ 老師在教師洞察按「載入預設 22 題」改字後「儲存題目並開放」。

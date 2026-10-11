@@ -1,4 +1,4 @@
-import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT} from './week3-core.mjs?v=20261012';
+import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261012-survey';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。
@@ -12,6 +12,66 @@ let record=emptyRecord(),row=null,week2=null,dirty=false,saving=false,formBuilt=
 const el=(tag,text,parent=root)=>{const e=document.createElement(tag);if(text)e.textContent=text;parent.append(e);return e;};
 const msg=el('p','正在載入你的訪談卡…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;e.body=b;throw e;}return b;}
+
+// ---- 全班痛點普查 ----
+// 上課填一次：每題只問事實。結果讓同學知道「班上誰遇過我那題、誰願意被問」，拿來找受訪者；不算訪談次數。
+const survey=el('section');survey.id='week3-survey';survey.className='video-learning-card';survey.hidden=true;
+let surveyData=null;
+function renderSurvey(){
+ survey.replaceChildren();
+ if(!surveyData||!surveyData.topics.length){survey.hidden=true;return;}
+ survey.hidden=false;
+ const {mine,summary,answered}=surveyData;const topics=[...surveyData.topics].sort((a,b)=>(a.sort-b.sort)||(a.topic_id-b.topic_id));const answeredMe=mine.length>0;
+ el('h2','全班痛點普查',survey);
+ el('p',`每題只問「你遇過嗎、上次什麼時候、多花了多少、現在怎麼辦」。填完就看得到班上誰遇過你那一題、誰願意被你訪談——這是找受訪者用的，不算訪談次數。目前 ${answered} 位同學已填。`,survey).className='week3-survey-lead';
+ const box=el('details','',survey);box.className='week3-survey-form';box.open=!answeredMe;
+ el('summary',answeredMe?'修改我的回答':'填普查（約 5 分鐘）',box);
+ const aliasL=el('label','',box);aliasL.className='week3-question';el('span','我的代稱（同學在名單上看到的名字，例：座號 12、小魚；不要填學號）',aliasL);
+ const alias=el('input','',aliasL);alias.maxLength=20;alias.value=mine[0]?.alias||'';alias.autocomplete='off';
+ const list=el('div','',box);list.className='week3-survey-topics';
+ const mineBy=Object.fromEntries(mine.map(m=>[m.topic_id,m]));
+ const rows=topics.map(t=>{
+  const m=mineBy[t.topic_id];
+  const row=el('fieldset','',list);row.className='week3-survey-topic';row.dataset.topicId=t.topic_id;
+  const lg=el('legend','',row);el('b',t.label,lg);if(t.hint)el('small','　'+t.hint,lg);
+  const choice=el('div','',row);choice.className='week3-survey-choice';
+  const mk=(v,text)=>{const l=el('label','',choice);const r=el('input','',l);r.type='radio';r.name='t'+t.topic_id;r.value=v;l.append(document.createTextNode(' '+text));return r;};
+  const yes=mk('yes','遇過'),no=mk('no','沒遇過');
+  const detail=el('div','',row);detail.className='week3-survey-detail';detail.hidden=true;
+  const mkIn=(k,ph)=>{const l=el('label','',detail);el('span',ph.split('（')[0],l);const i=el('input','',l);i.maxLength=60;i.placeholder=ph;i.dataset.key=k;i.value=m?.[k]||'';return i;};
+  const last_time=mkIn('last_time','上次是什麼時候（例：上週三中午）'),cost=mkIn('cost','那次多花了多少（例：等了 20 分鐘、多付 300 元）'),workaround=mkIn('workaround','現在怎麼辦（例：改去便利商店）');
+  const wl=el('label','',detail);wl.className='week3-survey-willing';const willing=el('input','',wl);willing.type='checkbox';willing.checked=!!m?.willing;wl.append(document.createTextNode(' 我願意被同學訪談這一題（10 分鐘）'));
+  const sync=()=>{detail.hidden=!yes.checked;};yes.onchange=no.onchange=sync;
+  if(m){(m.experienced?yes:no).checked=true;}sync();
+  return {t,yes,no,last_time,cost,workaround,willing};
+ });
+ const bar=el('div','',box);bar.className='workspace-actions';
+ const save=el('button',answeredMe?'更新我的回答':'送出普查',bar);save.type='button';save.className='primary-action';
+ save.onclick=async()=>{
+  save.disabled=true;
+  try{
+   const answers=rows.filter(r=>r.yes.checked||r.no.checked).map(r=>({topic_id:r.t.topic_id,experienced:r.yes.checked,last_time:r.last_time.value,cost:r.cost.value,workaround:r.workaround.value,willing:r.willing.checked}));
+   const unanswered=rows.length-answers.length;
+   const sv=normalizeSurvey({alias:alias.value,answers},topics);const c=checkSurvey(sv);
+   if(!c.ok){msg.textContent=c.errors[0];alias.focus();return;}
+   if(!answers.length){msg.textContent='至少回答一題。';return;}
+   msg.textContent='正在送出…';
+   surveyData=await api({action:'survey_save',survey:sv});
+   renderSurvey();
+   msg.textContent=`普查已送出${unanswered?`（還有 ${unanswered} 題沒選，之後可以補）`:''}。下面的名單就是你可以去約的受訪者。`;
+   survey.scrollIntoView({block:'start'});
+  }catch(e){msg.textContent=e.message;}finally{save.disabled=false;}
+ };
+ // 結果：每題幾人遇過、誰願意被問
+ if(answered){
+  const res=el('section','',survey);res.className='week3-survey-result';
+  el('h3','班上誰遇過、誰願意被問',res);
+  el('p','去約「願意被問」的同學：他們是真的遇過的人。沒人願意的題目，就要到班外找。',res).className='week3-hint';
+  const table=el('table','',res);const thead=el('thead','',table);const hr=el('tr','',thead);for(const h of ['題目','遇過','願意被問（代稱）'])el('th',h,hr);
+  const tb=el('tbody','',table);
+  for(const sm of [...summary].sort((a,b)=>b.experienced-a.experienced)){const tr=el('tr','',tb);tr.dataset.topicId=sm.topic_id;el('td',sm.label,tr);el('td',`${sm.experienced} 人`,tr);el('td',sm.willing.join('、')||'—',tr);}
+ }
+}
 
 // ---- 準備單 ----
 const sheet=el('section');sheet.id='week3-sheet';sheet.className='video-learning-card';
@@ -118,6 +178,7 @@ async function load(){
  if(!session?.token){msg.textContent='';sheet.replaceChildren();el('h2','先進入你的班級',sheet);el('p','用學號和班級邀請碼進入後，Week 3 的準備單會自動從你的 Week 2 痛點卡帶出來。',sheet);const a=el('a','前往學生入口 →',sheet);a.href='index.html#student';a.className='primary-link';return;}
  try{
   const r=await api({action:'week3_load'});week2=r.week2;row=r.row;
+  try{surveyData=await api({action:'survey_load'});}catch(e){surveyData=null;}renderSurvey();
   record=normalizeRecord(row?.record||emptyRecord());
   if(!row&&week2?.card?.statement&&!record.statement)record.statement=week2.card.statement;
   renderSheet();
