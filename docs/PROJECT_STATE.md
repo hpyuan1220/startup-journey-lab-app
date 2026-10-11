@@ -1605,3 +1605,5 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：單元 154（新 week3-core 4、week2-api Week 3 1）、bundle 35、瀏覽器 tests/week3-student.mjs 13/13（含手機寬度、重新開頁、沒 Week 2、教師洞察）、其餘瀏覽器測試全綠。注意：teacher-roster 測試會在驗收伺服器上建名單，之後同一台伺服器的其他學生登入會被擋——各測試用新 port。
 - 待上線：push → migration 20261012_week3.sql → 部署 week2-api bundle b1cf8411…（29,504 B）。
 - 還沒做：給受訪者填的問卷（第 5 項）。
+- 2026-10-12 上線（實證）：migration week3_submissions 建表（week3_rows 0）；week2-api 部署 b1cf8411…（29,504 B，雜湊不變、M 歸零）；探針 GET 405／week3_load 無 token 401／假 token 401／week3_save 假 token 401；GitHub Pages 已有 week3.js、Week 3 教材 pptx/pdf 200；正式站 week.html?week=3#card 用老師測試帳號載入：準備單從 Week 2 卡帶出、三階燈在「還沒交」、三個訪談區塊＋判斷區塊都在。
+  另：Week3 簡報 pptx/pdf、教案、好痛點 8 個標準 已複製到「116 AI start up class」資料夾（與 Week2_教學簡報.pptx 同層）。
