@@ -1591,3 +1591,5 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 空名單＝不擋人；面板會用紅字提醒「加入第一位之後就會開始擋」。
 - 測試：單元 149（含 2 個 teacher_roster）、bundle 模式 34、瀏覽器 tests/teacher-roster.mjs 6/6（含端到端：名單一有人，Student-api 真的擋 422）、teacher-week2-view 9/9。
 - 部署：week2-api bundle 7f855af8…（23,062 B）。
+- 2026-10-11 上線（實證）：week2-api 部署 7f855af8…（23,062 B，雜湊不變、M 歸零、a few seconds ago）；探針 GET 405／壞 JSON 400／學生無 token 401／teacher_roster 無 JWT 401／假 JWT 401；GitHub Pages 已是 teacher-week2.js?v=20261011-roster；
+  正式站教師洞察載入：班級名單 47 人、還沒進過系統 4 人（劉昱佑、李雲峰、李婕炘、屠均泰）、47 張卡（含 4 張「還沒進過系統」）、已交 36／還沒審 36／草稿 4／尚未開始 3。
