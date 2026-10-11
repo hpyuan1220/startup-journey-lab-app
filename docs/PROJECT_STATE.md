@@ -1580,3 +1580,6 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - docs/private/fix_student_ids_20261011.sql：三筆改名（含 session，一起改所以學生不會被登出）、一筆多出來的刪除，前有保險檢查。
 順序：push → migration（建表）→ 部署 student-api → fix_student_ids → roster_import（最後匯入，匯入後閘門才生效）。
 單元 147。
+- 2026-10-11 上線完成（實證）：class_roster 建表 → student-api 部署（83a5f7ff…，7134 B，三方雜湊一致）→ 四筆學號修正（week1 44→43、week2 40 不變、三位改名後版本號不變、舊學號殘留 0；觸發器全 O）→ 名單匯入 47 列、不在名單 0、名單上還沒進系統 4。
+  線上探針：不在名單 422 not_on_roster（帶 confirm_new 也擋）、舊錯學號 A113270039 擋、含空白 422、錯邀請碼 401、GET 405、空 body 400、假 token 401。
+  踩到的坑：student_sessions 有 unique(class_id,student_id)，改名會撞已存在的正確學號 session → 改成刪舊學號 session；pg_trigger.tgenabled 是 "char"，拼字串要 ::text。
