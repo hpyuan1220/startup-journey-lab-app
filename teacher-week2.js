@@ -1,5 +1,5 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
-import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261011-quality';
+import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261012-solution';
 import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261012-survey';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
@@ -18,6 +18,8 @@ let openKeys=new Set(),rosterOpen=new Set(),surveyOpen=new Set(),filter='all',qu
 const REVIEW_LABEL={pending:'尚未審核',approved:'已確認進入訪談',revision:'需要小幅修訂',hold:'請先與老師討論'};
 const FILTERS=[['all','全部'],['todo','已交、還沒審'],['approved','已確認'],['revision','需修訂'],['hold','請先討論'],['draft','草稿中'],['notstarted','尚未開始 Week 2'],['absent','還沒進過系統']];
 
+// 老師打到一半的回饋：以學生為 key 留在記憶體，儲存失敗（例如登入過期）或重新載入名單都不會清掉；存成功才丟掉。
+const drafts=new Map();
 async function call(body,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(body,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
 function button(text,fn,parent=root){const b=el('button',text,parent);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){status.textContent=e.message;}finally{b.disabled=false;}};return b;}
 async function load(){status.textContent='正在載入…';data=await call({action:'teacher_load'});render();}
@@ -160,17 +162,29 @@ function renderStudent(section,c,s,name,b,usage){
  const review=el('section','',box);review.className='tw2-review';
  el('h4','你的審核',review);
  el('p',`目前：${REVIEW_LABEL[r.review_status]||r.review_status}${r.teacher_note?' · 回饋：'+r.teacher_note:''}`,review).className='tw2-current';
- const label=el('label','老師的一句具體回饋（學生會在卡片上看到）',review),note=el('textarea','',label);note.maxLength=600;note.value=r.teacher_note||'';
+ const label=el('label','老師的一句具體回饋（學生會在卡片上看到）',review),note=el('textarea','',label);note.maxLength=600;const draft=drafts.get(s.id);note.value=draft?draft.note:(r.teacher_note||'');
+ note.oninput=()=>drafts.set(s.id,{note:note.value,target:tSel.value});
  const tLabel=el('label','指路：要學生先改哪一格（學生會看到一顆「老師要你改：__」的按鈕）',review),tSel=el('select','',tLabel);
  {const o0=el('option','不指定',tSel);o0.value='';for(const [k,t] of TARGETS){const o=el('option',t,tSel);o.value=k;}
   const worst=[...s.q.items].sort((a,b)=>a.score-b.score)[0];
-  tSel.value=r.teacher_target||(worst&&worst.score<2?worst.key:'');}
+  tSel.value=draft?draft.target:(r.teacher_target||(worst&&worst.score<2?worst.key:''));}
+ tSel.onchange=()=>drafts.set(s.id,{note:note.value,target:tSel.value});
+ const msg=el('p','',review);msg.className='tw2-msg';
  const actions=el('div','',review);actions.className='tw2-actions';
  for(const [v,t] of [['approved','確認進入訪談'],['revision','需要小幅修訂'],['hold','請先與老師討論']]){
   const btn=button(t,async()=>{
-   if(v==='approved'&&r.status!=='submitted'){status.textContent='這位學生還沒正式提交，不能確認。';return;}
-   await call({action:'teacher_review',class_id:c.id,student_id:s.id,version:r.version,review_status:v,note:note.value,target:tSel.value});
-   openKeys.add(key);await load();status.textContent=`${name}：已標為「${t}」。`;
+   if(v==='approved'&&r.status!=='submitted'){msg.textContent='這位學生還沒正式提交，不能確認。';msg.className='tw2-msg error';status.textContent=msg.textContent;return;}
+   msg.textContent='儲存中…';msg.className='tw2-msg';
+   try{await call({action:'teacher_review',class_id:c.id,student_id:s.id,version:r.version,review_status:v,note:note.value,target:tSel.value});}
+   catch(e){
+    // 失敗就在按鈕旁邊講，回饋留在格子裡（也留在 drafts），重新登入後再按一次即可。
+    const expired=/登入/.test(e.message||'');
+    msg.textContent='';msg.className='tw2-msg error';
+    msg.append(`沒有存進去：${e.message} 妳打的回饋還在這格裡，${expired?'重新登入後':'稍後'}再按一次就好。`);
+    if(expired){const a=document.createElement('a');a.href='#teacher';a.textContent='去重新登入';a.onclick=ev=>{ev.preventDefault();const g=document.getElementById('teacher-gate');if(g){g.hidden=false;g.scrollIntoView({behavior:'smooth'});}};msg.append(' ',a);}
+    status.textContent=`${name}：沒有存進去（${e.message}）`;return;
+   }
+   drafts.delete(s.id);openKeys.add(key);await load();status.textContent=`${name}：已標為「${t}」。`;
   },actions);
   btn.className=v==='approved'?'primary-action':'';
   if(r.review_status===v)btn.setAttribute('aria-pressed','true');

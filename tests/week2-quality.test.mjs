@@ -59,3 +59,30 @@ test('提交過之後改成草稿：第一格不熄，但提醒要重新提交',
  const c0=completion(strong(),{status:'draft',submitted_at:null,review_status:'pending'});
  assert.equal(c0.level,0);
 });
+
+// 2026-10-12：解法判斷改版（老師審 36 張卡後發現的誤判與漏判）
+test('「陌生開發」是業務用語，不算解法；「社交平台上找不到代購」是在描述現況，也不算', () => {
+ const c=strong();c.candidates[0].context='星期二中午 12 點，四號公園，準備第一次街頭陌生開發';c.statement='在街頭陌生開發時，新進業務不知道誰願意停下來';
+ assert.equal(assess(c).items.find(x=>x.key==='solution').score,2);
+ const d=strong();d.candidates[0].problem='在社交平台上很難找到合適的代購，資訊分散';
+ assert.equal(assess(d).items.find(x=>x.key==='solution').score,2);
+});
+test('整張卡在設計「場所」或「做一個 __」：0 分並指出那個字', () => {
+ const c=strong();c.candidates[0].job='發想抽煙場所這件事，能不能同時有吸引人前往的服務';
+ const s=assess(c).items.find(x=>x.key==='solution');
+ assert.equal(s.score,0);assert.match(s.reason,/場所/);assert.equal(s.field.key,'job');
+ const d=strong();d.candidates[0].problem='想做一個能幫我自動排班的東西';
+ assert.equal(assess(d).items.find(x=>x.key==='solution').score,0);
+});
+test('訪談題是「如果有 __ 你會不會」：0 分並指到那一題', () => {
+ const c=strong();c.questions=['如果有一鍵購買，會提高你出遊的意願嗎？','上次你怎麼買票的？'];
+ const s=assess(c).items.find(x=>x.key==='solution');
+ assert.equal(s.score,0);assert.match(s.reason,/假設題/);assert.equal(s.field.question,0);
+});
+test('只有假設在想解法 1 分；假設＋選題理由都在想解法 0 分', () => {
+ const c=strong();c.candidates[0].assumption='如果有一個工具可以依預算縮小選擇，大家會更快決定';
+ assert.equal(assess(c).items.find(x=>x.key==='solution').score,1);
+ c.reason='因為我想做一個 app 解決這件事';
+ const s=assess(c).items.find(x=>x.key==='solution');
+ assert.equal(s.score,0);assert.match(s.reason,/假設、選題理由/);
+});

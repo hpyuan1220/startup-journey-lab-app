@@ -3,7 +3,7 @@
 // 規則刻意簡單、可預測 —— 學生要能看懂為什麼是 0 分，老師要能覆寫。
 import {triageFields,depthFields,selectedIndex} from './week2-core.mjs';
 
-export const QUALITY_VERSION='q-20261011a';
+export const QUALITY_VERSION='q-20261012a';
 const S=v=>String(v??'').trim();
 const PENDING=/^(待驗證|不確定|待確認|尚未|還沒|未知|無|沒有|-|—|\?|？)*$/;
 const GENERIC_PERSON=/^(我|自己|我本人|本人|我自己|所有人|大家|每個人|人|學生|同學|大學生|消費者|使用者|用戶|客人|我們|我跟我朋友|我和朋友|同學還有我)$/;
@@ -14,7 +14,13 @@ const FREQ_HIGH=/(每天|每日|天天|每週|每周|每星期|一週\s*\d|週\s
 const FREQ_LOW=/(每月|每個月|一個月|學期|偶爾|出國|假日|一次)/;
 const GUESS=/(我猜|應該|可能|感覺|大概|很多人|大家都|一定會|我覺得)/;
 const SEEN=/(親眼|看到|看見|當時|那天|那次|聽到|實際|親身|遇到)/;
-export const SOLUTION_WORDS=/(app|ai\b|ＡＩ|一鍵|平台|系統|工具|網站|軟體|得來速|魔鏡|蓋一?個|開發|打造|推薦引擎|聊天機器人)/i;
+// 解法字：產品名詞與「做一個 __」句型。單獨的「開發」不算（「陌生開發」是業務用語）；
+// 「社交平台／外送平台／平台上」是在描述現況，先剔除再比對。
+export const SOLUTION_WORDS=/(app|ai\b|ＡＩ|一鍵|平台|系統|工具|網站|軟體|得來速|魔鏡|機器人|推薦引擎|吸菸室|吸煙室|專屬.{0,4}(場所|空間)|場所|自動(化|幫|填|排|訂|翻譯|推薦)|媒合|配對|整合.{0,6}資訊|(蓋|做|建|建立|設計|打造|開發|推出|提供)一?(個|款|套|間|台|隻)|開發(app|平台|系統|軟體|網站|工具)|(有人|有個|有一個|希望有).{0,6}(告訴我|推薦|幫我))/i;
+const NOT_SOLUTION=/(社交平台|社群平台|外送平台|購物平台|交易平台|各大平台|平台上|平台與論壇|論壇|公共場所|工作場所|系統性)/g;
+// 假設題：「如果有 __ 你會不會 / 願不願意 / 會提高意願嗎」—— YC 說這種題沒有人會說不會。
+export const HYPOTHETICAL_Q=/((如果|假如|假設|若)有.{0,24}(會不會|你會|願不願意|是否|意願|想不想|接受嗎)|會不會(使用|用|買|想用)|願不願意.{0,6}(付|用|買)|想要.{0,8}功能嗎|你會想用)/;
+export const solutionHit=text=>{const t=String(text??'').replace(NOT_SOLUTION,'');const m=t.match(SOLUTION_WORDS);return m?m[0]:'';};
 
 export const ITEMS=[
  {key:'people',label:'具體的人',ask:'這是誰的痛？',stage:1},
@@ -70,10 +76,15 @@ export function assess(card){
  else add('workaround',0,'沒有人在處理這件事，可能根本不痛。','問受訪者：你現在怎麼應付？',{depth:'workaround'});
 
  // 6 是問題不是解法
- const textsCore=[c.problem,c.job,card.statement].map(S).join('｜');
- const textsAss=[c.assumption,card.reason].map(S).join('｜');
- if(SOLUTION_WORDS.test(textsCore))add('solution',0,`問題裡寫了解法（${(textsCore.match(SOLUTION_WORDS)||[''])[0]}）。`,'刪掉解法那幾個字，只留困擾本身。',{cand:i,key:SOLUTION_WORDS.test(S(c.problem))?'problem':SOLUTION_WORDS.test(S(c.job))?'job':'statement'});
- else if(SOLUTION_WORDS.test(textsAss))add('solution',1,'假設裡已經在想解法。','假設先寫「原因」，不寫「做什麼」。',{depth:'assumption'});
+ // 0 分：困擾本身（阻礙／想完成的事／痛點陳述）寫了解法，或訪談題是「如果有 __ 你會不會」；
+ // 1 分：只有假設、選題理由、改變選擇的條件、「為什麼不夠」在想解法；2 分：都沒有。
+ const coreHits=[[S(c.problem),'problem'],[S(c.job),'job'],[S(card.statement),'statement']].map(([t,k])=>[solutionHit(t),k]).filter(([h])=>h);
+ const qs=(card.questions||[]).map(S);const hq=qs.findIndex(q=>HYPOTHETICAL_Q.test(q));
+ const sideHits=[[S(c.assumption),{depth:'assumption'},'假設'],[S(card.reason),{key:'reason'},'選題理由'],[S(card.reconsider),{key:'reconsider'},'改變選擇的條件'],[S(c.acceptance),{depth:'acceptance'},'為什麼不夠']].map(([t,f,l])=>[solutionHit(t),f,l]).filter(([h])=>h);
+ if(coreHits.length)add('solution',0,`問題裡寫了解法（${coreHits[0][0]}）。`,'刪掉解法那幾個字，只留困擾本身。',{cand:i,key:coreHits[0][1]});
+ else if(hq>=0)add('solution',0,`訪談題 ${hq+1} 是「如果有 __ 你會不會」的假設題。`,'改問上一次真的發生的事：那次最後怎麼辦、花了多久。',{question:hq});
+ else if(sideHits.length>=2)add('solution',0,`${sideHits.map(x=>x[2]).join('、')}都在講解法（${sideHits[0][0]}）。`,'Week 2 先只驗證困擾，解法 Week 5 再談。',sideHits[0][1]);
+ else if(sideHits.length===1)add('solution',1,`${sideHits[0][2]}裡已經在想解法（${sideHits[0][0]}）。`,'先寫「原因」，不寫「做什麼」。',sideHits[0][1]);
  else add('solution',2,'描述的是困擾，不是解法。','',{cand:i,key:'problem'});
 
  // 7 情境
@@ -139,7 +150,7 @@ export function chips(item,card){
   case 'evidence':return ['__月__日 __點，在 __，我親眼看到 __（誰）__（發生什麼）','上次是 __，我自己 __，結果 __'].map(text=>({text,mode:'append'}));
   case 'frequency':return ['每天','每週 2–3 次','每週 1 次','每月 1 次（偏低，訪談時確認）'].map(text=>({text,mode:'set'}));
   case 'workaround':return [{text:'目前先 __ 硬撐',mode:'append'},{text:'不夠是因為 __',mode:'append'}];
-  case 'solution':return [{text:'刪掉「App／AI／一鍵／平台」這幾個字',mode:'strip'}];
+  case 'solution':return [{text:'刪掉「App／AI／一鍵／平台／場所」這幾個字',mode:'strip'}];
   case 'context':return ['週__ __點，在 __，正在 __'].map(text=>({text,mode:'append'}));
   default:return [];
  }

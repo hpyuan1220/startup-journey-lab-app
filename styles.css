@@ -345,3 +345,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .preclass .preclass-video{position:relative;width:100%;max-width:720px;aspect-ratio:16/9;margin:10px 0;background:#000}
 .preclass .preclass-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .preclass .yc-sub{font-size:.92rem;color:#5b5548;margin:6px 0 0}
+.tw2-review .tw2-msg{margin:6px 0 0;font-weight:700;color:var(--green);min-height:1.4em}
+.tw2-review .tw2-msg.error{color:#9e362a}
+.tw2-review .tw2-msg a{color:inherit;text-decoration:underline;margin-left:4px}

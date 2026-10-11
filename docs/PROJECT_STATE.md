@@ -1632,3 +1632,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - `week.html` Week 3 教材區最上方新增 `.preclass` 區塊：youtube-nocookie 內嵌＋備用連結＋說明「AI 講師生成，以原片與導讀為準」；`styles.css?v=20261014-preclass`。
 - 實證：容器內 Playwright 390px／1100px 版面正常、無橫向捲動；單元測試見上一行數字。Week 2 的 OpenMAIC 提示詞在 `OpenMAIC_week2/`，尚未生成。
 - 上線（實證，2026-10-11）：origin/main = edc4307；正式站 week.html?week=3 載入 styles.css?v=20261014-preclass，.preclass 區塊可見、內嵌播放器顯示影片縮圖與標題（頻道名「Irene Yuan (Gmail)」會露出）。
+
+## 2026-10-12 老師審完 36 張 Week 2 卡之後的兩個修正
+- 實證：36 張審完（確認 13／需要小幅修訂 19／請先與老師討論 4）。過程中教師登入過期（閒置 30 分鐘），按審核鈕回 401，錯誤只顯示在 Week 2 區塊頂端「請重新登入教師帳號。」，老師沒看到，連續兩張以為已存；重新登入後名單重載，打好的回饋被清掉。
+- 修正一（teacher-week2.js）：審核結果改顯示在審核按鈕旁 `.tw2-msg`（成功「儲存中…」→ 重載；失敗紅字「沒有存進去：…妳打的回饋還在這格裡」，登入過期附「去重新登入」連結，點了展開登入表單並捲過去）。回饋與指路存在記憶體 `drafts`（以學生為 key），儲存失敗或重新載入名單都保留，存成功才清掉。
+- 修正二（week2-quality.mjs，QUALITY_VERSION q-20261012a）：「是問題不是解法」改法——解法字擴充（場所／吸菸室／機器人／媒合／自動幫…／「做一個 __」句型／「希望有人推薦」）；單獨「開發」不算（「陌生開發」誤判）；「社交平台／外送平台／平台上」先剔除（描述現況不是解法）；訪談題「如果有 __ 你會不會／意願嗎」直接 0 分並指到那一題；假設＋選題理由＋改變條件＋為什麼不夠：一格在想解法 1 分、兩格以上 0 分。預期：王柏勳 15→13、黃立竹更低、吳承叡 11→13（開發誤判解除）。
+- 測試：單元 162/162（week2-quality 新增 4 條）；瀏覽器 tests/teacher-review-expired.mjs 6/6（401 時訊息在按鈕旁、草稿保留、重載保留、恢復後再按一次存進去）；teacher-week2-view、quality-box 重跑仍全綠。版本號：teacher-week2.js?v=20261012-reviewmsg、week2.js?v=20261012-solution、quality ?v=20261012-solution、styles.css?v=20261014-reviewmsg。
+- 不動後端，不用部署 Edge Function；push 即上線。
