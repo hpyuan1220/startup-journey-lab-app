@@ -1616,3 +1616,5 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 資料表 week3_survey_topics、week3_survey_responses（migration 20261012_week3_survey.sql）。
 - 測試：單元 158（+4）、bundle 36、瀏覽器 tests/week3-survey.mjs 11/11（老師改題／關題／加題、學生擋代稱、兩人彙總、重新開頁、老師看姓名），其餘瀏覽器測試全綠。
 - 上線順序：push → migration → 部署 bundle df6b4d88…（36,203 B）→ 老師在教師洞察按「載入預設 22 題」改字後「儲存題目並開放」。
+- 2026-10-12 普查上線（實證）：migration 兩表建好（0/0）；week2-api 部署 df6b4d88…（36,203 B）；探針學生無 token 401、老師無 JWT 401；老師在正式站按「載入預設 22 題」→「儲存題目並開放」成功（22 題 · 0 人已填）；學生端（老師測試帳號）載入：普查在最上面、22 題、準備單仍正常。
+  畫面上讀到的班級品質分布：A 25／B 15／C 0（上次評估 16／14／9）。
