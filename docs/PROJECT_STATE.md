@@ -1631,3 +1631,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - srt 兩處簡體字修正後，老師上傳到自己的 YouTube，設「不公開」、字幕中文（台灣）已發布：https://youtu.be/1kf8RoPCq5g。
 - `week.html` Week 3 教材區最上方新增 `.preclass` 區塊：youtube-nocookie 內嵌＋備用連結＋說明「AI 講師生成，以原片與導讀為準」；`styles.css?v=20261014-preclass`。
 - 實證：容器內 Playwright 390px／1100px 版面正常、無橫向捲動；單元測試見上一行數字。Week 2 的 OpenMAIC 提示詞在 `OpenMAIC_week2/`，尚未生成。
+- 上線（實證，2026-10-11）：origin/main = edc4307；正式站 week.html?week=3 載入 styles.css?v=20261014-preclass，.preclass 區塊可見、內嵌播放器顯示影片縮圖與標題（頻道名「Irene Yuan (Gmail)」會露出）。
