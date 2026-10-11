@@ -2,13 +2,13 @@
 // 兩個 handler 都是從 supabase/functions/ 直接載入的真實程式碼。
 import http from 'node:http';import fs from 'node:fs/promises';import path from 'node:path';
 import fsSync from 'node:fs';import {fileURLToPath} from 'node:url';import {stripTypeScriptTypes} from 'node:module';
-import * as core from '../week2-core.mjs';
+import * as core from '../week2-core.mjs';import * as core3 from '../week3-core.mjs';
 
 // 專案根目錄：路徑含空白時 URL.pathname 會是 %20，必須用 fileURLToPath 還原。
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), port=Number(process.env.PORT||4210);
 const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],
  week1_submissions:[],week2_submissions:[],week1_ai_feedback:[],week1_ai_feedback_latest:[],
- learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[]};
+ learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[]};
 let seq=0;
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 
@@ -60,8 +60,8 @@ const load=(file,extraNames=[],extraVals=[])=>{
    ...extraVals);
 };
 const studentApi=load('../supabase/functions/student-api/index.ts');
-const names=Object.keys(core);
-const week2Api=load('../supabase/functions/week2-api/index.ts',names,names.map(n=>core[n]));
+const all={...core,...core3};const names=Object.keys(all);
+const week2Api=load('../supabase/functions/week2-api/index.ts',names,names.map(n=>all[n]));
 
 const AI_FB={readiness:{problem_clarity:{score:3,reason:'清楚'},evidence_quality:{score:3,reason:'有事實'},user_specificity:{score:3,reason:'具體'},next_validation_step:{score:3,reason:'有行動'},total_readiness:12},
  strengths:['情境具體'],gaps:['可再補一次事件'],follow_up_questions:['上次何時發生？'],next_small_action:'記錄一次事件',overall_feedback:'方向清楚，請補一次真實事件。'};

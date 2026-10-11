@@ -2,9 +2,10 @@
 import fs from 'node:fs';
 import {stripTypeScriptTypes} from 'node:module';
 import * as core from '../../week2-core.mjs';
+import * as core3 from '../../week3-core.mjs';
 export const demoCard=()=>{const d=core.emptyCard();d.candidates.forEach((c,i)=>core.fields.forEach(([k])=>c[k]=`候選${i+1}：校園午休觀察，${k}待訪談確認`));d.reason='可以接觸有午休限制的同學';d.reconsider='如果排隊不是主要困擾就重新選題';d.statement='午休只有五十分鐘的學生買餐時需要等候，仍需驗證時間代價';d.interviewees=['同學 A，課後詢問','同學 B，社團詢問','同學 C，午休詢問'];d.questions=['上一次買餐時發生什麼？','當時怎麼處理？'];d.contact_confirmed=d.questions_checked=true;return d;};
 export async function harness({modelFails=false,directions=[],reserveNull=false}={}){
- const tables={classes:[{id:'class-a',name:'測試班（非正式學生）'},{id:'class-b',name:'其他班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],week1_submissions:[],week2_submissions:[],week1_ai_feedback_latest:[],learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[]};
+ const tables={classes:[{id:'class-a',name:'測試班（非正式學生）'},{id:'class-b',name:'其他班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],week1_submissions:[],week2_submissions:[],week1_ai_feedback_latest:[],learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[]};
  const hash=async s=>Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))).toString('hex');
  async function student(id='TEST-1',submitted=true,classId='class-a') {const token='fixture-token-'+id+'-1234567890';tables.student_sessions.push({class_id:classId,student_id:id,expires_at:'2099-01-01',token_hash:await hash(token)});tables.week1_submissions.push({class_id:classId,student_id:id,student_name:'測試同學',status:submitted?'submitted':'draft',observed_problem:'午休排隊',known_fact:'昨天本人排隊',unverified_assumption:'其他同學也困擾'});return token;}
  let sequence=0;
@@ -18,7 +19,7 @@ export async function harness({modelFails=false,directions=[],reserveNull=false}
  const file=bundled?'../../supabase/functions/week2-api/index.bundled.ts':'../../supabase/functions/week2-api/index.ts';
  let source=fs.readFileSync(new URL(file,import.meta.url),'utf8').replace(/^import .*;\n/gm,'');source=stripTypeScriptTypes(source).replace('Deno.serve(','return (');
  // bundle 自己宣告了 week2-core 那些名字，不能再當參數傳進去（會重複宣告）。
- const names=bundled?[]:Object.keys(core),handler=new Function('createClient','Deno','fetch',...names,source)(()=>db,{env:{get:k=>k==='OPENAI_API_KEY'?'test-only-secret':'test'}},modelFetch,...names.map(n=>core[n]));
+ const all={...core,...core3};const names=bundled?[]:Object.keys(all),handler=new Function('createClient','Deno','fetch',...names,source)(()=>db,{env:{get:k=>k==='OPENAI_API_KEY'?'test-only-secret':'test'}},modelFetch,...names.map(n=>all[n]));
  async function call(body,jwt){const r=await handler(new Request('http://localhost/functions/v1/week2-api',{method:'POST',headers:{'Content-Type':'application/json',...(jwt?{Authorization:'Bearer '+jwt}:{})},body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};}
  return {tables,student,handler,call,get modelCalls(){return calls},inputs};
 }

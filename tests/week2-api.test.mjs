@@ -72,3 +72,19 @@ test('老師端名單：移除只能移除還沒有作業資料的人', async ()
  assert.equal(h.tables.week1_submissions.length,1,'移除名單不會動到作業');
  assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'nuke',student_id:'A113270021'},'teacher-token')).status,400);
 });
+
+test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存、提交要通過檢查；版本衝突 409；teacher_load 帶 week3', async () => {
+ const h=await harness(),token=await h.student('A113270021');
+ const empty=await h.call({action:'week3_load',token});assert.equal(empty.status,200);assert.equal(empty.body.week2,null);assert.equal(empty.body.row,null);
+ const rec={interviews:[{who:'通勤同學 A',when_where:'10/14 走廊',quotes:'「排到快上課就不吃了」',fits:'yes'}],judgment:'',learned:'',statement:''};
+ assert.equal((await h.call({action:'week3_save',token,status:'draft',record:rec})).status,409,'沒有 Week 2 卡就不能存');
+ await h.call({action:'save',token,status:'submitted',card:demoCard()});
+ const load=await h.call({action:'week3_load',token});assert.equal(load.body.week2.status,'submitted');assert.equal(load.body.week2.card.interviewees.length,3);
+ const d=await h.call({action:'week3_save',token,status:'draft',record:rec});assert.equal(d.status,200);assert.equal(d.body.row.version,1);assert.equal(d.body.row.record.interviews.length,3);
+ const bad=await h.call({action:'week3_save',token,status:'submitted',version:1,record:rec});assert.equal(bad.status,422);assert.match(bad.body.error,/訪談 2/);
+ const fullRec={interviews:[0,1,2].map(i=>({who:`通勤同學 ${'ABC'[i]}`,when_where:'10/14 走廊',quotes:'「排到快上課就不吃了」',cost:'20 分鐘',fits:'yes'})),judgment:'keep',learned:'',statement:'午休五十分鐘的通勤同學買餐要等二十分鐘，常常不吃。'};
+ assert.equal((await h.call({action:'week3_save',token,status:'submitted',version:0,record:fullRec})).status,409,'版本不對要擋');
+ const ok=await h.call({action:'week3_save',token,status:'submitted',version:1,record:fullRec});assert.equal(ok.status,200);assert.equal(ok.body.row.status,'submitted');assert.ok(ok.body.row.submitted_at);
+ const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week3.length,1);assert.equal(t.body.week3[0].student_id,'A113270021');
+ assert.equal((await h.call({action:'week3_load',token:'not-a-real-token-xxxxxxxx'})).status,401);
+});

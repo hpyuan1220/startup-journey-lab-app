@@ -1,5 +1,6 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261011-quality';
+import {interviewFields,fitsOptions,judgmentOptions,doneCount} from './week3-core.mjs?v=20261012';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -50,13 +51,14 @@ function render(){
   const section=el('section','',list);section.className='tw2-class';el('h3',c.name,section);
   const rows=data.rows.filter(r=>r.class_id===c.id),w1=data.week1.filter(r=>r.class_id===c.id),usage=data.usage.filter(r=>r.class_id===c.id);
   const roster=(data.roster||[]).filter(r=>r.class_id===c.id).sort((a,b)=>a.student_id.localeCompare(b.student_id));
+  const week3=(data.week3||[]).filter(r=>r.class_id===c.id);
   // 學生名單 = 班級名單 ∪ Week 1 有紀錄的人 ∪ Week 2 有卡的人（名單上還沒進過系統的人也要看得到）
   const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(w=>w.student_id),...rows.map(r=>r.student_id)])];
-  const students=ids.map(id=>({id,w1:w1.find(w=>w.student_id===id),r:rows.find(r=>r.student_id===id),roster:roster.find(r=>r.student_id===id)}));
+  const students=ids.map(id=>({id,w1:w1.find(w=>w.student_id===id),r:rows.find(r=>r.student_id===id),roster:roster.find(r=>r.student_id===id),w3:week3.find(r=>r.student_id===id)}));
   const counts={submitted:0,approved:0,revision:0,hold:0,todo:0,draft:0,notstarted:0,absent:0};
   for(const s of students){const b=bucket(s.r,s.w1);counts[b]=(counts[b]||0)+1;if(s.r&&s.r.status==='submitted')counts.submitted++;}
   // 進度：這是老師最需要先看到的一行
-  const progress=el('p',`已交 ${counts.submitted} 人 · 已確認進入訪談 ${counts.approved} · 需修訂 ${counts.revision} · 請先討論 ${counts.hold} · 還沒審 ${counts.todo} · 草稿中 ${counts.draft} · 尚未開始 ${counts.notstarted}${counts.absent?` · 還沒進過系統 ${counts.absent}`:''} · AI 嘗試 ${usage.length} 次`,section);
+  const progress=el('p',`已交 ${counts.submitted} 人 · 已確認進入訪談 ${counts.approved} · 需修訂 ${counts.revision} · 請先討論 ${counts.hold} · 還沒審 ${counts.todo} · 草稿中 ${counts.draft} · 尚未開始 ${counts.notstarted}${counts.absent?` · 還沒進過系統 ${counts.absent}`:''} · AI 嘗試 ${usage.length} 次${week3.length?` · Week 3 已交 ${week3.filter(r=>r.status==='submitted').length}／草稿 ${week3.filter(r=>r.status!=='submitted').length}`:''}`,section);
   progress.className='tw2-progress';
   const bar=el('div','',section);bar.className='tw2-bar';const fill=el('i','',bar);fill.style.width=(counts.submitted?Math.round(counts.approved/counts.submitted*100):0)+'%';bar.title=`已確認 ${counts.approved} / 已交 ${counts.submitted}`;
   const settings=el('details','',section);el('summary','班級設定（AI 上限）',settings);
@@ -99,8 +101,9 @@ function renderStudent(section,c,s,name,b,usage){
  const r=s.r,w=s.w1;
  const w1Tag=w?(w.status==='submitted'?'Week 1 ✓':'Week 1 草稿'):'Week 1 無';
  const w2Tag=r?(r.status==='submitted'?`Week 2 已交 v${r.version}`:`Week 2 草稿 v${r.version}`):'Week 2 未開始';
+ const w3Tag=s.w3?` · Week 3 ${s.w3.status==='submitted'?'已交':'草稿'} ${doneCount(s.w3.record)}/3 次訪談`:'';
  const sum=el('summary','',box);
- el('b',name,sum);el('span',` · ${s.id} · ${w1Tag} · ${w2Tag} · `,sum);
+ el('b',name,sum);el('span',` · ${s.id} · ${w1Tag} · ${w2Tag}${w3Tag} · `,sum);
  const badge=el('span',r?REVIEW_LABEL[r.review_status]||r.review_status:'—',sum);badge.className='tw2-badge tw2-badge-'+b;
  if(s.q){const qb=el('span',` 品質 ${s.q.total}/16 · 第 ${s.lv} 格`,sum);qb.className='tw2-score tw2-score-'+(s.q.total>=12?'a':s.q.total>=8?'b':'c');}
  if(r?.ai_help)el('span',' · AI 建議先找老師',sum).className='tw2-flag';
@@ -150,6 +153,8 @@ function renderStudent(section,c,s,name,b,usage){
  const ai=latestAI(usage,c.id,s.id);
  if(ai){const ab=el('section','',w2Box);ab.className='tw2-ai';el('h5','Week 2 AI 建議（形成性，不計成績）',ab);if(ai.feedback.strength)el('p','做得好：'+ai.feedback.strength,ab);for(const g of ai.feedback.gaps||[])el('p','缺口：'+g,ab);if(ai.feedback.next_action)el('p','下一步：'+ai.feedback.next_action,ab);if(ai.submission_version!==r.version)el('p',`此建議針對版本 ${ai.submission_version}，學生之後又改過。`,ab).className='tw2-warn';}
 
+ // ---- Week 3 ----
+ if(s.w3)renderWeek3(box,s.w3);
  // ---- 審核 ----
  const review=el('section','',box);review.className='tw2-review';
  el('h4','你的審核',review);
@@ -171,6 +176,21 @@ function renderStudent(section,c,s,name,b,usage){
  }
  const history=el('details','',box);el('summary','查看保存版本',history);
  button('載入最近 30 個版本',async()=>{const r2=await call({action:'teacher_history',class_id:c.id,student_id:s.id});history.querySelectorAll('.saved-version').forEach(x=>x.remove());for(const v of r2.versions){const d=el('details','',history);d.className='saved-version';el('summary',`Week ${v.week} 版本 ${v.version} · ${new Date(v.created_at).toLocaleString('zh-TW')}`,d);el('pre',JSON.stringify(v.snapshot?.card||v.snapshot,null,2),d);}},history);
+}
+
+/** Week 3 訪談紀錄：三次訪談的原話與判斷，老師看得到；本週先唯讀。 */
+function renderWeek3(box,w3){
+ const rec=w3.record||{};const sec=el('section','',box);sec.className='tw2-week3';
+ el('h4',`Week 3 訪談紀錄卡 · ${w3.status==='submitted'?'已交':'草稿'} v${w3.version} · ${doneCount(rec)}/3 次`,sec);
+ const fitsLabel=v=>(fitsOptions.find(([k])=>k===v)||[])[1]||'（未選）';
+ (rec.interviews||[]).forEach((it,i)=>{
+  if(!it.who&&!it.quotes)return;
+  const d=el('details','',sec);d.className='tw2-interview';el('summary',`訪談 ${i+1}：${it.who||'（無代稱）'} · ${fitsLabel(it.fits).split('：')[0]}`,d);
+  for(const [k,label] of interviewFields){if(it[k])el('p',`${label.split('（')[0]}：${it[k]}`,d).className=k==='quotes'?'tw2-quote':'';}
+  el('p','痛點成立？'+fitsLabel(it.fits),d);
+ });
+ const j=(judgmentOptions.find(([k])=>k===rec.judgment)||[])[1];
+ if(j||rec.statement||rec.learned){const after=el('div','',sec);after.className='tw2-week3-after';if(j)el('p','判斷：'+j,after);if(rec.learned)el('p','理解改變：'+rec.learned,after);if(rec.statement)el('p','修正後的痛點陳述：'+rec.statement,after).className='tw2-statement';}
 }
 
 /** 班級名單：決定哪些學號能進門。加選、轉班從這裡加；學號打錯的人不是加名單，是請他重打。 */

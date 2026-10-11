@@ -254,3 +254,51 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-ok{color:#2f6b3a}
 #teacher-week2 .tw2-remove{font-size:.8rem;padding:2px 8px;margin-left:auto}
 @media (max-width:700px){#teacher-week2 .tw2-roster-list{columns:1}}
+
+/* Week 3 訪談準備單與紀錄卡 */
+#week-three textarea{min-height:80px;width:100%;box-sizing:border-box} #week-three input[type=text],#week-three input:not([type]){width:100%;box-sizing:border-box}
+#week-three [role=status]{padding:1rem;background:#e6efc2}
+#week-three .week3-sheet-lead{font-weight:700}
+#week-three .week3-sheet-grid{display:grid;grid-template-columns:9em 1fr;gap:6px 14px;margin:12px 0}
+#week-three .week3-sheet-grid dt{font-weight:700;color:#5b5548}
+#week-three .week3-sheet-grid dd{margin:0}
+#week-three .week3-teacher{padding:8px 12px;background:#e6efc2;border-radius:8px}
+#week-three .week3-hint{font-size:14px;color:#5b5548;margin:6px 0 0;flex-basis:100%}
+#week-three .week3-print-only{display:none}
+#week-three .week3-interview{margin:20px 0;padding:16px 20px;background:#fffdf8;border:2px solid var(--ink)}
+#week-three .week3-after{border-color:var(--green)}
+#week-three .week3-question{display:block;margin:12px 0;border-left:4px solid var(--coral);padding-left:14px}
+#week-three .week3-question>span{display:block;font-weight:700;margin-bottom:4px}
+#week-three .week3-radios{border:0;padding:0 0 0 14px}
+#week-three .week3-radios legend{font-weight:700;margin-bottom:4px}
+#week-three .week3-radios label{display:block;margin:4px 0;font-weight:400}
+#week-three .week3-radios input{width:auto;margin-right:4px}
+#week-three .quality-box{padding:14px 18px}
+#week-three .quality-track{display:flex;gap:8px;list-style:none;padding:0;margin:0 0 8px;counter-reset:q}
+#week-three .quality-track li{flex:1;padding:8px 10px;border-radius:8px;border:2px solid #d9d3c5;background:#fbfaf7;font-size:14px;font-weight:700;color:#8a857a;position:relative}
+#week-three .quality-track li::before{counter-increment:q;content:counter(q) ' ';opacity:.6}
+#week-three .quality-track li[data-state=done]{border-color:#1f4e3d;background:#1f4e3d;color:#fff}
+#week-three .quality-track li[data-state=next]{border-color:#c58a2a;background:#fff7e6;color:#5b3d10}
+#week-three .quality-next{font-size:15px;font-weight:700;margin:6px 0}
+#week-three .quality-teacher{margin:8px 0;padding:8px 12px;background:#e6efc2;border-radius:8px}
+#week-three .quality-why{font-size:14px;color:#5b5548;margin:0 0 6px}
+#week-three .workspace-actions{position:static;flex-wrap:wrap}
+@media (max-width:640px){#week-three .week3-sheet-grid{grid-template-columns:1fr}#week-three .quality-track{flex-wrap:wrap}#week-three .quality-track li{flex-basis:45%}}
+@media print{
+ body.print-sheet{background:#fff}
+ body.print-sheet header,body.print-sheet nav,body.print-sheet #week-blueprint,body.print-sheet #week-three-materials,body.print-sheet #week-three>:not(#week3-sheet),body.print-sheet #week-two{display:none!important}
+ body.print-sheet #week-three{display:block!important}
+ body.print-sheet #week3-sheet{border:0;margin:0;padding:0;font-size:12pt;background:#fff}
+ body.print-sheet #week-three .week3-sheet-actions{display:none}
+ body.print-sheet #week-three .week3-print-only{display:block;margin-top:14pt}
+ body.print-sheet .week3-print-only h3{font-size:12pt;margin:12pt 0 4pt;page-break-after:avoid}
+ body.print-sheet .week3-print-only p{margin:6pt 0 2pt;font-size:11pt}
+ body.print-sheet .week3-lines{height:34pt;border-bottom:1px solid #999;background:repeating-linear-gradient(to bottom,transparent 0,transparent 16pt,#bbb 16pt,#bbb 17pt)}
+}
+
+/* 教師洞察 · Week 3 */
+#teacher-week2 .tw2-week3{margin:10px 0;padding:10px 14px;border-left:4px solid #1f4e3d;background:#f4f7f1}
+#teacher-week2 .tw2-interview{margin:6px 0;padding:6px 10px;border:1px solid #d9d3c7;border-radius:8px;background:#fff}
+#teacher-week2 .tw2-interview summary{cursor:pointer;font-weight:700}
+#teacher-week2 .tw2-quote{font-weight:700;color:#1f4e3d}
+#teacher-week2 .tw2-week3-after{margin-top:8px}

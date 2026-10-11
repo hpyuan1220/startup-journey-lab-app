@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '../../../week2-core.mjs';
+import {normalizeRecord,checkRecord,WEEK3_RULES} from '../../../week3-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
 const sha=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -17,10 +18,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -68,6 +69,24 @@ Deno.serve(async req=>{
   const feedback=must(await db.from('week2_ai_requests').select('feedback,state,kind,submission_version,created_at').match(scope).order('created_at',{ascending:false}));
   const week1_feedback=must(await db.from('week1_ai_feedback_latest').select('feedback_json').match({...scope,week_number:1}).maybeSingle());
   return reply({week1:w1,week1_feedback,row,settings,versions,feedback});
+ }
+ // ---- Week 3 訪談紀錄卡 ----
+ // 準備單來自 Week 2 的卡（暫定痛點、受訪者、兩題問題）；Week 2 還是草稿也給，但沒有 Week 2 就請先回去填。
+ if(b.action==='week3_load'){
+  const w3=must(await db.from('week3_submissions').select('*').match(scope).maybeSingle());
+  return reply({week2:row?{status:row.status,card:row.card,review_status:row.review_status,teacher_note:row.teacher_note,teacher_target:row.teacher_target}:null,row:w3});
+ }
+ if(b.action==='week3_save'){
+  if(!row)return reply({error:'請先填 Week 2 痛點卡，訪談準備單會從那裡帶過來。'},409);
+  const record=normalizeRecord(b.record),checks=checkRecord(record);
+  if(!['draft','submitted'].includes(b.status))return reply({error:'提交狀態不正確。'},422);
+  if(b.status==='submitted'&&!checks.ok)return reply({error:checks.errors.join('；'),checks},422);
+  const w3=must(await db.from('week3_submissions').select('*').match(scope).maybeSingle());
+  const values={...scope,record,status:b.status,submitted_at:b.status==='submitted'?(w3?.submitted_at||new Date().toISOString()):w3?.submitted_at||null,review_status:w3?.review_status==='hold'?'hold':'pending'};
+  let saved;
+  if(w3){if(w3.version!==b.version)return reply({error:'另一個視窗已更新這張卡，請重新載入。'},409);saved=must(await db.from('week3_submissions').update(values).match({...scope,version:b.version}).select().maybeSingle());}
+  else saved=must(await db.from('week3_submissions').insert(values).select().single());
+  return saved?reply({row:saved,checks}):reply({error:'內容已更新，請重新載入。'},409);
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){

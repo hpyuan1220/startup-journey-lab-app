@@ -1,7 +1,7 @@
 const weeks=[
 ['課程說明與創業起點','影片〈Should You Start A Startup?〉帶你從真實問題、使用者與長期動機理解創業的起點。','完成個人起點卡','教材已提供',['理解：不需要先有 App、公司名稱或完整商業計畫。','觀察：記下未修飾的原句，以及誰、何時、在哪裡發生。','辨別：把可觀察的事實和仍待驗證的假設分開。','討論：我為什麼關心？原句是什麼？哪些是事實？哪些還不知道？','準備：留下一題下週要問使用者的問題。']],
 ['問題探索與選題','從多個生活問題中選擇一個值得深入研究的方向。','兩個候選痛點、一個暫定選題、三位受訪者與兩題訪談問題','教材已提供',['取回 Week 1：先完成起點卡，可修改並保留版本。','比較：填寫人物、情境、工作、阻礙、頻率、代價、替代方式、證據與假設。','選題：說明理由，以及什麼證據會讓你改變選擇。','修訂：先規則檢查，再選用 AI 或同儕回饋。AI 不是成績。','準備：確認三位可接觸受訪者與兩題非引導式問題，正式提交。']],
-['使用者訪談','學習用開放式問題理解使用者的真實經驗。','訪談紀錄與原話','教材準備中',['完成訪談題綱。','訪談真實使用者。','整理原話與發現。']],
+['使用者訪談','用問題理解別人的經驗，不是推銷你的答案。','三次真實訪談的紀錄卡：原話、代價、目前做法，以及訪談後的判斷','教材已提供',['取回 Week 2：看自己的三階燈與老師指路；還沒交的先補交。','準備單：痛點陳述、三位受訪者、兩題問題，印出來或存在手機裡。','怎麼問：問上一次發生什麼、後來怎麼辦；不問「你會不會用」。','紀錄：原話欄只寫對方說的話；你的想法另外寫。受訪者只用代稱。','判斷：三次記完後選成立／調整／換題，用受訪者的用詞改寫痛點陳述。']],
 ['AI-native 創業','思考 AI 可以協助哪些工作，也知道哪些判斷應由人負責。','AI 使用情境與限制','教材準備中',['定義使用者工作。','找出可信資料來源。','寫下人類檢查方式。']],
 ['產品與 MVP','用最低成本做出可讓使用者測試的原型。','MVP 原型','教材準備中',['畫出使用流程。','做出可測試版本。','準備觀察問題。']],
 ['第一批使用者','找到第一批願意測試與給回饋的使用者。','測試計畫','教材準備中',['定義測試對象。','安排接觸方式。','記錄測試回饋。']],
@@ -15,16 +15,19 @@ const n=Math.min(10,Math.max(1,Number(new URLSearchParams(location.search).get('
 document.title=`Startup Journey Lab｜Week ${n}`;const h=highlights[n-1];document.querySelector('#video-title').textContent=h[0];document.querySelector('#video-takeaway').textContent=h[1];document.querySelector('#week-number').textContent=`WEEK ${String(n).padStart(2,'0')}`;document.querySelector('#week-title').textContent=w[0];document.querySelector('#week-summary').textContent=w[1];document.querySelector('#week-output').textContent=`本週提交：${w[2]}`;document.querySelector('#week-status').textContent=w[3];document.querySelector('#week-steps').innerHTML=w[4].map(x=>`<li>${x}</li>`).join('');document.querySelector('#week-one').hidden=n!==1;
 
 document.querySelector("#week-two-materials").hidden=n!==2;
+document.querySelector("#week-three-materials").hidden=n!==3;
 
 // Switch views without rebuilding the form: unsaved answers remain in memory.
-if(n===2){
- const navigation=document.querySelector('#week-two-navigation');
+if(n===2||n===3){
+ const navigation=document.querySelector(n===2?'#week-two-navigation':'#week-three-navigation');
+ const materials=document.querySelector(n===2?'#week-two-materials':'#week-three-materials');
+ const cardSection=document.querySelector(n===2?'#week-two':'#week-three');
  navigation.hidden=false;
  function showWeekView(){
-  const cardView=['#card','#week-two'].includes(location.hash);
+  const cardView=['#card','#week-two','#week-three'].includes(location.hash);
   document.querySelector('#week-blueprint').hidden=cardView;
-  document.querySelector('#week-two-materials').hidden=cardView;
-  document.querySelector('#week-two').hidden=!cardView;
+  materials.hidden=cardView;
+  cardSection.hidden=!cardView;
   navigation.querySelectorAll('[data-week-view]').forEach(link=>{
    if(link.dataset.weekView===(cardView?'card':'learning'))link.setAttribute('aria-current','page');
    else link.removeAttribute('aria-current');

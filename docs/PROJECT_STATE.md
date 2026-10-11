@@ -1593,3 +1593,15 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 部署：week2-api bundle 7f855af8…（23,062 B）。
 - 2026-10-11 上線（實證）：week2-api 部署 7f855af8…（23,062 B，雜湊不變、M 歸零、a few seconds ago）；探針 GET 405／壞 JSON 400／學生無 token 401／teacher_roster 無 JWT 401／假 JWT 401；GitHub Pages 已是 teacher-week2.js?v=20261011-roster；
   正式站教師洞察載入：班級名單 47 人、還沒進過系統 4 人（劉昱佑、李雲峰、李婕炘、屠均泰）、47 張卡（含 4 張「還沒進過系統」）、已交 36／還沒審 36／草稿 4／尚未開始 3。
+
+#### 2026-10-12 Week 3 使用者訪談：簡報、學習頁、訪談準備單、訪談紀錄卡、教師洞察
+- 影片：YC Startup School 2022〈How To Talk To Users〉Gustaf Alströmer，youtube.com/watch?v=z1iF1c8w5Lg（約 17 分鐘）。
+- 簡報：materials/Week3_教學簡報.pptx／.pdf，25 頁，套 Week 2 版面只換文字（scripts/build-week3-slides.py ＋ docs/WEEK3_SLIDES_SOURCE.json；格數不符會直接報錯）。教案：docs/WEEK3_LESSON_PLAN.md。
+- 學生端 week.html?week=3：學習頁（影片五點、120 分鐘流程、教材）；#card 是「訪談準備單」（從 Week 2 的卡帶出暫定痛點、三位受訪者、兩題問題；一鍵列印／存 PDF，列印版附三次訪談手寫欄）＋「訪談紀錄卡」（三次訪談各 6 欄＋是否成立；訪談後判斷、理解改變、修正後陳述；三階燈；草稿隨時存、三次都記完才能提交）。沒有 Week 2 會導回去填。沒有 AI。
+- 共用邏輯 week3-core.mjs（normalize／check／completion），原話裡有姓名、電話、學號、Email 擋提交。
+- week2-api 新動作 week3_load／week3_save（版本衝突 409、沒 Week 2 409）；teacher_load 多回 week3。bundle 現含 week3-core。
+- 資料表 week3_submissions（migration 20261012_week3.sql），沿用 bump_learning_version／snapshot_learning('3')。
+- 教師洞察：學生卡摘要多「Week 3 已交 N/3 次訪談」；卡內 Week 3 區塊（三次訪談可展開、原話、判斷、修正後陳述，本週唯讀）；進度行多「Week 3 已交／草稿」。
+- 測試：單元 154（新 week3-core 4、week2-api Week 3 1）、bundle 35、瀏覽器 tests/week3-student.mjs 13/13（含手機寬度、重新開頁、沒 Week 2、教師洞察）、其餘瀏覽器測試全綠。注意：teacher-roster 測試會在驗收伺服器上建名單，之後同一台伺服器的其他學生登入會被擋——各測試用新 port。
+- 待上線：push → migration 20261012_week3.sql → 部署 week2-api bundle b1cf8411…（29,504 B）。
+- 還沒做：給受訪者填的問卷（第 5 項）。
