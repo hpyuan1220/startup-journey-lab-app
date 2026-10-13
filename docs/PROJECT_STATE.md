@@ -1653,3 +1653,6 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 後端：week2-api 的 week3_save 走 normalizeRecord 就會留下 preclass，無新 action；bundle 重建 e2ce8bf9…（39,440 B），要部署。
 - 測試：單元 165/165（week3-core +3、week2-api +3：存 preclass 不改提交狀態、teacher_load 帶回、壞答案清掉）；瀏覽器 `tests/preclass.mjs` 18/18（沒登入可做題不能存、選錯有解釋可重選、假設題擋下、存後重開頁都在、沒有 Week 2 的學生存鈕停用、Week 2 頁只有三題、老師端看得到）。390px 版面截圖正常。
 - 不動資料表（preclass 在 record JSON 裡），不用 migration。上線順序：push → 部署 week2-api bundle → 正式站用老師測試 ID A1130309125 走一次。
+- 上線（實證，2026-10-13）：origin/main = 6cfeb1c；week2-api 部署 e2ce8bf9…（39,440 B），M 標記消失；探針無 token／壞 token／老師無 JWT 皆 401；正式站用 A1130309125 做三題、存第一個問題、重開頁都在（訪談卡版本 1 草稿）。LINE 訊息已給老師。
+- Week 3 簡報加「課前預習回顧」頁（第 4 頁，範本三格版面：三題＋正解，底下請三位同學唸自己存的第一個問題），流程頁 10–25 改成「課前預習回顧：三題＋第一個問題」；28 頁，pptx／pdf 重建並複製到 116 最上層。
+- **之後每週固定做法（老師 2026-10-13 定案）**：影片（NotebookLM）→ 影片下三題（PRECLASS_QUIZ 加該週）→ 一句話存進該週的卡（老師端看得到）→ 簡報「課前預習回顧」頁 → LINE 三步訊息。完整指令見 PROMPT_PACK P10。

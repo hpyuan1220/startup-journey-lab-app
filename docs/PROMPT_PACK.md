@@ -101,3 +101,16 @@ system prompt 裡「不可信資料」「不評成績」「不輸出姓名學號
 4. 簡報：docs/WEEK<N>_SLIDES_SOURCE.json 用新式格式（header + slides[{template, texts}]），每個重點一頁、用範本第 9 頁的四格版面（template: 9），放在「本週 YC 影片」那頁之後；「影片的 N 個提醒」那頁改成「前五個」並註明其餘在第幾頁。然後 python3 scripts/build-slides.py --source … --out …，soffice 轉 PDF，做接觸表目視檢查溢出，太長就縮短文字。
 5. 回報：重點數、學習頁截圖、簡報新頁截圖；標明實證／推論。
 ```
+
+## P10　每週課前預習套件（影片＋三題＋一句話存進卡＋簡報回顧頁）—— 自 Week 3 起的固定做法
+
+```
+第《N》週的課前預習套件，照 Week 3 的做法（docs/PROJECT_STATE.md「2026-10-13 課前預習互動」與「每週流程」）：
+1. 來源：把 docs/WEEK<N>_YC_GUIDE.md 整理成「給 NotebookLM 的來源」（每個重點五件事＋開場收尾指示，字數 4,500 字以上才夠 15 分鐘），存 116/NotebookLM_week<N>/。
+2. 影片：我把來源貼進 NotebookLM、Video Overview（說明影片、繁體）、看一遍、下載、上 YouTube 不公開；你把連結放進 week.html 該週 .preclass 區塊（youtube-nocookie 內嵌＋備用連結＋「AI 生成，以原片與導讀為準」）。
+3. 三題：在 week3-core.mjs 的 PRECLASS_QUIZ 加第 <N> 週（三題、四選項、每題一句解釋），從導讀裡挑最容易搞錯的三個觀念；不計分、可重選。
+4. 一句話存進卡：該週的學生頁用 mountPreclass 掛在影片下，onSave 存進該週的卡（Week 3 是「第一個訪談問題」；之後每週換成該週要帶去上課的那一句，例如 Week 4「你最想驗證的那個假設」），老師洞察的學生卡顯示「課前預習：三題做了 n/3 · …」。
+5. 簡報：docs/WEEK<N>_SLIDES_SOURCE.json 在 120 分鐘流程頁後面加一頁「課前預習回顧」（範本第 4 頁三格版面：三題＋正解一句，底下一行「請三位同學唸自己存的那一句」），流程頁 10–25 改成「課前預習回顧」；重建 pptx／pdf 並複製到 116 最上層。
+6. 上線：單元＋瀏覽器測試（tests/preclass.mjs 加該週案例）→ 我 push → 若動到 week3-core.mjs 就要重建 bundle、我按 Deploy → 正式站用老師測試 ID 走一遍 → 給我 LINE 訊息（三步＋連結＋「要先有上週的卡才存得了」）。
+7. 回報：影片長度、三題內容、簡報回顧頁截圖；標明實證／推論。
+```
