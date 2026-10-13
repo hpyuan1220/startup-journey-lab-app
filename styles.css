@@ -348,3 +348,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tw2-review .tw2-msg{margin:6px 0 0;font-weight:700;color:var(--green);min-height:1.4em}
 .tw2-review .tw2-msg.error{color:#9e362a}
 .tw2-review .tw2-msg a{color:inherit;text-decoration:underline;margin-left:4px}
+.preclass-quiz{margin:14px 0 0;padding:12px 14px;background:#fffdf8;border:1px solid var(--ink)}
+.preclass-quiz h3{margin:0 0 4px}
+.preclass-quiz .preclass-hint{margin:0 0 8px;font-size:.92rem;color:#5b5548}
+.preclass-item{border:1px solid #d9d3c5;border-radius:8px;padding:8px 10px;margin:8px 0;background:#fff}
+.preclass-item legend{font-weight:700;padding:0 4px}
+.preclass-item label{display:block;margin:4px 0;line-height:1.5}
+.preclass-item input{width:auto;margin:0 4px 0 0}
+.preclass-item[data-state=right]{border-color:var(--green)}
+.preclass-item[data-state=wrong]{border-color:#c98a2b}
+.preclass-why{margin:6px 0 2px;padding:6px 8px;border-radius:6px;background:#eef6f1;font-size:.95rem;line-height:1.5}
+.preclass-why[data-state=wrong]{background:#fff4e3}
+.preclass-summary{font-weight:700;margin:6px 0 0}
+.preclass-question{display:grid;gap:4px;margin-top:12px;font-weight:700}
+.preclass-question textarea{min-height:64px;font-weight:400}
+.preclass-actions{align-items:center;flex-wrap:wrap}
+.preclass-msg{margin:0;font-weight:700;color:var(--green)}
+.preclass-msg a{margin-left:6px}

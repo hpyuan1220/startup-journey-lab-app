@@ -1,6 +1,6 @@
 // Week 3 訪談紀錄卡：瀏覽器與 Edge Function 共用的純邏輯（不含任何身分資訊）。
 // 一張卡 = 三次訪談 + 訪談後的判斷。所有欄位都是學生自己的文字；AI 不參與本週。
-export const WEEK3_RULES='w3-20261012';
+export const WEEK3_RULES='w3-20261013';
 export const INTERVIEW_COUNT=3;
 export const interviewFields=[
  ['who','受訪者代稱＋身分（不寫姓名）','例：便利商店夜班工讀生 A'],
@@ -14,7 +14,33 @@ export const fitsOptions=[['yes','成立：對方真的遇過，說得出上一�
 export const judgmentOptions=[['keep','成立：保留這個痛點，補強陳述'],['adjust','調整：縮小人物或步驟，改寫陳述'],['change','換題：回 Week 2 另一個候選']];
 
 export function emptyInterview(){return {who:'',when_where:'',quotes:'',cost:'',workaround:'',surprise:'',fits:''};}
-export function emptyRecord(){return {interviews:[emptyInterview(),emptyInterview(),emptyInterview()],judgment:'',learned:'',statement:''};}
+export function emptyRecord(){return {interviews:[emptyInterview(),emptyInterview(),emptyInterview()],judgment:'',learned:'',statement:'',preclass:emptyPreclass()};}
+/** 課前預習：看完影片做三題（只存選了什麼，不計分），再寫一句「我要問受訪者的第一個問題」。老師端看得到誰做了預習。 */
+export function emptyPreclass(){return {question:'',answers:['','',''],done_at:''};}
+export function normalizePreclass(input){
+ const p=emptyPreclass();const src=input&&typeof input==='object'?input:{};
+ p.question=typeof src.question==='string'?src.question.replace(/\r/g,'').trim().slice(0,300):'';
+ const list=Array.isArray(src.answers)?src.answers:[];
+ p.answers=[0,1,2].map(i=>['a','b','c','d'].includes(list[i])?list[i]:'');
+ p.done_at=typeof src.done_at==='string'&&/^\d{4}-\d{2}-\d{2}/.test(src.done_at)?src.done_at.slice(0,30):'';
+ return p;
+}
+export function preclassDone(record){const p=record&&record.preclass||emptyPreclass();return p.question.length>=6;}
+/** 三題判斷：每題一句候選問題或題目，四個選項裡只有一個對；選完立刻看解釋，可以重選。 */
+export const PRECLASS_QUIZ={
+ 3:{title:'看完影片，做三題：這句話是好問題還是壞問題？',
+  options:[['a','好問題：問上一次真的發生的事'],['b','壞問題：是非題，對方只會說有或沒有'],['c','壞問題：假設題或功能題，在推銷解法'],['d','壞問題：引導答案，對方為了禮貌會附和']],
+  items:[
+   {q:'「上次你排隊排最久的那一次，後來怎麼辦？」',answer:'a',why:'問的是上一次真的發生的事，對方要回想細節，代價和替代做法會自己跑出來。'},
+   {q:'「如果有一個 App 可以幫你預約取餐，你會用嗎？」',answer:'c',why:'這是假設題加功能題。沒有人會說不會，但「會用」跟「真的會改變習慣」是兩回事；影片說這種題問了等於沒問。'},
+   {q:'「排隊很煩吧？你有沒有遇過？」',answer:'d',why:'「很煩吧」已經把答案放進去了，對方只會點頭；而且「有沒有遇過」是是非題。改問「上次是哪一天？後來呢？」'}]},
+ 2:{title:'看完影片，做三題：這個題目比較像哪一種？',
+  options:[['a','焦油坑：人人有感，但沒有人願意為它改變習慣'],['b','解法先行：先有產品，再硬找一個問題'],['c','無聊的好題目：每天發生、有明確代價、現有做法是硬撐'],['d','還不知道：要先去問三個真的遇過的人']],
+  items:[
+   {q:'「大家午餐都決定不了要吃什麼，討論很久，很煩。」',answer:'a',why:'人人有感，但訪談時一問「上次最後怎麼決定的？」答案常常是「隨便啦三分鐘」，代價不存在。這就是影片講的焦油坑。'},
+   {q:'「我想做一個 AI，一鍵幫我訂票、訂房、辦簽證。」',answer:'b',why:'整句話都是產品，沒有一件真的發生過的事。先拿掉「AI」「一鍵」，問自己上一次規劃完行程之後卡在哪一步。'},
+   {q:'「便利商店交班時漏記缺貨品項，下一班重新盤點一次，每週至少兩次。」',answer:'c',why:'看起來不起眼，但每週發生、代價明確（重做一次盤點）、現在的做法是紙本硬撐。影片說的「無聊的好題目」就是這種。'}]}
+};
 const str=v=>typeof v==='string'?v.replace(/\r/g,'').trim().slice(0,2000):'';
 export function normalizeRecord(input){
  const r=emptyRecord();const src=input&&typeof input==='object'?input:{};
@@ -22,6 +48,7 @@ export function normalizeRecord(input){
  r.interviews=r.interviews.map((blank,i)=>{const it=list[i]&&typeof list[i]==='object'?list[i]:{};const out={...blank};for(const k of Object.keys(blank))out[k]=str(it[k]);if(!['yes','partly','no',''].includes(out.fits))out.fits='';return out;});
  r.judgment=['keep','adjust','change'].includes(src.judgment)?src.judgment:'';
  r.learned=str(src.learned);r.statement=str(src.statement);
+ r.preclass=normalizePreclass(src.preclass);
  return r;
 }
 /** 一次訪談算「記了」：有代稱、有時地、有原話。 */

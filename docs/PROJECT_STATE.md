@@ -1645,3 +1645,11 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 老師看過、下載（1280×720、15:27、75 MB），上傳 irene 頻道設不公開：https://youtu.be/ZiaHP1EgGi8（無字幕檔，靠 YouTube 自動字幕）。
 - `week.html` Week 2 教材區最上方加 `.preclass` 區塊（同 Week 3 樣式，youtube-nocookie 內嵌＋備用連結＋「AI 生成，以原片與導讀為準」）。無 CSS 變動，版本號不用動。
 - 每週流程（之後照做）：AI 整理該週導讀成「給 NotebookLM 的來源」→ 老師貼進筆記本、Video Overview（說明影片、繁體）→ 老師看一遍、下載 → YouTube 不公開 → AI 放進學習頁。
+
+## 2026-10-13 課前預習互動：影片下「看完做三題」＋ Week 3「第一個問題」存進訪談卡
+- 動機：預習影片只有看，沒有互動；老師也看不到誰預習了。做法：三題選擇題（選了就看到解釋、可重選、不計分）；Week 3 多一格「寫下你這週要問受訪者的第一個問題」，存進學生的 week3 卡 `record.preclass`（question／answers／done_at），老師洞察的學生卡多一行「課前預習：三題做了 n/3 · 第一個問題：「…」」（沒寫則黃字「還沒寫第一個問題」）。
+- 模型：`week3-core.mjs`（WEEK3_RULES w3-20261013）新增 `emptyPreclass／normalizePreclass／preclassDone／PRECLASS_QUIZ`，`normalizeRecord` 一律帶 preclass；題目資料放在 core 檔（bundle 腳本只合併 week2-core＋week3-core，不能另開檔案）。`checkRecord` 不看 preclass，提交條件不變。
+- 前端：新檔 `preclass-ui.mjs`（`mountPreclass(container, week, {initial, canSave, onSave, loginHref})`）；`week3.js` 的 `renderPreclass()` 在沒登入、載入後各掛一次，存檔時保持原本提交狀態（已交且檢查通過才仍是 submitted，否則 draft）；像是非題／假設題（會不會／是不是／如果有…）先擋下不存；`week2.js` 只掛三題不存。版本號 `?v=20261013-preclass`（week2.js／week3.js／teacher-week2.js／styles.css）。
+- 後端：week2-api 的 week3_save 走 normalizeRecord 就會留下 preclass，無新 action；bundle 重建 e2ce8bf9…（39,440 B），要部署。
+- 測試：單元 165/165（week3-core +3、week2-api +3：存 preclass 不改提交狀態、teacher_load 帶回、壞答案清掉）；瀏覽器 `tests/preclass.mjs` 18/18（沒登入可做題不能存、選錯有解釋可重選、假設題擋下、存後重開頁都在、沒有 Week 2 的學生存鈕停用、Week 2 頁只有三題、老師端看得到）。390px 版面截圖正常。
+- 不動資料表（preclass 在 record JSON 裡），不用 migration。上線順序：push → 部署 week2-api bundle → 正式站用老師測試 ID A1130309125 走一次。

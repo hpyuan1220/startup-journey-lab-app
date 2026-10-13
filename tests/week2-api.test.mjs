@@ -86,6 +86,10 @@ test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存�
  assert.equal((await h.call({action:'week3_save',token,status:'submitted',version:0,record:fullRec})).status,409,'版本不對要擋');
  const ok=await h.call({action:'week3_save',token,status:'submitted',version:1,record:fullRec});assert.equal(ok.status,200);assert.equal(ok.body.row.status,'submitted');assert.ok(ok.body.row.submitted_at);
  const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week3.length,1);assert.equal(t.body.week3[0].student_id,'A113270021');
+ // 課前預習：存問題不會動到提交狀態；老師端讀得到；亂塞的選項被清掉
+ const pre=await h.call({action:'week3_save',token,status:'submitted',version:ok.body.row.version,record:{...fullRec,preclass:{question:'上次你排隊最久那次，後來怎麼辦？',answers:['a','c','zz'],done_at:'2026-10-13T01:00:00Z'}}});
+ assert.equal(pre.status,200);assert.equal(pre.body.row.status,'submitted');assert.equal(pre.body.row.record.preclass.question,'上次你排隊最久那次，後來怎麼辦？');assert.deepEqual(pre.body.row.record.preclass.answers,['a','c','']);
+ const t2=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t2.body.week3[0].record.preclass.question,'上次你排隊最久那次，後來怎麼辦？');
  assert.equal((await h.call({action:'week3_load',token:'not-a-real-token-xxxxxxxx'})).status,401);
 });
 

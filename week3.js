@@ -1,4 +1,5 @@
-import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261012-survey';
+import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261013-preclass';
+import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。
@@ -151,6 +152,7 @@ function collect(){
  const r=emptyRecord();
  r.interviews.forEach((it,n)=>{for(const [k] of interviewFields)it[k]=inputs[`i${n}_${k}`].value;it.fits=inputs[`i${n}_fits`].find(x=>x.checked)?.value||'';});
  r.judgment=inputs.judgment.find(x=>x.checked)?.value||'';r.learned=inputs.learned.value;r.statement=inputs.statement.value;
+ r.preclass=record.preclass; // 課前預習不在表單裡，存卡時要一起帶著
  record=normalizeRecord(r);return record;
 }
 function fill(){
@@ -174,14 +176,33 @@ async function persist(status,button){
  }finally{saving=false;button.disabled=false;}
 }
 
+// ---- 課前預習（影片下方的三題＋第一個問題）----
+// 沒登入也能做三題；存問題要有 Week 2 卡。存的時候保持原本的提交狀態（已交就還是已交）。
+const preclassHost=document.querySelector('#week-three-materials .preclass');
+function renderPreclass(){
+ mountPreclass(preclassHost,3,{
+  initial:record.preclass,
+  canSave:!!(session?.token&&week2),
+  loginHref:session?.token?null:'index.html#student',
+  onSave:async(p)=>{
+   if(!week2)throw Error('先填 Week 2 痛點卡');
+   record=normalizeRecord({...record,preclass:p});
+   const status=row?.status==='submitted'&&checkRecord(record).ok?'submitted':'draft';
+   const r=await api({action:'week3_save',status,version:row?.version??null,record});
+   row=r.row;record=normalizeRecord(row.record);refreshMeter();
+  }
+ });
+}
+renderPreclass();
+
 async function load(){
- if(!session?.token){msg.textContent='';sheet.replaceChildren();el('h2','先進入你的班級',sheet);el('p','用學號和班級邀請碼進入後，Week 3 的準備單會自動從你的 Week 2 痛點卡帶出來。',sheet);const a=el('a','前往學生入口 →',sheet);a.href='index.html#student';a.className='primary-link';return;}
+ if(!session?.token){renderPreclass();msg.textContent='';sheet.replaceChildren();el('h2','先進入你的班級',sheet);el('p','用學號和班級邀請碼進入後，Week 3 的準備單會自動從你的 Week 2 痛點卡帶出來。',sheet);const a=el('a','前往學生入口 →',sheet);a.href='index.html#student';a.className='primary-link';return;}
  try{
   const r=await api({action:'week3_load'});week2=r.week2;row=r.row;
   try{surveyData=await api({action:'survey_load'});}catch(e){surveyData=null;}renderSurvey();
   record=normalizeRecord(row?.record||emptyRecord());
   if(!row&&week2?.card?.statement&&!record.statement)record.statement=week2.card.statement;
-  renderSheet();
+  renderSheet();renderPreclass();
   if(week2){if(!formBuilt){buildForm();formBuilt=true;}fill();form.hidden=false;}
   refreshMeter();
   msg.textContent=week2?(row?`已載入你的訪談卡（版本 ${row.version}）。`:'準備單已帶出來。訪談完一位就回來記一筆。'):'';

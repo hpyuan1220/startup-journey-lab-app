@@ -44,3 +44,20 @@ test('普查：彙總每題幾人遇過、願意的代稱；關掉的題不出�
  const rs=[{topic_id:1,student_id:'x',experienced:true,willing:true,alias:'甲'},{topic_id:1,student_id:'y',experienced:true,willing:false,alias:'乙'},{topic_id:1,student_id:'z',experienced:false},{topic_id:2,student_id:'x',experienced:true,willing:true,alias:'甲'}];
  const sum=surveySummary(topics,rs);assert.deepEqual(sum.map(s=>[s.topic_id,s.answered,s.experienced,s.willing]),[[3,0,0,[]],[1,3,2,['甲']]]);
 });
+
+// 2026-10-13 課前預習：三題的選擇＋第一個問題存在 record.preclass
+import {normalizePreclass,preclassDone,PRECLASS_QUIZ} from '../week3-core.mjs';
+test('preclass：正規化只留 a–d 的選擇、問題截到 300 字；沒有 preclass 的舊卡也有空值',()=>{
+ const p=normalizePreclass({question:'  上次你排隊最久那次，後來怎麼辦？ ',answers:['a','zz','d',3],done_at:'2026-10-13T01:00:00Z'});
+ assert.deepEqual(p.answers,['a','','d']);assert.equal(p.question,'上次你排隊最久那次，後來怎麼辦？');assert.equal(p.done_at,'2026-10-13T01:00:00Z');
+ const r=normalizeRecord({interviews:[]});assert.deepEqual(r.preclass,{question:'',answers:['','',''],done_at:''});
+ assert.equal(preclassDone(r),false);r.preclass.question='上次發生什麼？';assert.equal(preclassDone(r),true);
+});
+test('preclass：三題資料 Week 2、3 各三題，每題正好一個正解且在四個選項內',()=>{
+ for(const w of [2,3]){const q=PRECLASS_QUIZ[w];assert.equal(q.items.length,3);const keys=q.options.map(([k])=>k);for(const it of q.items){assert.ok(keys.includes(it.answer),w+':'+it.q);assert.ok(it.why.length>10);}}
+});
+test('preclass：提交規則不管課前預習（沒寫也能提交，寫了也不會多擋）',()=>{
+ const r=normalizeRecord({interviews:[]});r.preclass.question='';const c1=checkRecord(r);
+ r.preclass.question='上次你怎麼找到組的？';const c2=checkRecord(r);
+ assert.deepEqual(c1.errors,c2.errors);
+});

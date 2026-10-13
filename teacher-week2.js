@@ -1,6 +1,6 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261012-solution';
-import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261012-survey';
+import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261013-preclass';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -197,6 +197,9 @@ function renderStudent(section,c,s,name,b,usage){
 function renderWeek3(box,w3){
  const rec=w3.record||{};const sec=el('section','',box);sec.className='tw2-week3';
  el('h4',`Week 3 訪談紀錄卡 · ${w3.status==='submitted'?'已交':'草稿'} v${w3.version} · ${doneCount(rec)}/3 次`,sec);
+ const pc=rec.preclass||{};const quizN=(pc.answers||[]).filter(Boolean).length;
+ if(pc.question)el('p',`課前預習：三題做了 ${quizN}/3 · 第一個問題：「${pc.question}」`,sec).className='tw2-preclass';
+ else el('p',`課前預習：${quizN?`三題做了 ${quizN}/3，`:''}還沒寫第一個問題`,sec).className='tw2-preclass tw2-warn';
  const fitsLabel=v=>(fitsOptions.find(([k])=>k===v)||[])[1]||'（未選）';
  (rec.interviews||[]).forEach((it,i)=>{
   if(!it.who&&!it.quotes)return;

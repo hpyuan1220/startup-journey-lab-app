@@ -2,7 +2,10 @@ import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} fro
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs?v=20261002-safari';
 import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
 import {completion,chips,questionIndex,assess,SOLUTION_WORDS} from './week2-quality.mjs?v=20261012-solution';
+import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 const root=document.querySelector('#week-two');
+// 課前預習三題（Week 2 只做題，不存；想改卡就直接去改）
+mountPreclass(document.querySelector('#week-two-materials .preclass'),2,{});
 if(root&&new URLSearchParams(location.search).get('week')==='2'){
 root.hidden=!['#card','#week-two'].includes(location.hash);
 let card=emptyCard(),version=null,row=null,step=0,dirty=false,session,week1Identity=[],editGeneration=0,saving=false;
