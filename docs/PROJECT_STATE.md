@@ -1639,3 +1639,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 修正二（week2-quality.mjs，QUALITY_VERSION q-20261012a）：「是問題不是解法」改法——解法字擴充（場所／吸菸室／機器人／媒合／自動幫…／「做一個 __」句型／「希望有人推薦」）；單獨「開發」不算（「陌生開發」誤判）；「社交平台／外送平台／平台上」先剔除（描述現況不是解法）；訪談題「如果有 __ 你會不會／意願嗎」直接 0 分並指到那一題；假設＋選題理由＋改變條件＋為什麼不夠：一格在想解法 1 分、兩格以上 0 分。預期：王柏勳 15→13、黃立竹更低、吳承叡 11→13（開發誤判解除）。
 - 測試：單元 162/162（week2-quality 新增 4 條）；瀏覽器 tests/teacher-review-expired.mjs 6/6（401 時訊息在按鈕旁、草稿保留、重載保留、恢復後再按一次存進去）；teacher-week2-view、quality-box 重跑仍全綠。版本號：teacher-week2.js?v=20261012-reviewmsg、week2.js?v=20261012-solution、quality ?v=20261012-solution、styles.css?v=20261014-reviewmsg。
 - 不動後端，不用部署 Edge Function；push 即上線。
+
+## 2026-10-13 Week 2 課前預習影片（NotebookLM 生成 → 老師 YouTube）
+- OpenMAIC 訪客額度用完且不重置（9/11 幕卡住，匯出鎖死），改用老師 Google Workspace 的 NotebookLM Video Overview（語言中文（繁體）、格式說明影片）。來源只用我們自己寫的導讀：`116/NotebookLM_week2/Week2_課前預習_來源_加長版.md`（九個重點各五件事＋開場收尾指示）；第一版來源太短只生出 8:15，加長版生出 15:26。
+- 老師看過、下載（1280×720、15:27、75 MB），上傳 irene 頻道設不公開：https://youtu.be/ZiaHP1EgGi8（無字幕檔，靠 YouTube 自動字幕）。
+- `week.html` Week 2 教材區最上方加 `.preclass` 區塊（同 Week 3 樣式，youtube-nocookie 內嵌＋備用連結＋「AI 生成，以原片與導讀為準」）。無 CSS 變動，版本號不用動。
+- 每週流程（之後照做）：AI 整理該週導讀成「給 NotebookLM 的來源」→ 老師貼進筆記本、Video Overview（說明影片、繁體）→ 老師看一遍、下載 → YouTube 不公開 → AI 放進學習頁。
