@@ -1,5 +1,7 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs?v=20261002-safari';
+import {renderWeek2Summary,week2StatusText,priorDetails} from './prior-view.mjs?v=20261016-prior';
+import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
 import {completion,chips,questionIndex,assess,SOLUTION_WORDS} from './week2-quality.mjs?v=20261012-solution';
 import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
@@ -38,6 +40,20 @@ const el=(tag,text,parent=root)=>{const e=document.createElement(tag);if(text)e.
 const msg=el('p','正在載入你的學習卡…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const workspace=el('section');workspace.hidden=true;
 const intro=el('section','',workspace);intro.className='video-learning-card';root.insertBefore(intro,workspace);
+// 已交過的人：開頁會捲到完成度卡，緊接著就是整張卡（唯讀）。表單仍在下面，要改再往下。
+// 摘要的位置在 qualityBox 建好後才放（見下方 workspace.insertBefore）。
+const summaryCard=el('section');summaryCard.className='video-learning-card prior-summary';summaryCard.id='week2-summary';summaryCard.hidden=true;
+function renderSummary(){
+ const wasOpen=summaryCard.querySelector('details')?.open;
+ summaryCard.replaceChildren();
+ const sent=row&&(row.status==='submitted'||row.submitted_at);
+ if(!sent){summaryCard.hidden=true;return;}
+ summaryCard.hidden=false;
+ const d=priorDetails(summaryCard,`我的 Week 2 痛點卡 · ${week2StatusText(row)}`,wasOpen!==false);
+ renderWeek2Summary(d,row);
+ const go=document.createElement('button');go.type='button';go.textContent='要修改：往下到填答區 ↓';
+ go.onclick=()=>{try{form.scrollIntoView({block:'start'});}catch{}};d.append(go);
+}
 el('h3','先理解：這張卡要做什麼？',intro);
 el('p','本週先比較兩個你親身觀察到的不同困擾，再暫選一個，下週找真人訪談。現在不用想產品，也不用證明創業會成功。',intro);
 const explanation=el('ol','',intro);for(const text of ['痛點 1：延續 Week 1 的觀察，補充還不清楚的地方。','痛點 2：再找另一個不同困擾；可以是同一場景，但阻礙要不同。','比較選題：從兩個困擾選一個，說明理由。兩個不是都要做成產品。','準備訪談：為選中的一題，找三位可接觸的人、準備兩個問題。'])el('li',text,explanation);
@@ -50,6 +66,7 @@ const welcome=el('section','',workspace);welcome.hidden=true;welcome.className='
 // 三階完成度：學生只在意「完成」，所以把「完成」長在對的地方 —— 交了 → 能拿去問人了 → 老師說 OK。
 // 永遠不擋提交；差哪一件事就只講那一件，旁邊給可以直接點的寫法。
 const qualityBox=el('section','',workspace);qualityBox.className='video-learning-card quality-box';qualityBox.id='week2-quality';qualityBox.hidden=true;
+workspace.append(summaryCard);
 function refreshQuality(){
  if(!row){qualityBox.hidden=true;return;}
  qualityBox.hidden=false;qualityBox.replaceChildren();
@@ -301,7 +318,10 @@ function qFocus(){const rememberedQuestion=[...form.querySelectorAll('.week2-que
  if(q&&q.offsetParent!==null){try{q.scrollIntoView({block:'center',behavior:'auto'});}catch{q.scrollIntoView();}}}
 function addBackupDownload(){try{const backup=localStorage.getItem(cacheKey()+'-backup');if(backup&&!actions.querySelector('[data-backup]'))button('下載先前本機備份',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+backup],{type:'text/plain;charset=utf-8'}));a.download='Week2-本機備份.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}).dataset.backup='true';}catch{}}
 const cacheKey=()=>`sjl-week2-${session?.class_id}-${session?.student_id}`;
-async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;throw e;}return b;}
+async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;if(r.status===401)onExpired();throw e;}return b;}
+// 登入失效（換裝置登入或過期）：一次就好，畫一張「重新進入」卡。畫面上的答案已經有本機草稿，回來時可以選。
+let expiredShown=false;
+function onExpired(){if(expiredShown)return;expiredShown=true;showRelogin(root,'week2',msg);}
 /** 每次 AI 回來就說還剩幾次 —— 不要讓學生在用完的那一刻才知道有上限。 */
 function remainingNote(r){
  if(!r||typeof r.remaining!=='number')return '';
@@ -415,8 +435,11 @@ function render(){
  el('p','不論勾選與否，必填內容完全相同：兩個候選痛點、三位受訪者與兩題訪談問題。隨時可以切換，答案不會消失。',form);
  if(card.candidates.length===3)button('前往第三個痛點（選填）',()=>goStage('2'),form);
  card.candidates.forEach((c,i)=>{
-  const box=el('details','',form);box.className='candidate';box.dataset.stage=String(i);box.open=true;el('summary',`痛點 ${i+1}${i===2?'（選填）':''}：${i===0?'延續 Week 1 的困擾':i===1?'另一個不同困擾':'額外比較的困擾'}`,box);
-  el('p',i===0?'已帶入可用的 Week 1 內容；請在下面的文字框確認並補充。':'請在下面的文字框填寫另一個困擾，不是上一題的解決方法。',box);
+  const box=el('details','',form);box.className='candidate';box.dataset.stage=String(i);box.open=true;// 雲端已有這張卡的人，痛點 1 就是他自己的 Week 2 內容，不要再說「延續 Week 1／已帶入 Week 1」——學生會以為 Week 2 不見了。
+  const fresh=!row;
+  const gist=String(c.problem||'').trim(),hint=fresh?(i===0?'延續 Week 1 的困擾':i===1?'另一個不同困擾':'額外比較的困擾'):(gist?gist.slice(0,24)+(gist.length>24?'…':''):'');
+  el('summary',`痛點 ${i+1}${i===2?'（選填）':''}${hint?'：'+hint:''}`,box);
+  if(fresh)el('p',i===0?'已帶入可用的 Week 1 內容；請在下面的文字框確認並補充。':'請在下面的文字框填寫另一個困擾，不是上一題的解決方法。',box);
   // 場景下拉只是起手式，情境已經寫了就不要再擺一個「請選擇」在那裡，看起來像沒填。
   if(paced()&&!String(c.context||'').trim()){
    const q=el('label','先從生活場景選擇（可自行填寫）',box),s=el('select','',q);for(const text of ['請選擇','吃飯','通勤','上課','租屋','打工','分組','行政流程']){el('option',text,s);}s.onchange=()=>{if(s.selectedIndex){const hint=el('p',`你選了「${s.value}」。請在「何時何地發生」補充自己的時間、地點與事件；不會覆蓋原答案。`,box);hint.setAttribute('role','status');}};
@@ -582,7 +605,7 @@ async function save(status,snapshot=normalize(card)){
  if(status==='draft')submitResult.hidden=true;
  if(status==='submitted'&&!checks(true).ok){msg.textContent='尚未通過必要欄位檢查，仍可儲存草稿。';return;}
  const generation=editGeneration;saving=true;msg.textContent='正在同步…';
- try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;
+ try{const r=await api({action:'save',card:snapshot,version,status});row=r.row;version=row.version;if(!summaryCard.hidden)renderSummary();
  if(generation===editGeneration){dirty=false;localStorage.removeItem(cacheKey());msg.textContent=`${status==='submitted'?'已提交':'草稿已同步'} · 版本 ${version} · ${readiness(row)}`;
   // 套用 AI 修改後會留下「但還沒存到雲端，請按儲存草稿到雲端」這句話。
   // 存好之後它沒被清掉，畫面上就同時出現「已同步版本 N」和「還沒存到雲端」兩句相反的話，
@@ -656,7 +679,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
   // 上次停在「檢查與提交」就不要回到那裡：那一頁把整張表單藏起來，重新開頁的學生會以為答案全沒了。
   if(activeStage==='submit'){activeStage='0';remembered.question=0;}if(activeStage==='2'&&card.candidates.length<3)activeStage='0';if(activeStage==='challenge'&&!showChallenge())activeStage='0';step=Number.isInteger(remembered.question)?remembered.question:0;aiSkipped=remembered.skipped===true;}
  if(row&&(row.submitted_at||row.status==='submitted'))showAll=true;
- workspace.hidden=false;render();if(row&&(row.submitted_at||row.status==='submitted'))queueMicrotask(()=>{try{qualityBox.scrollIntoView({block:'start'});}catch{}});msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
+ workspace.hidden=false;render();renderSummary();if(row&&(row.submitted_at||row.status==='submitted'))queueMicrotask(()=>{try{qualityBox.scrollIntoView({block:'start'});}catch{}});msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}
  if(local&&!sameAnswers(local.card,card)){
@@ -687,6 +710,7 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  // 讀不到資料時，卡片整張不會出現，畫面看起來就像資料不見了。
  // 「Failed to fetch」是請求沒送到伺服器（網路瞬斷、剛睡醒、分頁擱太久），
  // 不是伺服器回錯誤，重試通常就好 —— 所以一定要給一顆重試按鈕，不能只留一句話。
+  if(e&&e.status===401){msg.hidden=true;return;}
   const 網路問題=/Failed to fetch|NetworkError|Load failed/i.test(e.message||'');
   msg.textContent=網路問題
    ? '連不上伺服器，你的內容沒有遺失，請按下面的「重新載入」再試一次。'

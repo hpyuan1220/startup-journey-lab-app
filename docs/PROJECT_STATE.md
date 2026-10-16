@@ -1656,3 +1656,19 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 上線（實證，2026-10-13）：origin/main = 6cfeb1c；week2-api 部署 e2ce8bf9…（39,440 B），M 標記消失；探針無 token／壞 token／老師無 JWT 皆 401；正式站用 A1130309125 做三題、存第一個問題、重開頁都在（訪談卡版本 1 草稿）。LINE 訊息已給老師。
 - Week 3 簡報加「課前預習回顧」頁（第 4 頁，範本三格版面：三題＋正解，底下請三位同學唸自己存的第一個問題），流程頁 10–25 改成「課前預習回顧：三題＋第一個問題」；28 頁，pptx／pdf 重建並複製到 116 最上層。
 - **之後每週固定做法（老師 2026-10-13 定案）**：影片（NotebookLM）→ 影片下三題（PRECLASS_QUIZ 加該週）→ 一句話存進該週的卡（老師端看得到）→ 簡報「課前預習回顧」頁 → LINE 三步訊息。完整指令見 PROMPT_PACK P10。
+
+## 2026-10-16 學生「Week 2 不見了」：回看前幾週＋登入失效改成「重新進入（資料都在）」
+- 老師反映：學生進 Week 3 看不到 Week 1、Week 2；有人進 Week 2 以為卡不見了。
+- 查到兩個原因（實證）：
+  1. **卡其實在，只是看不到**：正式站用某位已交、老師已確認的學生卡打開 Week 2（老師自己登入，AI 只讀畫面）——32 格有 29 格有內容，但畫面只攤開「第 1/5 步：痛點 1」5 格，標題寫「延續 Week 1 的困擾」＋「已帶入可用的 Week 1 內容」，其餘收在後四步。學生以為只剩 Week 1。
+  2. **登入失效時畫面誤導**：student_sessions 是 unique(class_id,student_id)，同一學號在第二台裝置登入，第一台的 token 立刻作廢；登入 14 天也會過期。本機驗收伺服器用合成學號重現：舊裝置開 Week 3 只剩一行小字「登入已過期」、預習區寫「先填 Week 2 痛點卡」；開 Week 2 是「可按重新載入」但重新載入永遠卡住。資料沒有被動到（login 只 upsert session）。
+- 修正（只動前端，不用 migration、不用 Deploy）：
+  - `prior-view.mjs`（新）：Week 1／Week 2 唯讀摘要（痛點陳述、選中的痛點九格、另一題五格、選題理由、受訪者、訪談題、老師的話）。
+  - Week 2 頁：已交過的人，完成度卡下面緊接「我的 Week 2 痛點卡 · 已交 · 老師已確認 · 版本 N」整張摘要（預設展開，可收起）＋「要修改：往下到填答區 ↓」。雲端已有卡的人，痛點標題改成自己的阻礙（例「痛點 1：排隊買餐就花掉二十分鐘」），不再顯示「延續 Week 1／已帶入 Week 1 內容」。第一次填的人不變。
+  - Week 3 頁：狀態列下方「回看我前兩週的卡」兩個可展開區塊（預設收起），用既有 week2-api `load`，後端不改。
+  - `relogin.mjs`（新）：任何 401 → 紅框卡「請重新進入一次（你的資料都在）」＋「重新進入 →」；按了清掉作廢的登入，帶到 `index.html?return=week2|week3#student`；`app.js` 登入成功後回到原週（只接受 week2／week3 白名單）。拿掉 Week 2 的「重新載入」、Week 3 預習區的「先填 Week 2」誤導字。
+- 測試：單元 168/168（新 tests/relogin.test.mjs 3 條）；瀏覽器新 tests/prior-relogin.mjs 23/23（摘要內容與位置、開頁摘要在畫面內、第一次填的人照舊、Week 3 回看、換裝置後兩頁的重新進入卡、按了→登入→自動回 Week 3、沒有 return 照舊、外部網址不跳、390px 無橫向捲動）；其餘瀏覽器測試全綠（acceptance 12、preclass 18、quality-box 6、teacher-review-expired 6、teacher-roster 6、teacher-week2-view 9、week3-student 13、week3-survey 11、after-submit／confirm-panel／stale-message ✅、dead-buttons 0）。
+- 版本號：week2.js／week3.js／styles.css ?v=20261016-prior；app.js ?v=20261016-return；prior-view.mjs／relogin.mjs ?v=20261016-prior。
+- 上線：push 即生效（GitHub Pages）。之後用老師測試 ID 在正式站看一次 Week 2 摘要、Week 3 回看。
+- 還沒做（要 migration＋Deploy，另案）：同一學號多裝置同時登入、使用中自動續期。診斷 SQL（只讀）已給老師，結果還沒回來。
+- 暫停中：教師洞察手機版卡片順序與「回到頂端」按鈕。

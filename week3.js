@@ -1,6 +1,8 @@
 import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261013-preclass';
 import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
+import {renderWeek1Summary,renderWeek2Summary,week2StatusText,priorDetails} from './prior-view.mjs?v=20261016-prior';
+import {showRelogin} from './relogin.mjs?v=20261016-prior';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。
 // 下半：三次訪談的紀錄＋訪談後的判斷。沒有 AI、沒有一次一題；三次可以分三天填，每次都能存。
@@ -12,7 +14,25 @@ let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||
 let record=emptyRecord(),row=null,week2=null,dirty=false,saving=false,formBuilt=false;
 const el=(tag,text,parent=root)=>{const e=document.createElement(tag);if(text)e.textContent=text;parent.append(e);return e;};
 const msg=el('p','正在載入你的訪談卡…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
-async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;e.body=b;throw e;}return b;}
+async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;e.body=b;if(r.status===401)onExpired();throw e;}return b;}
+// 登入失效：畫一張「重新進入」卡，並讓預習區改成「請重新進入」而不是「先填 Week 2」。
+let expired=false;
+function onExpired(){if(expired)return;expired=true;showRelogin(root,'week3',msg);if(!dirty){msg.hidden=true;if(!row)sheet.hidden=true;}else msg.textContent='你剛打的內容還沒存進雲端：重新進入前請先複製起來。';renderPreclass();}
+// ---- 回看 Week 1／Week 2（唯讀）----
+// 學生在 Week 3 也要看得到前兩週自己寫了什麼（2026-10-16 學生反映 Week 3 看不到 Week 1、Week 2）。
+const prior=el('section');prior.className='video-learning-card prior-weeks';prior.id='week3-prior';prior.hidden=true;
+async function loadPrior(){
+ try{
+  const d=await api({action:'load'});
+  prior.replaceChildren();
+  const h=document.createElement('h2');h.textContent='回看我前兩週的卡';prior.append(h);
+  const w2=priorDetails(prior,`我的 Week 2 痛點卡 · ${week2StatusText(d.row)}`);
+  if(!renderWeek2Summary(w2,d.row)){const p=document.createElement('p');p.textContent='還沒有 Week 2 痛點卡。';w2.append(p);}
+  const w1=priorDetails(prior,`我的 Week 1 起點卡 · ${d.week1?.status==='submitted'?'已交':'草稿'}`);
+  if(!renderWeek1Summary(w1,d.week1)){const p=document.createElement('p');p.textContent='還沒有 Week 1 起點卡。';w1.append(p);}
+  prior.hidden=false;
+ }catch(e){prior.hidden=true;}
+}
 
 // ---- 全班痛點普查 ----
 // 上課填一次：每題只問事實。結果讓同學知道「班上誰遇過我那題、誰願意被問」，拿來找受訪者；不算訪談次數。
@@ -182,8 +202,8 @@ const preclassHost=document.querySelector('#week-three-materials .preclass');
 function renderPreclass(){
  mountPreclass(preclassHost,3,{
   initial:record.preclass,
-  canSave:!!(session?.token&&week2),
-  loginHref:session?.token?null:'index.html#student',
+  canSave:!expired&&!!(session?.token&&week2),
+  loginHref:expired?'index.html?return=week3#student':session?.token?null:'index.html#student',
   onSave:async(p)=>{
    if(!week2)throw Error('先填 Week 2 痛點卡');
    record=normalizeRecord({...record,preclass:p});
@@ -202,11 +222,11 @@ async function load(){
   try{surveyData=await api({action:'survey_load'});}catch(e){surveyData=null;}renderSurvey();
   record=normalizeRecord(row?.record||emptyRecord());
   if(!row&&week2?.card?.statement&&!record.statement)record.statement=week2.card.statement;
-  renderSheet();renderPreclass();
+  renderSheet();renderPreclass();loadPrior();
   if(week2){if(!formBuilt){buildForm();formBuilt=true;}fill();form.hidden=false;}
   refreshMeter();
   msg.textContent=week2?(row?`已載入你的訪談卡（版本 ${row.version}）。`:'準備單已帶出來。訪談完一位就回來記一筆。'):'';
- }catch(e){msg.textContent=e.status===401?'登入已過期，請回學生入口重新進入。':e.message;}
+ }catch(e){if(e.status!==401)msg.textContent=e.message;}
 }
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('hashchange',()=>{root.hidden=!['#card','#week-three'].includes(location.hash);});

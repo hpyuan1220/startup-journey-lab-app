@@ -365,3 +365,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .preclass-actions{align-items:center;flex-wrap:wrap}
 .preclass-msg{margin:0;font-weight:700;color:var(--green)}
 .preclass-msg a{margin-left:6px}
+/* 2026-10-16 回看前幾週＋重新進入 */
+.prior-summary details>summary,.prior-weeks details>summary{font-weight:800;cursor:pointer;padding:6px 0}
+.prior-weeks h2{margin-top:0;font-size:1.15rem}
+.prior-week{border-top:1px solid var(--line);padding:6px 0}
+.prior-body{display:grid;gap:6px;margin:8px 0 12px}
+.prior-body h4{margin:10px 0 2px}
+.prior-line{margin:0;overflow-wrap:anywhere}
+.prior-line b{color:var(--green)}
+.prior-candidate{border-left:3px solid var(--line);padding:2px 0 2px 12px}
+.prior-candidate.prior-picked{border-left-color:var(--green)}
+.prior-body ul,.prior-body ol{margin:0;padding-left:1.4em}
+.relogin-card{border:2px solid #9e362a;background:#fffdf8}
+.relogin-card h2{margin-top:0;color:#9e362a;font-size:1.2rem}
+.relogin-go{display:inline-block;margin-top:6px}

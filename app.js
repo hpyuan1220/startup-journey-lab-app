@@ -104,7 +104,11 @@ function showTeacherNote(submission){
 function showStudent(){ $('student-gate').hidden=Boolean(studentSession); $('student-workspace').hidden=!studentSession; if(studentSession) $('student-label').textContent=`學號：${studentSession.student_id}`; }
 async function restoreStudent(){
   showStudent();
-  if(!studentSession){ renderCard(); return; }
+  if(!studentSession){
+    renderCard();
+    if(studentReturnTarget())message('access-message','你的作業都還在。輸入學號和班級邀請碼後，會自動回到剛才那一頁。');
+    return;
+  }
   try{
     const loaded=await studentApi({action:'load',token:studentSession.token});
     fill(loaded.submission||{});
@@ -162,6 +166,12 @@ function askFirstTime(typedId){
   row.appendChild(back);row.appendChild(go);
   back.focus();
 }
+// 與 relogin.mjs 的 RETURN_PAGES 相同（app.js 不是 module，不能 import）。
+function studentReturnTarget(){
+  const key=new URLSearchParams(location.search).get('return');
+  const pages={week2:'week.html?week=2#card',week3:'week.html?week=3#card'};
+  return Object.prototype.hasOwnProperty.call(pages,key)?pages[key]:null;
+}
 async function enterStudent(confirmNew){
   if(!configured()) return message('access-message','尚未設定 Supabase 連線資訊。請先完成設定。',true);
   try{
@@ -169,6 +179,9 @@ async function enterStudent(confirmNew){
     studentSession=await studentApi({action:'login',student_id:$('access-student-id').value,invite_code:$('access-code').value,...(confirmNew?{confirm_new:true}:{})});
     localStorage.setItem('sjl-student-session',JSON.stringify(studentSession));
     showStudent();
+    // 從 Week 2／Week 3 的「重新進入」過來的人，登入後直接回原本那一週（只接受白名單，見 relogin.mjs）。
+    const back=studentReturnTarget();
+    if(back){message('access-message','已重新進入，正在回到剛才那一頁…');location.href=back;return;}
     const loaded=await studentApi({action:'load',token:studentSession.token});
     fill(loaded.submission||{});
     message('form-message','已進入起點卡，可先儲存草稿。');
