@@ -23,12 +23,62 @@
 
 每一個都是「老闆貼進來、它產出、老闆複製出去」：沒有串接、沒有程式，一個晚上做得完。少了「自動」，但足以驗證老闆要不要——他願不願意每天貼東西給它、用它的輸出，就是答案（YC：先手動服務）。
 
-## 進階（選做、加分）：同樣是「開工具＋貼 prompt」
-- **AI Studio Build**：一段 prompt 生成有畫面的小網頁（漏斗五個數字、交班勾選頁）。給需要畫面的組。
-- **Apps Script 自動化**：提醒自己寄、名單自己算——即下面的 R2 八步步驟包。
+## 兩條路（Week 7 開場，組自己勾；老師定案 2026-10-18）
+
+| | 簡單版：AI 小幫手 | 代理版：會自己動的 AI 代理 |
+|---|---|---|
+| 它會做什麼 | 老闆貼進來 → 它回答或產出 → 老闆複製出去 | 時間到或表單一送出 → 自己讀資料、自己寫訊息、自己寄出或寫回表 |
+| 用什麼 | Gemini Gem | Google 試算表＋Apps Script 呼叫 Gemini API（金鑰從 AI Studio 免費取得） |
+| 幾步、多久 | 4 步、一個晚上 | 8 步、兩個晚上 |
+| 適合誰 | 全部九張卡的 v1，全班必做 | 規格裡有「定時／自動」的組；組裡有一人不怕貼程式；簡單版測完才能開 |
+| 課堂 | Week 7 分站只教簡單版 | Week 7 就開放，靠 app 八步＋老師課後一次線上答疑；加分 |
+
+### 代理版八步（每步 app 都給可複製的東西與要貼回的證明）
+| 步 | 做什麼 | app 給什麼 | 證明 |
+|---|---|---|---|
+| 1 | 到 AI Studio 取得 Gemini API 金鑰（免費） | 連結＋提醒：金鑰只貼在第 3 步，不進試算表、不給別人、不進 repo | 勾選 |
+| 2 | 建立 app 給的範本試算表副本（已含 Apps Script；欄位：日期、對象、Email、資料、狀態） | 「建立副本」連結 | 副本連結 |
+| 3 | 金鑰放進指令碼屬性 | 擴充功能 → Apps Script → 專案設定 → 指令碼屬性 → 新增 `GEMINI_API_KEY` | 截圖（遮住金鑰） |
+| 4 | 改 PROMPT：代理要怎麼寫訊息 | 依這張卡預填的四段指示 | 貼回改後的 PROMPT |
+| 5 | 執行一次、完成授權（試算表＋Gmail） | 按「執行」→ 允許 | 第一封測試信截圖 |
+| 6 | 設觸發：每天幾點，或表單送出就跑 | 觸發條件 → 新增 → 時間驅動／表單提交 | 截圖 |
+| 7 | 測兩天：自己寄、沒重複、內容對 | 三項檢查清單 | 兩封信截圖 |
+| 8 | 交付包 | 試算表連結（老闆填）、一句話說明、「怎麼關掉」 | 三樣連結 |
+
+範本程式核心（副本裡已有，學生只改 PROMPT 與欄位名；模型名稱以 AI Studio 當時列出的為準）：
+```javascript
+const PROMPT = `你是〔店名〕的小幫手。用繁體中文、兩句以內、語氣像店員。
+依下面的資料寫一則要寄給〔對象〕的訊息，只寫訊息本文：`;
+
+function runAgent() {
+  const key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  const sheet = SpreadsheetApp.getActive().getSheetByName('工作表1');
+  const rows = sheet.getDataRange().getValues();
+  const today = new Date().toDateString();
+  rows.forEach((r, i) => {
+    if (i === 0 || r[4] === '已寄' || new Date(r[0]).toDateString() !== today) return;
+    const text = askGemini(key, PROMPT + '\n' + r[3]);
+    MailApp.sendEmail(r[2], `給 ${r[1]} 的提醒`, text + '\n（小幫手自動寄出）');
+    sheet.getRange(i + 1, 5).setValue('已寄');
+  });
+}
+
+function askGemini(key, prompt) {
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key;
+  const res = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json',
+    payload: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+  return JSON.parse(res.getContentText()).candidates[0].content.parts[0].text.trim();
+}
+```
+
+### 九張卡在代理版各做什麼
+1 餐飲：每天早上把交班表彙整成一封信給老闆｜2 零工：店長表單一送出，自動寫代班訊息寄給有空的人｜3 網拍：表單收客人問題 → 自動回草稿到賣家信箱｜4 旅宿：入住前一天自動寄確認｜5 健身：教練填完 → 準時寄提醒給學員（只轉達）｜6 漏斗：每週一算五個數字＋寄摘要｜7 CRM：每週一寄「該回訪誰＋每人一句」｜8 銀髮：每晚把當天群組訊息摘要寄給家屬｜9 老手：新人問題表單 → 自動依 SOP 回覆。
+
+### 另一條（只在真的需要畫面時）：AI Studio Build
+一段 prompt 生成有畫面的小網頁（漏斗五個數字的表、交班勾選頁）。不算第三條路，是代理版或簡單版的附件。
 
 ## Week 7 Demo 卡在 app 裡長什麼樣
-五行規格 → app 給預填的 Gem 指示（四段可改、一鍵複製）→「開 Gemini」鈕 → 四格勾選 → 貼分享連結與三張截圖 → 存。進階兩條路各一顆按鈕展開，不選不會看到。老師端看：Gem 連結能不能開、三張截圖、有沒有做進階。
+開場勾「簡單版／代理版」→ 五行規格 → 簡單版：預填 Gem 指示（四段可改、一鍵複製）→「開 Gemini」→ 四格勾選 → 貼分享連結與三張截圖；代理版：八步卡片、每步有做什麼／點哪裡／範本／證明，進度條與「卡在第幾步」老師端看得到。進階的 AI Studio 一顆按鈕展開。
 
 ---
 以下為進階用的基礎步驟包（R1–R5），R1 即最簡路徑的詳細版。
