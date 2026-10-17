@@ -93,7 +93,7 @@ Prompt（app 帶入 ②③）：
 兩個外組試用為主：外組扮演假設句裡的那位老闆，照他的場景走一遍，不解釋，看他第一個按哪裡；收三條回饋，改一版。有真客戶的組用真客戶試用（加分）。Demo 評估用同一把尺：想要＝有沒有真的用／付得起＝願不願付或續用（真客戶）或「老闆角色會不會繼續用」（外組）／做得到＝壞了誰修／夠小＝多出來的按鈕砍了沒。
 
 ## 工具配對：選了題目，app 就告訴他用什麼做
-第一層（產業板卡片上一行，資料＝`痛點產業對照_第三版`「MVP 形式 × Google 工具」欄）：1 餐飲→agent＋表單（Gem＋Forms→Sheets→Apps Script）；2 零工→workflow（Forms 發班→Sheets→Apps Script 配對通知）；3 網拍→agent（Gem 餵 FAQ 與退貨規則）；4 旅宿→預約頁＋agent（Calendar＋Apps Script no-show 確認＋Gem）；5 健身→workflow＋影片（Sheets→Apps Script 提醒＋YouTube 不公開）；6 漏斗→儀表板＋agent（Looker Studio＋Gem）；7 CRM→workflow（Sheets 熟客表→Apps Script 回訪名單）；8 銀髮→共用 Calendar＋Tasks＋Gem；9 轉型→AI Studio Build／Opal／Apps Script＋NotebookLM。
+第一層（產業板卡片上一行，資料＝`痛點產業對照_第三版`「MVP 形式 × Google 工具」欄）：1 餐飲→agent＋表單（Gem＋Forms→Sheets→Apps Script）；2 零工→workflow（Forms 發班→Sheets→Apps Script 配對通知）；3 網拍→agent（Gem 餵 FAQ 與退貨規則）；4 旅宿→預約頁＋agent（Calendar＋Apps Script no-show 確認＋Gem）；5 健身→workflow＋影片（Sheets→Apps Script 提醒＋YouTube 不公開）；6 漏斗→儀表板＋agent（Looker Studio＋Gem）；7 CRM→workflow（Sheets 熟客表→Apps Script 回訪名單）；8 銀髮→共用 Calendar＋Tasks＋Gem；9 轉型→AI Studio Build／Apps Script＋NotebookLM。
 第二層（Week 7 五行規格的「AI 具體做哪個任務」那一行，app 自動給做法）：
 
 | 動作 | 形式 | 工具＋做法 |
@@ -101,7 +101,7 @@ Prompt（app 帶入 ②③）：
 | 回答問題（客人、店員、新人） | agent | Gemini Gem：貼 SOP／FAQ 當知識、寫規則、拿分享連結 |
 | 定時提醒、到期追蹤 | workflow | Sheets 一張表＋Apps Script 定時觸發寄 Gmail |
 | 讓人預約、留名單 | 預約頁 | Calendar 預約時段／Forms→Sheets |
-| 配對、排班、算名單 | workflow | Forms→Sheets→Apps Script（先用 Opal 畫流程原型） |
+| 配對、排班、算名單 | workflow | Forms→Sheets→Apps Script |
 | 看數字、看漏斗 | 儀表板 | Looker Studio 接 Sheets |
 | 多語 SOP、知識問答 | 知識庫 | NotebookLM 分享筆記本（＋Gem 包一層規則） |
 | 需要一個畫面給別人按 | webapp | AI Studio Build（前面都不夠用時才用） |
