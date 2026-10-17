@@ -23,20 +23,20 @@
 - 每週核心影片可安排課前觀看或課堂精選片段，不以完整觀影取代練習。
 - AI 可以協助研究、整理、製作原型與分析匿名資料；學生必須標示資料來源、區分事實與推論，並對提交內容負責。
 
-## 十週課程結構與學習成果
+## 十週課程結構與學習成果（2026-10-17 第二版：Week 4–10 依「從個人痛到產業挑戰與契機」重排；細節見 COURSE_V2_WEEK4-10.md 與 RESEARCH_PATH_V2.md）
 
 | 週次 | 主題與核心影片 | 學生主要任務 | 當週提交 | 累積能力 |
 |---|---|---|---|---|
 | 1 | 課程說明與創業起點： [Should You Start A Startup?](https://www.youtube.com/watch?v=BUE-icVYRFU) | 理解十週流程，觀察一個生活不便 | 個人起點卡 | 課程理解與問題意識 |
 | 2 | 問題探索與選題： [How to Get and Evaluate Startup Ideas](https://www.youtube.com/watch?v=Th8JoIan4dg) | 蒐集問題、比較機會與初步證據 | 問題機會清單與選題理由 | 問題定義與判斷 |
 | 3 | 使用者訪談： [How To Talk To Users](https://www.youtube.com/watch?v=z1iF1c8w5Lg) | 設計非引導式問題並訪談 | 訪談紀錄、原話與洞察 | 傾聽與證據蒐集 |
-| 4 | AI-native 創業： [How To Build A Company With AI From The Ground Up](https://www.youtube.com/watch?v=EN7frwQIbKc) | 定義 AI 能協助的工作、資料與人類判斷邊界 | AI-native 服務／產品假設 | AI 工作流程設計 |
-| 5 | 產品與 MVP： [How to Build An MVP](https://www.youtube.com/watch?v=QRZ_l7cVzzU) | 畫出使用流程，製作可測試的低成本原型 | MVP Storyboard 或可操作原型 | 產品化與取捨 |
-| 6 | 第一批使用者： [How to Get Your First 10 Customers](https://www.youtube.com/watch?v=_FBivfgOvuE) | 招募測試者、安排小型使用者測試 | 測試者招募與測試計畫 | 使用者接觸與實驗 |
-| 7 | 產品數據與留存： [Dot Plots: How to Actually See What Your Users Are Doing](https://www.youtube.com/watch?v=e5-6rEwzxLs) | 整理匿名測試資料，辨識卡關點與下一步假設 | 一張行為圖表與改版決策 | 數據思考與迭代 |
-| 8 | 商業模式與定價： [Startup Business Models and Pricing](https://www.youtube.com/watch?v=oWZbWzAyHAE) | 說清楚價值、客戶、成本與初步定價假設 | 商業模式與定價假設 | 商業思考 |
-| 9 | 團隊合作： [Keys To Successful Co-Founder Relationships](https://www.youtube.com/watch?v=A4SLDQDXdp0) | 說明角色、合作原則、決策與衝突處理 | 團隊章程 | 合作與自我認識 |
-| 10 | 發布與成果展： [The Best Way To Launch Your Startup](https://www.youtube.com/watch?v=u36A-YTxiOw) | 統整證據、產品、下一輪測試與展示 | 5 分鐘 Demo 與 Startup Portfolio | 整合、表達與下一步 |
+| 4 | 從我的痛看產業：挑戰與契機（YC 片段：壞掉的大產業、焦油坑；課前 NotebookLM 自製研究方法影片） | 配對產業線、問 AI 查錢流與挑戰、NotebookLM 查證、體檢 | 產業挑戰卡（四格＋證據＋體檢） | 產業研究與證據判讀 |
+| 5 | 縮小與機會：期中報告、矩陣選段、組隊（《How to Build An MVP》前段選看） | 從三個切入點用影響×難度矩陣挑一段、寫可測假設、依產業線組隊 | 個人研究報告（期中）＋機會卡 | 收斂與假設 |
+| 6 | 驗證：AI 反方＋見付錢的人（《How To Talk To Users》B 端三問） | Gemini 反方三回合；訪談第一個客戶：現在怎麼處理、花多少、願不願意試 | 驗證卡（Go／No-go） | 驗證與拒絕的承受力 |
+| 7 | 做 Demo v1：agent 不是 app（AI-native 影片選看） | 五行規格；Gem／Apps Script／Calendar／Looker Studio 做一個流程的小助手 | Demo 卡 v1 | AI 工具實作 |
+| 8 | 商業模式與定價：《Startup Business Models and Pricing》 | 用對方現在的成本算定價假設，反方再辯 | 定價假設 | 商業思考 |
+| 9 | Demo v2 與團隊：《Keys To Successful Co-Founder Relationships》 | 第一個客戶試用兩週＋兩個外組試用，改一版；團隊章程 | Demo 卡 v2＋團隊章程 | 迭代與合作 |
+| 10 | 成果展：《The Best Way To Launch Your Startup》（選看） | 用證據講：付錢的人、挑戰來源、切哪一段、Demo、試用回饋、下一步 | 5 分鐘 Demo 與 Startup Portfolio | 整合與表達 |
 
 ## 學生在十週結束時提交
 

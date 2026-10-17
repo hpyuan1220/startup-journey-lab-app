@@ -1672,3 +1672,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 上線：push 即生效（GitHub Pages）。之後用老師測試 ID 在正式站看一次 Week 2 摘要、Week 3 回看。
 - 還沒做（要 migration＋Deploy，另案）：同一學號多裝置同時登入、使用中自動續期。診斷 SQL（只讀）已給老師，結果還沒回來。
 - 暫停中：教師洞察手機版卡片順序與「回到頂端」按鈕。
+
+## 2026-10-17 十週學習地圖改版（Week 4–10）
+- 老師與 AI 一整天討論定案：下半場從「個人痛」拉遠到「產業挑戰與契機」。9 張產業卡（`116/痛點產業對照_第三版_20261017.xlsx`「產業板_第三版」）、研究路徑（docs/RESEARCH_PATH_V2.md）、課表（docs/COURSE_V2_WEEK4-10.md）。
+- 改動：index.html 十週地圖 4–10 的標題；week.js 第 4–10 週的標題／摘要／交付／步驟與影片重點（YC 只留對得上的；AI-native、MVP 改選看）；COURSE_BLUEPRINT_V1 十週表第二版；week.html 的 week.js 版本號 20261017-map。
+- 決定：期中＝個人產業研究報告（10/29 課前交、11/2 前可補證據）；體檢五題＋加分題「為什麼是現在」；Week 5 用 Lewrick 影響×難度矩陣選段；Week 7 agent 優先、全用 Google 免費工具（Gem／Apps Script／Calendar／Looker Studio／NotebookLM），LINE 自動發只給進階組；不碰醫療；移工主題不列入。
+- 未做：新頁面（產業板、挑戰卡、問 AI 元件、證據表、體檢）的程式；mockup 在 Claude 的 Design canvas。Week 4 是 10/22。
