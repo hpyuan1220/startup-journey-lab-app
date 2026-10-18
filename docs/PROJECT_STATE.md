@@ -1685,3 +1685,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 第一輪個人：一個產業、三個機會、五問比較。第二輪小組：3 人為主最少 2、一組一個產業、三個方向分給三個人、六準則比較。
 - 全文見 `docs/COURSE_V3_12WEEKS.md`。COURSE_V2_WEEK4-10、RESEARCH_PATH_V2、MVP_RECIPES_V2 保留為歷史，不再依循。
 - 下一步：Week 4 講義（5 頁）→ Week 5、Week 9 講義 → 地圖與 week.js 改 12 週 → 第一輪兩頁程式。
+
+## 2026-10-18 Week 4 第一輪研究上線（實證）
+- 上線：commit `ec45b25` push；week2-api 部署 bundle `3e33389c…`（三方雜湊一致、部署後 M 標記 0）；migration `20261018_week4.sql` 與 `20261018_week4_fix_trigger.sql` 已在正式庫執行。
+- 正式站驗證（測試學號 A1130309125）：week4_load 帶 Week 3 一句話與推薦；save 版本 1→2→3，同內容不跳版，舊版本 409，重開頁內容與時間章都在；零寫入探針 401／401／401／405。
+- 踩坑：第一版沿用 `bump_learning_version` 觸發器，UPDATE 因無 `submitted_at` 欄位失敗；記憶體測試不跑觸發器所以沒抓到。教訓：新表不要沿用舊觸發器；上線後一定要在正式站存兩次。
+- 老師端：教師洞察新增「Week 4 第一輪研究」區（teacher-week4.js）：出席＝兩題在上課日 13:30–18:00 內存檔、可改本週兩題、一人一列。
+- 待辦：Week 4 簡報；課前影片；relogin 回到 week4 已補。
