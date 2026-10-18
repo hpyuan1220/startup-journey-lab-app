@@ -1,7 +1,6 @@
 import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261013-preclass';
 import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
-import {renderWeek1Summary,renderWeek2Summary,week2StatusText,priorDetails} from './prior-view.mjs?v=20261016-prior';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。
@@ -18,21 +17,7 @@ async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/we
 // 登入失效：畫一張「重新進入」卡，並讓預習區改成「請重新進入」而不是「先填 Week 2」。
 let expired=false;
 function onExpired(){if(expired)return;expired=true;showRelogin(root,'week3',msg);if(!dirty){msg.hidden=true;if(!row)sheet.hidden=true;}else msg.textContent='你剛打的內容還沒存進雲端：重新進入前請先複製起來。';renderPreclass();}
-// ---- 回看 Week 1／Week 2（唯讀）----
-// 學生在 Week 3 也要看得到前兩週自己寫了什麼（2026-10-16 學生反映 Week 3 看不到 Week 1、Week 2）。
-const prior=el('section');prior.className='video-learning-card prior-weeks';prior.id='week3-prior';prior.hidden=true;
-async function loadPrior(){
- try{
-  const d=await api({action:'load'});
-  prior.replaceChildren();
-  const h=document.createElement('h2');h.textContent='回看我前兩週的卡';prior.append(h);
-  const w2=priorDetails(prior,`我的 Week 2 痛點卡 · ${week2StatusText(d.row)}`);
-  if(!renderWeek2Summary(w2,d.row)){const p=document.createElement('p');p.textContent='還沒有 Week 2 痛點卡。';w2.append(p);}
-  const w1=priorDetails(prior,`我的 Week 1 起點卡 · ${d.week1?.status==='submitted'?'已交':'草稿'}`);
-  if(!renderWeek1Summary(w1,d.week1)){const p=document.createElement('p');p.textContent='還沒有 Week 1 起點卡。';w1.append(p);}
-  prior.hidden=false;
- }catch(e){prior.hidden=true;}
-}
+// 回看前幾週改由每頁上下的「← 上一週 ／ 下一週 →」按鈕（week.js）處理；這一頁只放 Week 3 自己的東西。
 
 // ---- 全班痛點普查 ----
 // 上課填一次：每題只問事實。結果讓同學知道「班上誰遇過我那題、誰願意被問」，拿來找受訪者；不算訪談次數。
@@ -222,7 +207,7 @@ async function load(){
   try{surveyData=await api({action:'survey_load'});}catch(e){surveyData=null;}renderSurvey();
   record=normalizeRecord(row?.record||emptyRecord());
   if(!row&&week2?.card?.statement&&!record.statement)record.statement=week2.card.statement;
-  renderSheet();renderPreclass();loadPrior();
+  renderSheet();renderPreclass();
   if(week2){if(!formBuilt){buildForm();formBuilt=true;}fill();form.hidden=false;}
   refreshMeter();
   msg.textContent=week2?(row?`已載入你的訪談卡（版本 ${row.version}）。`:'準備單已帶出來。訪談完一位就回來記一筆。'):'';

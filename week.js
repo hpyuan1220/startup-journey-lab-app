@@ -16,6 +16,21 @@ const highlights=[['Should You Start A Startup?','創業從理解問題開始。
 const n=Math.min(12,Math.max(1,Number(new URLSearchParams(location.search).get('week'))||1)); const w=weeks[n-1];
 document.title=`Startup Journey Lab｜Week ${n}`;const h=highlights[n-1];document.querySelector('#video-title').textContent=h[0];document.querySelector('#video-takeaway').textContent=h[1];document.querySelector('#week-number').textContent=`WEEK ${String(n).padStart(2,'0')}`;document.querySelector('#week-title').textContent=w[0];document.querySelector('#week-summary').textContent=w[1];document.querySelector('#week-output').textContent=`本週提交：${w[2]}`;document.querySelector('#week-status').textContent=w[3];document.querySelector('#week-steps').innerHTML=w[4].map(x=>`<li>${x}</li>`).join('');document.querySelector('#week-one').hidden=n!==1;
 
+
+// 每一週頁上下各一組「← 上一週 ／ 下一週 →」：學生要回看前幾週的卡就按這個，不在同一頁堆好幾週。
+(function(){
+ const main=document.querySelector('main');if(!main)return;
+ const hash=location.hash==='#card'||/^#week-/.test(location.hash)?'#card':'';
+ const make=()=>{
+  const nav=document.createElement('nav');nav.className='week-pager';nav.setAttribute('aria-label','上一週與下一週');
+  if(n>1){const a=document.createElement('a');a.href=`week.html?week=${n-1}${hash}`;a.className='button-link';a.textContent=`← Week ${n-1}：${weeks[n-2][0]}`;nav.append(a);}
+  const span=document.createElement('span');span.textContent=`Week ${n} / ${weeks.length}`;nav.append(span);
+  if(n<weeks.length){const a=document.createElement('a');a.href=`week.html?week=${n+1}${hash}`;a.className='button-link';a.textContent=`Week ${n+1}：${weeks[n][0]} →`;nav.append(a);}
+  return nav;
+ };
+ main.prepend(make());main.append(make());
+})();
+
 document.querySelector("#week-two-materials").hidden=n!==2;
 document.querySelector("#week-three-materials").hidden=n!==3;
 const w4m=document.querySelector("#week-four-materials"); if(w4m) w4m.hidden=n!==4;

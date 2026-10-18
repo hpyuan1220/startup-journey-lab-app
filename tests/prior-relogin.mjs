@@ -42,12 +42,10 @@ ok('Week 2 頁沒有 JS 錯誤',!errs.length,errs);
 ({p,errs}=await open(tokNew,SID2,'week.html?week=2#card'));
 s=await p.evaluate(()=>({shown:!document.querySelector('#week2-summary')?.hidden,first:document.querySelector('details.candidate summary')?.textContent||'',hint:document.body.innerText.includes('已帶入可用的 Week 1 內容')}));
 ok('第一次填的人：沒有摘要卡、痛點 1 仍寫「延續 Week 1」並有帶入說明',!s.shown&&/延續 Week 1/.test(s.first)&&s.hint,s);
-// 3) Week 3 回看
+// 3) Week 3：不再堆前兩週的卡；改成上下各一組「← 上一週 ／ 下一週 →」
 ({p,errs}=await open(tok,SID,'week.html?week=3#card'));
-s=await p.evaluate(()=>{const box=document.querySelector('#week3-prior');const ds=[...(box?.querySelectorAll('details')||[])];return {shown:box&&!box.hidden,n:ds.length,titles:ds.map(d=>d.querySelector('summary').textContent),closed:ds.every(d=>!d.open),afterMsg:box?.previousElementSibling?.getAttribute('role')==='status'};});
-ok('Week 3 頂端有「回看我前兩週的卡」：兩個區塊、預設收起',s.shown&&s.n===2&&s.closed&&/Week 2 痛點卡 · 已交/.test(s.titles[0])&&/Week 1 起點卡 · 已交/.test(s.titles[1]),s);
-s=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#week3-prior details')];ds.forEach(d=>d.open=true);return ds.map(d=>d.innerText);});
-ok('展開後看得到 Week 2 的陳述與受訪者、Week 1 的觀察',/午休五十分鐘的同學/.test(s[0])&&/通勤同學 B/.test(s[0])&&/第 4 格：校園餐廳觀察/.test(s[1]),s.map(x=>x.slice(0,120)));
+s=await p.evaluate(()=>{const pagers=[...document.querySelectorAll('nav.week-pager')];return {noPrior:!document.querySelector('#week3-prior'),pagers:pagers.length,links:pagers[0]?[...pagers[0].querySelectorAll('a')].map(a=>a.getAttribute('href')+' '+a.textContent):[]};});
+ok('Week 3 沒有「回看前兩週」區塊，上下各一組上一週／下一週按鈕（帶 #card）',s.noPrior&&s.pagers===2&&s.links.length===2&&s.links[0].startsWith('week.html?week=2#card')&&s.links[1].startsWith('week.html?week=4#card'),s);
 ok('Week 3 準備單照常帶出',await p.evaluate(()=>/午休有連堂的大二同學/.test(document.querySelector('#week3-sheet')?.innerText||'')));
 ok('Week 3 頁 390px 無橫向捲動',!(await wide(p)));
 ok('Week 3 頁沒有 JS 錯誤',!errs.length,errs);
