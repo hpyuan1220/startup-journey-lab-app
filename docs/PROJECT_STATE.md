@@ -1702,3 +1702,8 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 不動的東西：資料結構、欄位、存檔／提交流程、Edge Function（純前端改動，不需部署）。
 - 驗證（容器 serve-acceptance，合成學號）：`tests/review-week1.mjs` 8/8、`tests/prior-relogin.mjs` 24/24、`tests/after-submit.mjs`、`tests/week3-student.mjs` 15/15、`tests/quality-box.mjs` 6/6、單元測試 174/174；390px 無橫向捲動。
 - 教訓：幾個瀏覽器測試共用同一個 serve-acceptance 時，學號都用 `Date.now()%100` 當尾碼會互相撞號而誤判失敗；每個測試檔要用不同前綴，或每次重開伺服器。
+
+## 2026-10-19 Week 4 教學簡報重做（第三版課程）
+- 舊的 21 頁是研究路徑 v2（體檢六題、矩陣、YC 片段），與第三版不符，整份重寫為 22 頁：回顧 Week 3 → 共同成果 → 120 分鐘流程 → 講義四段理論（Graham／Bhidé／Shane；Blank／Ries／Christensen／Fitzpatrick；Porter／六條路徑／Osterwalder／Aulet；Denzin 三角驗證）→ 個人痛 vs 產業痛 → 六條路徑例子 → 來源五層 → 九張產業卡 → 課堂兩題 → 卡 1／卡 2（四步＋六題階梯）／卡 3 → Gemini vs NotebookLM → 好機會四問 → 研究筆記 v1 → 離堂清單 → 接下來三週。
+- 來源：`docs/WEEK4_SLIDES_SOURCE.json`，`python3 scripts/build-slides.py --source docs/WEEK4_SLIDES_SOURCE.json --out materials/Week4_教學簡報.pptx`，PDF 用 soffice 轉；每頁縮圖檢查過無溢字。
+- 內容全部對齊講義五頁與 app 實際行為（課堂兩題預設題、三張卡 prompt、九張卡名稱、出席規則）。
