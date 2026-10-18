@@ -438,3 +438,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .review-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
 .review-bar button{min-height:44px}
 #student-workspace.is-review .preview{margin-top:0;outline:3px solid var(--lime);outline-offset:-3px}
+
+/* 首頁「本週」只留一行小字，地圖才是主角 */
+.thisweek{margin:-6px 0 14px;font-size:.95rem;color:#3f4a44}.thisweek b{display:inline-block;background:var(--lime);border:1px solid var(--ink);padding:1px 8px;margin-right:6px;font-weight:800;color:var(--ink)}.thisweek a{font-weight:700;white-space:nowrap}
