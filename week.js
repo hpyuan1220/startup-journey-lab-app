@@ -21,13 +21,14 @@ document.querySelector("#week-three-materials").hidden=n!==3;
 const w4m=document.querySelector("#week-four-materials"); if(w4m) w4m.hidden=n!==4;
 
 // Switch views without rebuilding the form: unsaved answers remain in memory.
-if(n===2||n===3){
- const navigation=document.querySelector(n===2?'#week-two-navigation':'#week-three-navigation');
- const materials=document.querySelector(n===2?'#week-two-materials':'#week-three-materials');
- const cardSection=document.querySelector(n===2?'#week-two':'#week-three');
+if(n===2||n===3||n===4){
+ const ids={2:['#week-two-navigation','#week-two-materials','#week-two'],3:['#week-three-navigation','#week-three-materials','#week-three'],4:['#week-four-navigation','#week-four-materials','#week-four']}[n];
+ const navigation=document.querySelector(ids[0]);
+ const materials=document.querySelector(ids[1]);
+ const cardSection=document.querySelector(ids[2]);
  navigation.hidden=false;
  function showWeekView(){
-  const cardView=['#card','#week-two','#week-three'].includes(location.hash);
+  const cardView=['#card','#week-two','#week-three','#week-four'].includes(location.hash);
   document.querySelector('#week-blueprint').hidden=cardView;
   materials.hidden=cardView;
   cardSection.hidden=!cardView;

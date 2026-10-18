@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '../../../week2-core.mjs';
 import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
+import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommendCards} from '../../../week4-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
 const sha=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -18,10 +19,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -66,6 +67,15 @@ Deno.serve(async req=>{
    must(await db.from('week3_survey_topics').upsert(rows,{onConflict:'class_id,topic_id'}));
    const saved=must(await db.from('week3_survey_topics').select('*').eq('class_id',b.class_id).order('sort'));
    return reply({topics:saved});
+  }
+  if(b.action==='teacher_week_questions'){
+   // 每週課堂兩題：老師隨時可改，學生畫面下次載入就換題。三欄都留白＝刪掉這列、回到預設。
+   const week=Number(b.week);if(!Number.isInteger(week)||week<1||week>12)return reply({error:'週數不正確。'},422);
+   const q=normalizeQuestions(b.questions);
+   if(!q.q1&&!q.q2&&!q.points)must(await db.from('week_questions').delete().match({class_id:b.class_id,week}));
+   else must(await db.from('week_questions').upsert({class_id:b.class_id,week,...q,updated_at:new Date().toISOString()},{onConflict:'class_id,week'}));
+   const rows=must(await db.from('week_questions').select('*').eq('class_id',b.class_id));
+   return reply({week_questions:rows,resolved:resolveQuestions(week,rows.find((r:any)=>r.week===week))});
   }
   return reply({error:'未知教師操作。'},400);
  }
@@ -115,6 +125,22 @@ Deno.serve(async req=>{
   const mine=must(await db.from('week3_survey_responses').select('*').match(scope));
   const answered=new Set(all.map((r:any)=>r.student_id)).size;
   return reply({topics,mine,summary:surveySummary(topics,all),answered});
+ }
+ // ---- Week 4 第一輪研究：課堂兩題＋選產業＋三張卡 ----
+ // 一直開著、沒有截止；每個欄位的時間由伺服器蓋章（課中／課後給老師看）。prompt 在前端用 week4-core 組，這裡只存。
+ if(b.action==='week4_load'||b.action==='week4_save'){
+  const w3=must(await db.from('week3_submissions').select('record,status').match(scope).maybeSingle());
+  const qrow=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week:4}).maybeSingle());
+  const survey=must(await db.from('week3_survey_responses').select('topic_id,experienced').match(scope));
+  const experienced=(survey||[]).filter((r:any)=>r.experienced).map((r:any)=>Number(r.topic_id));
+  let r4=must(await db.from('week4_research').select('*').match(scope).maybeSingle());
+  if(b.action==='week4_save'){
+   const prev=r4?normalizeWeek4(r4.data):null,next=normalizeWeek4(b.data);
+   const stamps=applyStamps(prev,next,r4?.stamps,new Date().toISOString());
+   if(r4){if(r4.version!==b.version)return reply({error:'另一個視窗已更新這一頁，請重新載入。'},409);r4=must(await db.from('week4_research').update({data:next,stamps}).match({...scope,version:b.version}).select().maybeSingle());if(!r4)return reply({error:'內容已更新，請重新載入。'},409);}
+   else r4=must(await db.from('week4_research').insert({...scope,data:next,stamps}).select().single());
+  }
+  return reply({row:r4,questions:resolveQuestions(4,qrow),week3_statement:w3?.record?.statement||'',week3_status:w3?.status||null,recommended:recommendCards(experienced).map(x=>({id:x.card.id,hits:x.hits}))});
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){
