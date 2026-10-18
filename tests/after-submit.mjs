@@ -25,7 +25,12 @@ const vis=()=>p.evaluate(()=>{const v=n=>n.offsetParent!==null&&!n.closest('deta
 const afterSubmit=await vis();
 await p.reload();await p.waitForTimeout(3000);
 const afterReload=await vis();
-// 提交過的人回來：這一步整個攤開（5 格都看得到，不是一次一題）、沒有舊的「我不知道下一步」、場景下拉不會空著擺在那裡
-const pass=afterSubmit.有回去看答案的按鈕 && afterReload.看得到的答案格>=5 && afterReload.已提交 && !afterReload.還有我不知道下一步 && afterReload.一次一題勾選===false && !afterReload.空的場景下拉;
-console.log(JSON.stringify({提交後:afterSubmit,重新開頁後:afterReload,結論:pass?'✅ 提交後與重新開頁後都看得到自己的答案':'❌ 學生提交後看不到自己寫的東西'},null,1));
+// 回顧模式（2026-10-18）：提交過的人回來先看到回顧卡（自己的答案都在摘要裡）＋「修改這張卡」；表單收起來。
+afterReload.回顧卡答案數=await p.evaluate(()=>document.querySelectorAll('#week2-summary.is-review .prior-line').length);
+afterReload.有修改按鈕=await p.evaluate(()=>[...document.querySelectorAll('#week2-summary button')].some(b=>b.textContent==='修改這張卡'));
+// 按「修改這張卡」之後：這一步整個攤開（5 格都看得到，不是一次一題）、沒有舊的「我不知道下一步」、場景下拉不會空著擺在那裡
+await p.evaluate(()=>[...document.querySelectorAll('#week2-summary button')].find(b=>b.textContent==='修改這張卡').click());await p.waitForTimeout(500);
+const afterEdit=await vis();
+const pass=afterSubmit.有回去看答案的按鈕 && afterReload.回顧卡答案數>=8 && afterReload.有修改按鈕 && afterReload.看得到的答案格===0 && afterReload.已提交 && afterEdit.看得到的答案格>=5 && !afterEdit.還有我不知道下一步 && afterEdit.一次一題勾選===false && !afterEdit.空的場景下拉;
+console.log(JSON.stringify({提交後:afterSubmit,重新開頁後:afterReload,按修改後:afterEdit,結論:pass?'✅ 提交後看得到答案；重新開頁先看回顧卡，按修改後表單攤開':'❌ 學生提交後看不到自己寫的東西'},null,1));
 await b.close();process.exit(pass?0:1);

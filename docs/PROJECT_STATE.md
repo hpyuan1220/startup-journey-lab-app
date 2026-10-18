@@ -1692,3 +1692,13 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 踩坑：第一版沿用 `bump_learning_version` 觸發器，UPDATE 因無 `submitted_at` 欄位失敗；記憶體測試不跑觸發器所以沒抓到。教訓：新表不要沿用舊觸發器；上線後一定要在正式站存兩次。
 - 老師端：教師洞察新增「Week 4 第一輪研究」區（teacher-week4.js）：出席＝兩題在上課日 13:30–18:00 內存檔、可改本週兩題、一人一列。
 - 待辦：Week 4 簡報；課前影片；relogin 回到 week4 已補。
+
+## 2026-10-18 Week 1–3 改成「回顧卡」（已交的人只看摘要＋修改）
+- 起因：Week 2 頁對已交的學生仍是整張表單攤開（兩個痛點 × 五格、比較、訪談），老師看了覺得太長。
+- 做法（三頁同一個形狀）：已交（Week 1 `status=submitted`、Week 2 `submitted` 或有 `submitted_at`、Week 3 `submitted`）的人，進頁只看一張摘要卡＋一顆「修改這張卡」；表單、說明、影片重點收起，按了才展開，再按一次收回。沒交過的人完全照舊。
+  - Week 1（`app.js` `applyReviewMode`）：摘要就是原本的 MY PROBLEM CARD；收起影片重點與整張表單（含 AI 建議）。狀態列改成指到「修改這張卡」。
+  - Week 2（`week2.js` `applyReview`）：完成度卡（三格燈＋下一步寫法＋老師指路）留在外面照常顯示；在回顧模式按完成度卡裡任何按鈕會先展開表單再做原本的事。其餘全部收進 `editArea`。本機草稿與雲端不同的人直接進編輯模式。
+  - Week 3（`week3.js` `renderReview`，摘要用 `prior-view.mjs` 新的 `renderWeek3Summary`）：普查、準備單、三階燈、紀錄卡都收起。
+- 不動的東西：資料結構、欄位、存檔／提交流程、Edge Function（純前端改動，不需部署）。
+- 驗證（容器 serve-acceptance，合成學號）：`tests/review-week1.mjs` 8/8、`tests/prior-relogin.mjs` 24/24、`tests/after-submit.mjs`、`tests/week3-student.mjs` 15/15、`tests/quality-box.mjs` 6/6、單元測試 174/174；390px 無橫向捲動。
+- 教訓：幾個瀏覽器測試共用同一個 serve-acceptance 時，學號都用 `Date.now()%100` 當尾碼會互相撞號而誤判失敗；每個測試檔要用不同前綴，或每次重開伺服器。

@@ -2,6 +2,7 @@ import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,
 import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
+import {renderWeek3Summary,priorDetails} from './prior-view.mjs?v=20261018-review';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。
 // 下半：三次訪談的紀錄＋訪談後的判斷。沒有 AI、沒有一次一題；三次可以分三天填，每次都能存。
@@ -22,6 +23,21 @@ function onExpired(){if(expired)return;expired=true;showRelogin(root,'week3',msg
 // ---- 全班痛點普查 ----
 // 上課填一次：每題只問事實。結果讓同學知道「班上誰遇過我那題、誰願意被問」，拿來找受訪者；不算訪談次數。
 const survey=el('section');survey.id='week3-survey';survey.className='video-learning-card';survey.hidden=true;
+// 回顧卡（2026-10-18）：已提交的人進頁只看這張摘要＋「修改這張卡」；普查、準備單、三階燈、紀錄卡都收起來，按了才展開。
+const review=el('section');review.id='week3-review';review.className='video-learning-card prior-summary';review.hidden=true;
+let week3Editing=false;
+function renderReview(){
+ review.replaceChildren();
+ const sent=!!(row&&row.status==='submitted');
+ const show=!sent||week3Editing;
+ review.hidden=!sent;review.classList.toggle('is-review',sent&&!week3Editing);
+ survey.hidden=!show||!(surveyData&&surveyData.topics.length);sheet.hidden=!show;meter.hidden=!show||!week2;form.hidden=!show||!week2;
+ if(!sent)return;
+ const d=priorDetails(review,`我的 Week 3 訪談卡 · 已交 · 版本 ${row.version}`,true);
+ renderWeek3Summary(d,record,row);
+ const b=el('button',week3Editing?'收起表單，只看回顧卡':'修改這張卡',d);b.type='button';b.className='primary-action';
+ b.onclick=()=>{week3Editing=!week3Editing;renderReview();try{(week3Editing?form:review).scrollIntoView({block:'start'});}catch{}};
+}
 let surveyData=null;
 function renderSurvey(){
  survey.replaceChildren();
@@ -194,7 +210,7 @@ function renderPreclass(){
    record=normalizeRecord({...record,preclass:p});
    const status=row?.status==='submitted'&&checkRecord(record).ok?'submitted':'draft';
    const r=await api({action:'week3_save',status,version:row?.version??null,record});
-   row=r.row;record=normalizeRecord(row.record);refreshMeter();
+   row=r.row;record=normalizeRecord(row.record);refreshMeter();renderReview();
   }
  });
 }
@@ -209,7 +225,7 @@ async function load(){
   if(!row&&week2?.card?.statement&&!record.statement)record.statement=week2.card.statement;
   renderSheet();renderPreclass();
   if(week2){if(!formBuilt){buildForm();formBuilt=true;}fill();form.hidden=false;}
-  refreshMeter();
+  refreshMeter();renderReview();
   msg.textContent=week2?(row?`已載入你的訪談卡（版本 ${row.version}）。`:'準備單已帶出來。訪談完一位就回來記一筆。'):'';
  }catch(e){if(e.status!==401)msg.textContent=e.message;}
 }

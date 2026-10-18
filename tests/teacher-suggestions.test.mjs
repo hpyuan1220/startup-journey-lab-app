@@ -170,7 +170,8 @@ test('回到已提交的卡片會看到狀態，不必按按鈕試探',async()=>
  assert.match(html,/id="submitted-state"/);
  assert.match(app,/function renderSubmittedState/);
  assert.match(app,/renderCard\(\); renderSubmittedState\(\); \}/,'載入卡片時要更新狀態');
- assert.match(app,/可以直接修改後重新提交，先前版本會保留/);
+ assert.match(app,/要改就按「修改這張卡」，先前版本會保留/,'回顧模式：狀態列指到「修改這張卡」');
+ assert.match(app,/改完按「正式提交」，先前版本會保留/,'編輯模式：狀態列說改完重新提交');
 });
 
 // 清除按鈕的說明寫著「原版本會保留」—— 靠的是資料庫觸發器，不是前端。

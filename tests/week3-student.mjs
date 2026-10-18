@@ -53,6 +53,12 @@ ok('三次都記完＋判斷＋陳述 → 提交成功，燈到「三次都記�
 await p.reload();await p.waitForTimeout(2200);
 const after=await p.evaluate(()=>({who2:document.querySelector('[name=i1_who]').value,fits1:document.querySelector('input[name=i1_fits]:checked')?.value,judgment:document.querySelector('input[name=judgment]:checked')?.value,learned:document.querySelector('textarea[name=learned]').value,status:document.querySelector('#week-three [role=status]').textContent,燈:[...document.querySelectorAll('#week3-quality .quality-track li')].map(l=>l.dataset.state)}));
 ok('重新開頁：三次訪談、判斷、學到什麼都在，燈仍在第 2 格', after.who2==='通勤同學 B'&&after.fits1==='partly'&&after.judgment==='adjust'&&/怕賣完/.test(after.learned)&&after.燈[2]==='done', after);
+// 回顧模式（2026-10-18）：已提交的人重新開頁只看回顧卡＋「修改這張卡」；準備單、三階燈、紀錄卡收起來，按了才展開。
+const rv=await p.evaluate(()=>{const vis=e=>!!e&&e.getClientRects().length>0;const card=document.querySelector('#week3-review');return {card:vis(card)&&card.classList.contains('is-review'),text:card?.innerText.replace(/\s+/g,' ').slice(0,1500)||'',form:vis(document.querySelector('form.week3-form')),sheet:vis(document.querySelector('#week3-sheet')),meter:vis(document.querySelector('#week3-quality'))};});
+ok('重新開頁：回顧卡有三次訪談、判斷與修正後陳述；準備單、燈、紀錄卡都收起',rv.card&&/訪談 1/.test(rv.text)&&/訪談 3/.test(rv.text)&&/通勤同學 B/.test(rv.text)&&/我的判斷：調整/.test(rv.text)&&/修正後的痛點陳述/.test(rv.text)&&!rv.form&&!rv.sheet&&!rv.meter,rv);
+await p.evaluate(()=>[...document.querySelectorAll('#week3-review button')].find(b=>b.textContent==='修改這張卡').click());await p.waitForTimeout(400);
+const ed=await p.evaluate(()=>{const vis=e=>!!e&&e.getClientRects().length>0;return {form:vis(document.querySelector('form.week3-form')),sheet:vis(document.querySelector('#week3-sheet')),meter:vis(document.querySelector('#week3-quality')),btn:[...document.querySelectorAll('#week3-review button')].map(b=>b.textContent)};});
+ok('按「修改這張卡」：準備單、燈、紀錄卡都展開，按鈕變「收起表單」',ed.form&&ed.sheet&&ed.meter&&ed.btn.includes('收起表單，只看回顧卡'),ed);
 ok('有 Week 2 的學生：沒有 JS 錯誤', errs.length===0, errs);
 // 2) 沒有 Week 2 的學生
 const o2=await open(tok2,SID2);s=await state(o2.p);

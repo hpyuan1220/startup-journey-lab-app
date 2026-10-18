@@ -76,9 +76,25 @@ function renderSubmittedState(){
  if(draftBtn)draftBtn.hidden=submitted;
  if(clearBtn)clearBtn.hidden=submitted;
  if(!box)return;
+ applyReviewMode();
  if(!submitted){box.hidden=true;return;}
  box.hidden=false;
- $('submitted-state-text').textContent=`${submittedSummary()}可以直接修改後重新提交，先前版本會保留。`;
+ $('submitted-state-text').textContent=`${submittedSummary()}${week1Editing?'改完按「正式提交」，先前版本會保留。':'下面是你交出的卡；要改就按「修改這張卡」，先前版本會保留。'}`;
+}
+// 回顧卡（2026-10-18）：已交的人進頁只看「MY PROBLEM CARD」那張摘要＋一顆「修改這張卡」。
+// 影片重點、整張表單（含 AI 建議）收起來，按了才展開。沒交過的人完全照舊；資料與存檔流程不動。
+let week1Editing=false;
+function applyReviewMode(){
+ const ws=$('student-workspace');if(!ws)return;
+ const submitted=savedStatus==='submitted',review=submitted&&!week1Editing;
+ ws.classList.toggle('is-review',review);
+ const form=$('week1-form');if(form)form.hidden=review;
+ ws.querySelectorAll(':scope > .video-learning-card, :scope > .notice').forEach(n=>{n.hidden=review;});
+ let bar=$('week1-review-bar');
+ if(!bar){bar=document.createElement('div');bar.id='week1-review-bar';bar.className='review-bar';const b=document.createElement('button');b.type='button';b.id='week1-edit';b.className='primary';bar.append(b);const anchor=$('teacher-note')||$('submitted-state');anchor.after(bar);}
+ bar.hidden=!submitted;
+ const b=$('week1-edit');b.textContent=review?'修改這張卡':'收起表單，只看回顧卡';
+ b.onclick=()=>{week1Editing=!week1Editing;renderSubmittedState();try{(week1Editing?$('week1-form'):$('submitted-state')).scrollIntoView({block:'start'});}catch{}};
 }
 
 function renderCard(){ const data=formData(); const map=[['verbatim_complaint','card-quote','尚未填寫'],['observed_problem','card-problem','你的觀察會出現在這裡'],['affected_user','card-user','尚未填寫'],['known_fact','card-fact','尚未填寫'],['unverified_assumption','card-assumption','尚未填寫']]; map.forEach(([key,id,fallback])=>$(id).textContent=data[key]?.trim()||fallback); const done=required.filter(k=>data[k]?.trim()).length; const pct=Math.round(done/required.length*100); $('progress-label').textContent=`完成度 ${pct}%（${done}/${required.length}）`; $('progress-bar').style.width=`${pct}%`; }

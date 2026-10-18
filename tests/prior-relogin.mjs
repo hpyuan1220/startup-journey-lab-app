@@ -35,8 +35,15 @@ ok('痛點 1 標題不再寫「延續 Week 1」，改成自己的阻礙',!/延�
 ok('已有雲端卡的人看不到「已帶入可用的 Week 1 內容」',!s.hint);
 ok('Week 2 頁 390px 無橫向捲動',!(await wide(p)));
 if(process.env.SHOT_DIR)await p.screenshot({path:process.env.SHOT_DIR+'/week2-summary.png'});
-const btn=await p.evaluate(()=>{const b=[...document.querySelectorAll('#week2-summary button')].find(x=>/往下到填答區/.test(x.textContent));if(!b)return null;const y0=scrollY;b.click();return y0;});
-await p.waitForTimeout(300);ok('「往下到填答區」按了會捲下去',btn!==null&&await p.evaluate(y=>scrollY>y+200,btn));
+// 回顧模式（2026-10-18）：已交的人只看完成度卡＋摘要卡；表單、說明都收起來，按「修改這張卡」才展開。
+const rv=await p.evaluate(()=>{const vis=e=>!!e&&e.getClientRects().length>0;return {form:vis(document.querySelector('#week-two form')),intro:vis(document.querySelector('#week-two .video-learning-card h3')),cand:vis(document.querySelector('details.candidate')),btn:[...document.querySelectorAll('#week2-summary button')].map(b=>b.textContent)};});
+ok('回顧模式：表單、說明、痛點區塊都收起來，摘要卡上有「修改這張卡」',!rv.form&&!rv.cand&&rv.btn.includes('修改這張卡'),rv);
+const y0=await p.evaluate(()=>{const b=[...document.querySelectorAll('#week2-summary button')].find(x=>x.textContent==='修改這張卡');const y=scrollY;b.click();return y;});
+await p.waitForTimeout(400);
+const ed=await p.evaluate(y=>{const vis=e=>!!e&&e.getClientRects().length>0;return {form:vis(document.querySelector('#week-two form')),cand:vis(document.querySelector('details.candidate')),scrolled:scrollY>y+200,btn:[...document.querySelectorAll('#week2-summary button')].map(b=>b.textContent)};},y0);
+ok('按「修改這張卡」：表單展開、捲到填答區、按鈕變「收起表單」',ed.form&&ed.cand&&ed.scrolled&&ed.btn.includes('收起表單，只看回顧卡'),ed);
+await p.evaluate(()=>[...document.querySelectorAll('#week2-summary button')].find(x=>/收起表單/.test(x.textContent)).click());await p.waitForTimeout(300);
+ok('再按「收起表單」：回到回顧模式',await p.evaluate(()=>!document.querySelector('#week-two form').getClientRects().length&&!!document.querySelector('#week2-summary.is-review')));
 ok('Week 2 頁沒有 JS 錯誤',!errs.length,errs);
 // 2) 還沒有 Week 2 的人：照舊
 ({p,errs}=await open(tokNew,SID2,'week.html?week=2#card'));

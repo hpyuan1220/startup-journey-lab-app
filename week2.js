@@ -1,6 +1,6 @@
 import {steps,stepState,progressKey,sameAnswers,cardDifferences,stateLabels} from './week2-journey.mjs?v=20260929-states';
 import {revisionFields,draftRevision,applyRevision} from './week2-revision.mjs?v=20261002-safari';
-import {renderWeek2Summary,week2StatusText,priorDetails} from './prior-view.mjs?v=20261016-prior';
+import {renderWeek2Summary,week2StatusText,priorDetails} from './prior-view.mjs?v=20261018-review';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {emptyCard,fields,triageFields,depthFields,selectedIndex,challengeFields,sourceOptions,normalize,check,readiness,aiInput,privacyRisk} from './week2-core.mjs?v=20260930-lean';
 import {completion,chips,questionIndex,assess,SOLUTION_WORDS} from './week2-quality.mjs?v=20261012-solution';
@@ -43,16 +43,27 @@ const intro=el('section','',workspace);intro.className='video-learning-card';roo
 // 已交過的人：開頁會捲到完成度卡，緊接著就是整張卡（唯讀）。表單仍在下面，要改再往下。
 // 摘要的位置在 qualityBox 建好後才放（見下方 workspace.insertBefore）。
 const summaryCard=el('section');summaryCard.className='video-learning-card prior-summary';summaryCard.id='week2-summary';summaryCard.hidden=true;
+// 回顧卡（2026-10-18）：已交的人進頁只看這張摘要＋「修改這張卡」。說明、完成度、整張表單都收進 editArea，
+// 按了才展開；沒交過的人完全照舊。資料、欄位、存檔流程一律不動。
+let editArea=null,week2Editing=false;
+const isSent=()=>!!(row&&(row.status==='submitted'||row.submitted_at));
+function applyReview(){
+ // 完成度卡（三格燈＋「差哪一件事」的可點寫法＋老師指路）留在外面：回顧模式也看得到下一步。
+ if(!editArea){editArea=document.createElement('div');editArea.className='edit-area';for(const n of [...workspace.children])if(n!==summaryCard&&n!==qualityBox)editArea.append(n);workspace.append(editArea);
+  // 在回顧模式按了完成度卡裡的任何按鈕（套用寫法、老師要你改），等於要改：先展開表單，原本的捲動與聚焦才有地方去。
+  qualityBox.addEventListener('click',e=>{if(e.target.closest('button')&&isSent()&&!week2Editing){week2Editing=true;applyReview();renderSummary();}},true);}
+ const review=isSent()&&!week2Editing;
+ editArea.hidden=review;intro.hidden=review;summaryCard.classList.toggle('is-review',review);
+}
 function renderSummary(){
  const wasOpen=summaryCard.querySelector('details')?.open;
  summaryCard.replaceChildren();
- const sent=row&&(row.status==='submitted'||row.submitted_at);
- if(!sent){summaryCard.hidden=true;return;}
+ if(!isSent()){summaryCard.hidden=true;return;}
  summaryCard.hidden=false;
  const d=priorDetails(summaryCard,`我的 Week 2 痛點卡 · ${week2StatusText(row)}`,wasOpen!==false);
  renderWeek2Summary(d,row);
- const go=document.createElement('button');go.type='button';go.textContent='要修改：往下到填答區 ↓';
- go.onclick=()=>{try{form.scrollIntoView({block:'start'});}catch{}};d.append(go);
+ const go=document.createElement('button');go.type='button';go.className='primary-action';go.textContent=week2Editing?'收起表單，只看回顧卡':'修改這張卡';
+ go.onclick=()=>{week2Editing=!week2Editing;applyReview();renderSummary();if(week2Editing){try{form.scrollIntoView({block:'start'});}catch{}}else{try{summaryCard.scrollIntoView({block:'start'});}catch{}}};d.append(go);
 }
 el('h3','先理解：這張卡要做什麼？',intro);
 el('p','本週先比較兩個你親身觀察到的不同困擾，再暫選一個，下週找真人訪談。現在不用想產品，也不用證明創業會成功。',intro);
@@ -682,6 +693,8 @@ window.addEventListener('beforeunload',e=>{if(dirty||pendingLocal){e.preventDefa
  workspace.hidden=false;render();renderSummary();if(row&&(row.submitted_at||row.status==='submitted'))queueMicrotask(()=>{try{qualityBox.scrollIntoView({block:'start'});}catch{}});msg.textContent=row?`已恢復版本 ${version} · ${readiness(row)}${row.teacher_note?' · 老師：'+row.teacher_note:''}`:'已帶入 Week 1 觀察，請補充第二個候選題。';
  let local;try{local=JSON.parse(localStorage.getItem(cacheKey())||'null');}catch{}
  if(local&&sameAnswers(local.card,card)){card.mode=adoptPacing(normalize(local.card).mode);render();}
+ if(local&&!sameAnswers(local.card,card))week2Editing=true;
+ applyReview();if(week2Editing)renderSummary();
  if(local&&!sameAnswers(local.card,card)){
   pendingLocal=local;workspace.inert=true;refreshJourney();
   const conflict=el('section');conflict.className='video-learning-card';conflict.tabIndex=-1;conflict.setAttribute('role','region');conflict.setAttribute('aria-label','選擇要繼續的草稿');root.insertBefore(conflict,workspace);workspace.hidden=true;

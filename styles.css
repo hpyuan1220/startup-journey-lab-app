@@ -430,3 +430,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .week-pager span{font-size:.8rem;color:#6b7a72;flex:1 1 auto;text-align:center}
 .week-pager a{font-size:.85rem;max-width:48%;white-space:normal;line-height:1.3}
 @media(max-width:600px){.week-pager a{max-width:100%}}
+
+/* 回顧卡（Week 1–3 已交的人）：摘要＋一顆「修改這張卡」，表單收起 */
+.prior-summary.is-review{border:2px solid var(--green);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.prior-summary.is-review>details>summary{font-size:1.1rem}
+.prior-summary .primary-action{margin-top:10px}
+.review-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+.review-bar button{min-height:44px}
+#student-workspace.is-review .preview{margin-top:0;outline:3px solid var(--lime);outline-offset:-3px}
