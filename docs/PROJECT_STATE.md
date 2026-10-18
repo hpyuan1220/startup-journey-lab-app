@@ -1678,3 +1678,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 改動：index.html 十週地圖 4–10 的標題；week.js 第 4–10 週的標題／摘要／交付／步驟與影片重點（YC 只留對得上的；AI-native、MVP 改選看）；COURSE_BLUEPRINT_V1 十週表第二版；week.html 的 week.js 版本號 20261017-map。
 - 決定：期中＝個人產業研究報告（10/29 課前交、11/2 前可補證據）；體檢五題＋加分題「為什麼是現在」；Week 5 用 Lewrick 影響×難度矩陣選段；Week 7 agent 優先、全用 Google 免費工具（Gem／Apps Script／Calendar／Looker Studio／NotebookLM），LINE 自動發只給進階組；不碰醫療；移工主題不列入。
 - 未做：新頁面（產業板、挑戰卡、問 AI 元件、證據表、體檢）的程式；mockup 在 Claude 的 Design canvas。Week 4 是 10/22。
+
+## 2026-10-18 課程第三版定案（12 堂、兩輪研究、不做 MVP）
+- 實際日期：10/23、10/30、11/6、11/13 期中、11/20、11/27、12/4、12/11、12/18 期末；加上已上 3 週共 12 堂，地圖要改成 12 格。
+- 不做 MVP／Demo；app 縮到：選產業存檔、問 AI 卡（一種形狀到處重複）、比較頁點分、建組與方向認領、PDF 上傳（個人期中、小組期末）。
+- 第一輪個人：一個產業、三個機會、五問比較。第二輪小組：3 人為主最少 2、一組一個產業、三個方向分給三個人、六準則比較。
+- 全文見 `docs/COURSE_V3_12WEEKS.md`。COURSE_V2_WEEK4-10、RESEARCH_PATH_V2、MVP_RECIPES_V2 保留為歷史，不再依循。
+- 下一步：Week 4 講義（5 頁）→ Week 5、Week 9 講義 → 地圖與 week.js 改 12 週 → 第一輪兩頁程式。
