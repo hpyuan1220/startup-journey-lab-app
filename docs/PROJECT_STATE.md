@@ -1729,3 +1729,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 老師定案：只要有 Week 1、2，沒做訪談也直接給一個接近的痛開始 Week 4；連 Week 1 都沒有的才自己填。
 - `week4_load` 多回 `pain_seed`／`pain_source`（week3 修正後陳述 → week2 card.statement → week1 「誰受影響：觀察到的問題」）；`week3_statement` 舊欄位照舊。前端只在還沒有 Week 4 列時帶入，訊息依來源不同（Week 2／1 的會提醒之後改成訪談後版本）。標題改成「我的痛（系統從 Week 3／2／1 帶出，可改）」。
 - 單元 179/179（新測試：遞補鏈、已存過不覆蓋、沒 Week 1 為空）；bundled handler 也跑過；瀏覽器 week4-student 13/13。bundle SHA b37ca99e55586c3e（55,999 B），要部署。
+- 2026-10-19 老師實測：按「複製問題、開我的 AI 工具」開 Gemini 是空的。這是設計限制（Gemini／Copilot 沒有網址帶問題；ChatGPT／Claude 有）。改法：訊息明講「打開是空的是正常的，按 Ctrl+V／⌘V／長按貼上」，而且沒有帶入功能時自動展開「看／改這次的問題」框；工具下拉 title 也註明。教訓：`node --check` 抓不到 ES module 裡「參數與 const 同名」的錯，要用 `node --input-type=module -e "import('./x.js')"` 驗；瀏覽器測試會抓到。

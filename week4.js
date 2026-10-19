@@ -88,7 +88,7 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
  const row2=el('div','',sec,'w4-row');
  const btn=el('button',btnText,row2,'primary w4-go');btn.type='button';
  let toolSel=null;
- if(!nb){toolSel=el('select','',row2,'w4-tool');for(const [v,label] of TOOLS){const o=el('option',label,toolSel);o.value=v;}toolSel.value=getTool();toolSel.setAttribute('aria-label','我的 AI 工具');toolSel.addEventListener('change',()=>setTool(toolSel.value));}
+ if(!nb){toolSel=el('select','',row2,'w4-tool');for(const [v,label] of TOOLS){const o=el('option',label,toolSel);o.value=v;}toolSel.value=getTool();toolSel.setAttribute('aria-label','我的 AI 工具');toolSel.title='Gemini、Copilot 打開是空的，要按 Ctrl+V 貼上；ChatGPT、Claude 會自動帶入問題';toolSel.addEventListener('change',()=>setTool(toolSel.value));}
  const note=el('p',nb?'六題：這一行多大／誰在賺錢／最常被抱怨的三件事／過去三年什麼變了／有人試過解決嗎／台灣跟國外差在哪。':'問題已用你的痛點和產業填好。開啟後按 Ctrl+V 貼上、送出。工具可以換；查證一律用 NotebookLM。',sec,'w4-note');
  let opps=null;
  if(k==='card3'){opps=[0,1,2].map(n=>{const inp=el('input','',sec);inp.type='text';inp.maxLength=200;inp.placeholder=`機會 ${'ABC'[n]}：一句話（誰的哪個困難 → 第一個付錢的人）`;inp.className='w4-opp';inp.setAttribute('aria-label',`機會 ${'ABC'[n]}`);inp.addEventListener('input',()=>{data.card3.opps[n]=inp.value;touch();});return inp;});}
@@ -108,14 +108,16 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
  });
  cBlocks[k]={ta,radios,stamp,opps};
 });
-function showPrompt(sec,prompt){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看／改這次的問題';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;d.append(pre);sec.append(d);}d.querySelector('textarea').value=prompt;}
+function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看／改這次的問題';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;d.append(pre);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
 async function openTool(prompt,btn,tool){
  const t=tool||getTool();setTool(t);
  const ok=await copyText(prompt);
  window.open(toolUrl(t,prompt),'_blank','noopener');
- const name=(TOOLS.find(x=>x[0]===t)||TOOLS[0])[1];
- msg.textContent=ok?`問題已複製，已開 ${name}。貼上送出後，把回答貼回來。`:`已開 ${name}；複製失敗，請手動複製下面的問題。`;
- showPrompt(btn.closest('section')||page,prompt);
+ const td=TOOLS.find(x=>x[0]===t)||TOOLS[0],name=td[1],prefill=td[3];
+ // Gemini／Copilot 沒有「網址帶問題」的功能，開出來一定是空的：問題在剪貼簿裡，要自己貼。ChatGPT／Claude 會直接帶進輸入框。
+ if(prefill)msg.textContent=ok?`已開 ${name}，問題已帶進輸入框（也複製了一份）。送出後把回答貼回來。`:`已開 ${name}，問題已帶進輸入框。送出後把回答貼回來。`;
+ else msg.textContent=ok?`已開 ${name}。${name} 打開會是空的，這是正常的：問題已經複製好了，到 ${name} 的輸入框按 Ctrl+V（Mac：⌘V；手機：長按→貼上）再送出。`:`已開 ${name}；複製失敗，請把下面的問題全選複製，貼到 ${name}。`;
+ showPrompt(btn.closest('section')||page,prompt,!prefill||!ok);
 }
 
 // 存檔
