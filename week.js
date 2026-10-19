@@ -17,6 +17,16 @@ const n=Math.min(12,Math.max(1,Number(new URLSearchParams(location.search).get('
 document.title=`Startup Journey Lab｜Week ${n}`;const h=highlights[n-1];document.querySelector('#video-title').textContent=h[0];document.querySelector('#video-takeaway').textContent=h[1];document.querySelector('#week-number').textContent=`WEEK ${String(n).padStart(2,'0')}`;document.querySelector('#week-title').textContent=w[0];document.querySelector('#week-summary').textContent=w[1];document.querySelector('#week-output').textContent=`本週提交：${w[2]}`;document.querySelector('#week-status').textContent=w[3];document.querySelector('#week-steps').innerHTML=w[4].map(x=>`<li>${x}</li>`).join('');document.querySelector('#week-one').hidden=n!==1;
 
 
+// 每一週頁的上方都有「學號 · 離開」：共用電腦或換裝置時才找得到登出（原本只有首頁起點卡有）。
+(function(){
+ let s=null;try{s=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
+ const nav=document.querySelector('.topbar nav');if(!s||!s.student_id||!nav)return;
+ const who=document.createElement('span');who.className='topbar-who';who.textContent=`學號 ${s.student_id}`;
+ const out=document.createElement('button');out.type='button';out.className='quiet';out.textContent='離開';out.title='登出這台裝置；資料都在雲端，下次用學號和邀請碼再進來';
+ out.addEventListener('click',()=>{localStorage.removeItem('sjl-student-session');location.href='index.html#student';});
+ who.append(out);nav.append(who);
+})();
+
 // 每一週頁上下各一組「← 上一週 ／ 下一週 →」：學生要回看前幾週的卡就按這個，不在同一頁堆好幾週。
 (function(){
  const main=document.querySelector('main');if(!main)return;
