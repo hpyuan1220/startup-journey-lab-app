@@ -1,4 +1,4 @@
-import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards} from './week4-core.mjs?v=20261019-rank';
+import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards} from './week4-core.mjs?v=20261019-rank2';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 // Week 4 第一輪研究頁：課堂兩題 → 選一條產業線 → 三張「問 AI 卡」（同一個形狀：一句要問什麼、一顆鈕、一個貼回框、來源）。
 // 一直開著、沒有截止。每次存，伺服器替有變動的欄位蓋時間章；上課時段內＝課中。prompt 由 week4-core 用學生自己的痛與產業組好。
@@ -65,7 +65,7 @@ function renderCards(){
  const {list,related}=rankCards(painInput.value||data.pain,recommended);
  const best=related?list[0]:null;
  if(related){indHint.textContent=`從你的痛看，最接近的是「${best.card.name}」；不對就看全部，或自己填。`;}
- else{indHint.textContent='從你的痛看不出屬於哪一條線（這很常見）。九條都看一下，挑一條「有業者在為這件事花錢」的；都不是就自己填一個產業。';}
+ else{indHint.textContent='從你的痛看不出屬於哪一條線（這很常見，例如分組協調、通勤、選擇困難）。想一下「誰的生意裡也有這個麻煩」：很多人要對時間 → 零工排班（2）或場地預約（4）；選不出來、比不完 → 餐飲（1）或網拍（3）。九條都看一下；都不是就自己填一個產業。';}
  const order=list.map(x=>({card:x.card,hits:x.byText?2:(x.hits?1:0),byText:x.byText}));
  const shown=(showAll||!related)?order:order.slice(0,2);
  // 選了跟痛對不上的線：不擋，但提醒；卡 1 的 prompt 也會先要 AI 判斷關不關聯。
