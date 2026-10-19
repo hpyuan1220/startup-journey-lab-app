@@ -89,7 +89,10 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
  const btn=el('button',btnText,row2,'primary w4-go');btn.type='button';
  let toolSel=null;
  if(!nb){toolSel=el('select','',row2,'w4-tool');for(const [v,label] of TOOLS){const o=el('option',label,toolSel);o.value=v;}toolSel.value=getTool();toolSel.setAttribute('aria-label','我的 AI 工具');toolSel.title='Gemini、Copilot 打開是空的，要按 Ctrl+V 貼上；ChatGPT、Claude 會自動帶入問題';toolSel.addEventListener('change',()=>setTool(toolSel.value));}
- const note=el('p',nb?'六題：這一行多大／誰在賺錢／最常被抱怨的三件事／過去三年什麼變了／有人試過解決嗎／台灣跟國外差在哪。':'問題已用你的痛點和產業填好。開啟後按 Ctrl+V 貼上、送出。工具可以換；查證一律用 NotebookLM。',sec,'w4-note');
+ const note=el('p',nb?'六題：這一行多大／誰在賺錢／最常被抱怨的三件事／過去三年什麼變了／有人試過解決嗎／台灣跟國外差在哪。':'問題已用你的痛點和產業填好。工具可以換；查證一律用 NotebookLM。',sec,'w4-note');
+ // 操作步驟寫死在卡上：按鈕只做「複製＋開工具」，貼上、送出、貼回是學生自己的三個動作。
+ const steps=el('ol','',sec,'w4-steps');
+ for(const t of (nb?['按上面的按鈕：六題已複製、NotebookLM 已打開（先建筆記本、加 5–8 個來源）','在 NotebookLM 的對話框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），一題一題問','每個答案都要有引用；把答案整理後貼回下面，每點留（來源：XX）']:['按上面的按鈕：問題已複製、AI 工具已打開（Gemini／Copilot 打開是空的，正常）','在工具的輸入框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），送出','把回答貼回下面的框；有數字的句子後面寫出處或「估計」']))el('li',t,steps);
  let opps=null;
  if(k==='card3'){opps=[0,1,2].map(n=>{const inp=el('input','',sec);inp.type='text';inp.maxLength=200;inp.placeholder=`機會 ${'ABC'[n]}：一句話（誰的哪個困難 → 第一個付錢的人）`;inp.className='w4-opp';inp.setAttribute('aria-label',`機會 ${'ABC'[n]}`);inp.addEventListener('input',()=>{data.card3.opps[n]=inp.value;touch();});return inp;});}
  const ta=el('textarea','',sec);ta.rows=4;ta.maxLength=6000;ta.placeholder=ph;ta.setAttribute('aria-label',title+' 貼回');
