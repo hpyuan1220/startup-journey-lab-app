@@ -1721,3 +1721,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：單元 `tests/teacher-remarks.test.mjs`（存改刪、403、401、學生端拿不到）；瀏覽器 `tests/teacher-remarks.mjs` 13/13；既有 week4-student 13/13、teacher-week2-view 9/9、單元 176/176。
 - 上線順序：SQL `supabase/migrations/20261019_teacher_remarks.sql` → push → 部署 week2-api bundle（SHA 0a27e7c37a419b50，55,192 B）→ 正式站老師帳號存一筆、重開頁、匯出 CSV。
 - 之後每週：新的週模組一樣用 `remarkEditor(..., week: N)`，CSV 的週數迴圈從 [1,2,3,4] 改成到當週。
+- 上線後調整：備註欄原本在最右邊，老師在窄視窗（Claude 瀏覽器窗格 534px）找不到；改到「出席」旁邊第三欄，窄視窗不用往右滑。Week 4 區說明也寫明備註怎麼用。上線實證：表建好後 `teacher_load` 正常、存／刪備註成功、學生端不含 remarks。教訓：第一次 SQL 沒真的 Run，造成 teacher_load 整個失敗——以後有新表的上線，部署前先用 REST 探表存不存在。

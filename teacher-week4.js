@@ -10,7 +10,7 @@ if(dashboard){
 const root=document.createElement('section');root.id='teacher-week4';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 el('h2','Week 4 第一輪研究：出席、兩題、三張卡',root);
-el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你唯一要操作的是本週兩題的文字。',root,'tw2-intro');
+el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你要操作的只有兩件事：本週兩題的文字，和每位學生那一列的「老師備註」（四個標記一點就存、備註打完按 Enter；學生看不到）。表格太寬時可以左右滑。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 4',root,'quiet');reloadBtn.type='button';
 const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–4 狀態、出席、三張卡來源、每週老師標記與備註';
@@ -53,18 +53,19 @@ function render(){
   stat(rows.filter(x=>x.st.card1).length,'卡 1 已貼回');stat(rows.filter(x=>x.st.card2).length,'卡 2 已貼回');stat(rows.filter(x=>x.st.card3).length,'卡 3 已貼回');
   // 一人一列
   const wrap=el('div','',sec,'tw4-wrap');const table=el('table','',wrap);const thead=el('thead','',table);const tr=el('tr','',thead);
-  for(const h of ['學生','出席','產業線','Q1','Q2','卡 1 錢流','卡 2 查證','卡 3 機會','來源','老師備註（學生看不到）'])el('th',h,tr);
+  // 備註欄放在出席旁邊（第三欄）：手機或窄視窗不用往右滑就看得到、點得到。
+  for(const h of ['學生','出席','老師備註（學生看不到）','產業線','Q1','Q2','卡 1 錢流','卡 2 查證','卡 3 機會','來源'])el('th',h,tr);
   const tbody=el('tbody','',table);
   rows.sort((a,b)=>Number(a.present)-Number(b.present)||Number(!!a.r)-Number(!!b.r)||a.id.localeCompare(b.id));
   for(const x of rows){
    const r=el('tr','',tbody);
    const idTd=el('td','',r);const btn=el('button',x.id+(x.name?`　${x.name}`:''),idTd,'quiet');btn.type='button';btn.style.padding='2px 6px';
    const att=el('td','',r);const sp=el('span',x.present?'出席':'缺席',att,x.present?'tw4-in':'tw4-out');
+   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,onSaved:rows=>mergeRemarks(data,c.id,x.id,rows)});
    const ind=el('td','',r);if(x.d&&x.d.industry.card){ind.textContent=industryName(x.d)+' ';const s=document.createElement('span');s.className=stampLabel(x.st.industry)?.kind==='in'?'tw4-in':'tw4-out';s.textContent=fmt(x.st.industry);ind.append(s);}else ind.textContent='未選';
    for(const k of ['q1','q2']){const td=el('td','',r);if(x.st[k])stampCell(td,x.st[k]);else{td.textContent='未答';td.className='tw4-no';}}
    for(const k of ['card1','card2','card3']){const td=el('td','',r);stampCell(td,x.st[k]);}
    el('td',x.d?['card1','card2','card3'].map(k=>x.d[k].source).filter(Boolean).map(s=>(SOURCE_LABEL[s]||s).replace(/ 說| 查到（有引用）/,'')).join(' · ')||'—':'—',r);
-   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,onSaved:rows=>mergeRemarks(data,c.id,x.id,rows)});
    btn.addEventListener('click',()=>{if(open.has(x.id))open.delete(x.id);else open.add(x.id);render();});
    if(open.has(x.id)&&x.d){
     const dr=el('tr','',tbody);const td=el('td','',dr);td.colSpan=10;const box=el('div','',td,'tw4-detail');
