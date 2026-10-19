@@ -244,6 +244,28 @@ function recommendCards(experiencedTopicIds){
  return INDUSTRY_CARDS.map(card=>({card,hits:card.topics.filter(t=>set.has(t)).length})).sort((a,b)=>b.hits-a.hits||a.card.id-b.card.id);
 }
 
+/** 痛點句子裡的關鍵字 → 產業卡。老師 2026-10-19 實測：痛是「合租找室友」卻被推到「健身」，prompt 硬把兩者接在一起、AI 一本正經地亂答。
+ * 所以推薦先看痛的文字，再看普查；句子完全對不到任何一條就老實說「看不出來」，讓學生自己選或自填。 */
+const PAIN_KEYWORDS={
+ 1:['吃','餐','飯','便當','早餐','飲料','排隊','外送','小吃','店家','點餐','咖啡'],
+ 2:['打工','排班','代班','工讀','兼職','缺人','短班','時薪','找人'],
+ 3:['網拍','蝦皮','電商','退貨','賣家','買家','代購','直播','出貨','賣東西'],
+ 4:['租屋','室友','合租','房東','房仲','民宿','住宿','自習室','場地','停車','包棟','租房'],
+ 5:['健身','運動','場館','教練','球場','瑜珈','游泳','重訓','跑步'],
+ 6:['美髮','美甲','美容','按摩','預約','工作室','理髮','剪髮','私訊','獲客'],
+ 7:['長照','銀髮','長輩','爺爺','奶奶','照護','看護','回診','用藥','阿公','阿嬤'],
+ 8:['寵物','貓','狗','毛小孩','獸醫','美容','寄宿','遛狗'],
+ 9:['二手','租借','租衣','二手書','器材','閒置','循環','轉賣'],
+};
+function keywordHits(card,painText){const t=String(painText||'');return (PAIN_KEYWORDS[card.id]||[]).filter(k=>t.includes(k)).length;}
+/** 把「痛的文字」和「普查命中」合起來排：文字命中一個算 2 分，普查命中一題算 1 分。回傳 [{card,hits,score,byText}]；
+ * related＝有沒有任何一條靠文字對上（false 就該直接秀全部九條，讓學生自己選）。 */
+function rankCards(painText,surveyRecommended){
+ const sv=new Map((surveyRecommended||[]).map(r=>[Number(r.id),Number(r.hits)||0]));
+ const list=INDUSTRY_CARDS.map(card=>{const byText=keywordHits(card,painText);const hits=sv.get(card.id)||0;return {card,hits,byText,score:byText*2+hits};}).sort((a,b)=>b.score-a.score||a.card.id-b.card.id);
+ return {list,related:list.some(x=>x.byText>0)};
+}
+
 // ---- 課表與課中判定 ----
 // 上課日 13:30–18:00（台北，UTC+8）。存檔時間落在任何一個上課日的時段內＝課中。
 const CLASS_SCHEDULE={
@@ -314,7 +336,7 @@ const NOTEBOOKLM_URL='https://notebooklm.google.com/';
 function toolUrl(tool,prompt){const t=TOOLS.find(x=>x[0]===tool)||TOOLS[0];return t[3]?t[2]+encodeURIComponent(prompt):t[2];}
 function buildPrompt(kind,d,q){
  const ind=industryName(d)||'〔產業〕',pain=d.pain||'〔我的痛，一句話〕';
- if(kind==='card1')return `你是台灣「${ind}」這一行的資深顧問。我觀察到：${pain}。請告訴我 (1) 這一行誰付錢給誰、多久一次、大概多少；(2) 業者自己會說出口的三到五個困難；(3) 這些困難現在用什麼方法撐著（人工、LINE、Excel、外包、平台）。繁體中文，每點兩行內，數字寫出處或標「估計」。`;
+ if(kind==='card1')return `你是台灣「${ind}」這一行的資深顧問。我是使用者，我觀察到的痛是：${pain}。\n第一步，先判斷：這個痛翻到業者那一面，會落在「${ind}」這一行的哪一段（誰為它花錢、花時間）？如果這個痛跟這一行其實關係不大，請直接說「關係不大」，並告訴我它比較像哪一行，不要硬湊。\n第二步，只針對「${ind}」這一行回答：(1) 誰付錢給誰、多久一次、大概多少；(2) 業者自己會說出口的三到五個困難；(3) 這些困難現在用什麼方法撐著（人工、LINE、Excel、外包、平台）。\n繁體中文，每點兩行內，數字寫出處或標「估計」。`;
  if(kind==='card2')return `請只根據這個筆記本裡的來源回答，每一點後面附引用；找不到就說找不到，不要推測。關於台灣的「${ind}」：1. 這一行有多大（家數、營業額、從業人數）？2. 誰在賺錢、錢怎麼流？3. 業者最常被抱怨、自己最常抱怨的三件事？4. 過去三年什麼變了？5. 有人試過解決嗎、結果如何？6. 台灣跟國外差在哪？`;
  if(kind==='card3')return `以下是我用 NotebookLM 查到、有來源的「${ind}」困難：\n${d.card2?.text||'（還沒貼卡 2 的證據）'}\n\n根據這些，列三個適合小團隊切入的機會。每個機會寫：解誰的哪個困難、第一個會付錢的人是誰、現在他付錢給誰、為什麼是現在（AI、法規、行為改變）。不要給做 App 或平台的答案，除非你能說出第一個付錢的人。繁體中文，每個機會不超過四行。`;
  if(kind==='q1'||kind==='q2'){

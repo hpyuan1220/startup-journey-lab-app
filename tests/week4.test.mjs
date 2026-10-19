@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate} from '../week4-core.mjs';
+import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate,rankCards} from '../week4-core.mjs';
 import {harness} from './support/week2-harness.mjs';
 
 test('產業板九張、推薦依普查題號排序', () => {
@@ -89,4 +89,13 @@ test('Edge：「我的痛」種子遞補 Week 3 → Week 2 → Week 1；沒有 W
  // 連 Week 1 都沒有：種子空、來源空
  const token0='fixture-token-A113270032-1234567890';h.tables.student_sessions.push({class_id:'class-a',student_id:'A113270032',expires_at:'2099-01-01',token_hash:await (async s=>Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))).toString('hex'))(token0)});
  const l0=await h.call({action:'week4_load',token:token0});assert.equal(l0.status,200);assert.equal(l0.body.pain_seed,'');assert.equal(l0.body.pain_source,'');
+});
+
+test('rankCards：先看痛的文字，再看普查；對不到就 related=false', () => {
+ const r=rankCards('在台北學校附近要校外合租的大學生想找到可以信任的室友',[{id:1,hits:2},{id:2,hits:1}]);
+ assert.equal(r.related,true);assert.equal(r.list[0].card.id,4,'合租／室友 → 旅宿與空間出租');assert.equal(r.list[0].byText,2);assert.equal(r.list[1].card.id,1,'普查命中的排第二');
+ const r2=rankCards('想到要搶演唱會的票都搶不到',[{id:1,hits:2}]);
+ assert.equal(r2.related,false,'搶票對不到任何一條');assert.equal(r2.list[0].card.id,1,'沒對到就照普查');
+ const r3=rankCards('',[]);assert.equal(r3.related,false);assert.equal(r3.list[0].card.id,1,'全空就原順序');
+ assert.ok(/關係不大/.test(buildPrompt('card1',{pain:'找室友',industry:{card:5,custom:''},card1:{},card2:{},card3:{opps:[]}})),'卡 1 要 AI 先判斷關不關聯');
 });

@@ -12,20 +12,25 @@ await p.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.
 await p.goto(`${BASE}/week.html?week=4#card`);await p.waitForTimeout(1500);
 ok('頁面有課堂兩題與三張卡',await p.evaluate(()=>document.querySelectorAll('.w4-q').length===2&&document.querySelectorAll('.w4-askcard').length===3));
 ok('兩題文字是預設題',await p.evaluate(()=>document.querySelector('.w4-q-title').textContent.includes('Bhidé')));
-ok('產業卡預設只秀兩張',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===2));
+ok('痛還是空的：看不出哪一條線，九張都秀、提示寫明',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===9&&/看不出屬於哪一條線/.test(document.querySelector('.w4-indhint').textContent)));
+await p.fill('textarea[aria-label="我的痛一句話"]','午休 50 分鐘的大二同學每週兩次在餐廳排隊 20 分鐘');await p.dispatchEvent('textarea[aria-label="我的痛一句話"]','change');await p.waitForTimeout(200);
+ok('痛提到餐廳排隊：只秀兩張、餐飲小店排第一、提示寫最接近',await p.evaluate(()=>{const c=[...document.querySelectorAll('.w4-card b')].map(b=>b.textContent);return c.length===2&&c[0]==='1 餐飲小店'&&/最接近的是「餐飲小店」/.test(document.querySelector('.w4-indhint').textContent);}));
 // 答兩題、選產業、存
-await p.fill('textarea[aria-label="我的痛一句話"]','午休 50 分鐘的大二同學每週兩次排 20 分鐘');
+// 痛已在上面填好（含「餐廳排隊」關鍵字）
 await p.fill('textarea[aria-label="第一題答案"]','七成來自自己工作裡碰到的問題');
 await p.fill('textarea[aria-label="第二題答案"]','買方鏈：家長付錢');
 await p.click('text=看全部 9 條');ok('看全部變九張',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===9));
-await p.check('input[name="w4-ind"][value="1"]');
+await p.check('input[name="w4-ind"][value="5"]');await p.waitForTimeout(100);
+ok('選了跟痛對不上的「健身」：有提醒、不擋',await p.evaluate(()=>{const w=document.querySelector('.w4-indwarn');return !w.hidden&&/比較接近「餐飲小店」/.test(w.textContent)&&/健身與運動服務/.test(w.textContent);}));
+await p.check('input[name="w4-ind"][value="1"]');await p.waitForTimeout(100);
+ok('改選餐飲小店：提醒消失',await p.evaluate(()=>document.querySelector('.w4-indwarn').hidden));
 await p.click('button.w4-save');await p.waitForTimeout(800);
 const st1=await p.evaluate(()=>({msg:document.querySelector('.w4-msg').textContent,q1:document.querySelectorAll('.w4-q .w4-stamp')[0].textContent,ind:document.querySelector('.w4-sec .w4-stamp').textContent}));
 ok('存成功、Q1 與產業有時間章',/版本 1/.test(st1.msg)&&/已存/.test(st1.q1)&&/已存/.test(st1.ind),st1);
 // 卡 1：按鈕會複製 prompt、顯示問題；貼回自動選來源
 await p.click('.w4-askcard >> nth=0 >> button.w4-go');await p.waitForTimeout(300);
 const prompt=await p.evaluate(()=>document.querySelector('.w4-askcard .w4-prompt textarea')?.value||'');
-ok('卡 1 prompt 帶入產業與痛',prompt.includes('餐飲小店')&&prompt.includes('午休 50 分鐘'),prompt.slice(0,80));
+ok('卡 1 prompt 帶入產業與痛，並先要 AI 判斷關不關聯',prompt.includes('餐飲小店')&&prompt.includes('午休 50 分鐘')&&/關係不大/.test(prompt),prompt.slice(0,80));
 await p.fill('textarea[aria-label="這一行的錢流與困難 貼回"]','1. 尖峰出 120 份人手不夠 2. 外送抽 30%（估計）');
 await p.waitForTimeout(2300);// 自動存
 const st2=await p.evaluate(()=>({src:[...document.querySelectorAll('input[name="w4-src-card1"]')].find(r=>r.checked)?.value,stamp:document.querySelectorAll('.w4-askcard .w4-stamp')[0].textContent,prog:document.querySelector('.w4-prog').textContent}));

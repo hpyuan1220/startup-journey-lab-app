@@ -1,4 +1,4 @@
-import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress} from './week4-core.mjs?v=20261018-w4';
+import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards} from './week4-core.mjs?v=20261019-rank';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 // Week 4 第一輪研究頁：課堂兩題 → 選一條產業線 → 三張「問 AI 卡」（同一個形狀：一句要問什麼、一顆鈕、一個貼回框、來源）。
 // 一直開著、沒有截止。每次存，伺服器替有變動的欄位蓋時間章；上課時段內＝課中。prompt 由 week4-core 用學生自己的痛與產業組好。
@@ -28,6 +28,7 @@ const rule=el('p','',head,'w4-rule');
 const painBox=el('div','',page,'w4-pain');el('span','我的痛（系統從 Week 3／2／1 帶出，可改）',painBox,'w4-cap');
 const painInput=el('textarea','',painBox);painInput.rows=2;painInput.maxLength=300;painInput.placeholder='〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕';painInput.setAttribute('aria-label','我的痛一句話');
 const painStamp=el('div','',painBox,'w4-stamp');
+painInput.addEventListener('change',()=>renderCards());
 
 // 課堂兩題
 const quiz=el('section','',page,'w4-quiz');
@@ -47,7 +48,8 @@ for(const k of ['q1','q2']){
 // 選產業線
 const indSec=el('section','',page,'w4-sec');
 const indHead=el('div','',indSec,'w4-sec-head');el('span','0',indHead,'w4-n');el('h2','選一條產業線',indHead);
-el('p','依你的痛，最相關的排前面；都不對就看全部，或自己填。',indSec,'w4-hint');
+const indHint=el('p','依你的痛，最相關的排前面；都不對就看全部，或自己填。',indSec,'w4-hint w4-indhint');
+const indWarn=el('p','',indSec,'w4-indwarn');indWarn.hidden=true;
 el('p','原題是「早八起不來、記帳、找抽菸的地方、個人搶票」的同學：這四題找不到願意付錢的人，直接從下面改選一條。',indSec,'w4-unusable');
 const indList=el('div','',indSec,'w4-cards');
 const moreBtn=el('button','看全部 9 條',indSec,'button-link w4-small');moreBtn.type='button';let showAll=false;moreBtn.addEventListener('click',()=>{showAll=!showAll;moreBtn.textContent=showAll?'只看最相關的':'看全部 9 條';renderCards();});
@@ -59,13 +61,22 @@ customRadio.addEventListener('change',()=>{if(customRadio.checked){data.industry
 customInput.addEventListener('input',()=>{customRadio.checked=true;data.industry={card:'custom',custom:customInput.value.trim()};touch();});
 function renderCards(){
  indList.replaceChildren();
- const order=recommended.length?recommended.map(r=>({card:cardById(r.id),hits:r.hits})).filter(x=>x.card):INDUSTRY_CARDS.map(card=>({card,hits:0}));
- const shown=showAll?order:order.slice(0,2);
+ // 先看痛的文字對到哪一條，再看普查；對不到任何一條就直接秀九條，不假裝有推薦。
+ const {list,related}=rankCards(painInput.value||data.pain,recommended);
+ const best=related?list[0]:null;
+ if(related){indHint.textContent=`從你的痛看，最接近的是「${best.card.name}」；不對就看全部，或自己填。`;}
+ else{indHint.textContent='從你的痛看不出屬於哪一條線（這很常見）。九條都看一下，挑一條「有業者在為這件事花錢」的；都不是就自己填一個產業。';}
+ const order=list.map(x=>({card:x.card,hits:x.byText?2:(x.hits?1:0),byText:x.byText}));
+ const shown=(showAll||!related)?order:order.slice(0,2);
+ // 選了跟痛對不上的線：不擋，但提醒；卡 1 的 prompt 也會先要 AI 判斷關不關聯。
+ const sel=data.industry.card;const selRank=typeof sel==='number'?list.find(x=>x.card.id===sel):null;
+ if(related&&selRank&&selRank.byText===0){indWarn.hidden=false;indWarn.textContent=`提醒：你的痛看起來比較接近「${best.card.name}」，你選的是「${selRank.card.name}」。可以選，但卡 1 的 AI 會先告訴你這個痛跟這一行關不關聯；如果它說關係不大，就回來改選。`;}
+ else indWarn.hidden=true;
  for(const {card,hits} of shown){
   const lab=el('label','',indList,'w4-card'+(data.industry.card===card.id?' is-on':''));
   const r=el('input','',lab);r.type='radio';r.name='w4-ind';r.value=String(card.id);r.checked=data.industry.card===card.id;
   const body=el('div','',lab,'w4-card-body');
-  const t=el('div','',body,'w4-card-title');el('b',`${card.id} ${card.name}`,t);if(hits)el('span',hits>=2?'最相關':'相關',t,'w4-tag');
+  const t=el('div','',body,'w4-card-title');el('b',`${card.id} ${card.name}`,t);if(hits)el('span',hits>=2?'從你的痛看最接近':'普查相關',t,'w4-tag');
   el('div',card.sub,body,'w4-card-sub');
   el('div','誰付錢給誰：'+card.payers,body,'w4-card-pay');
   if(card.redline)el('div','紅線：'+card.redline,body,'w4-card-red');
