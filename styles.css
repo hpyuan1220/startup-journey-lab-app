@@ -445,3 +445,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* 教師洞察：本週在最上面（Week 4 → Week 2／3 → Week 1），每一週一個區塊 */
 #teacher-dashboard > section{border-top:3px solid var(--ink);padding-top:14px;margin-top:30px}
 #teacher-dashboard > section > h2{margin-top:0}
+/* 教師洞察 Week 2 區：每位學生收合時也看得到三週的痛（一行一週） */
+#teacher-week2 .tw2-gist{display:block;font-weight:400;font-size:13px;color:#4a5550;margin:4px 0 0 0;line-height:1.5}
+#teacher-week2 .tw2-gist>span{display:block;overflow-wrap:anywhere}
+#teacher-week2 .tw2-gist b{color:var(--green);margin-right:4px;font-weight:800}
+#teacher-week2 .tw2-gist .tw2-gist-pick{font-weight:700;color:var(--ink)}

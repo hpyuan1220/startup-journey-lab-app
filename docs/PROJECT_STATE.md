@@ -1711,3 +1711,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 ## 2026-10-19 教師洞察順序改成「本週在最上面」
 - 老師要求：教師洞察先看本週。DOM 順序改為 狀態列 → `#teacher-week4` → `#teacher-week2`（含 Week 3）→ `#teacher-week1`（index.html 把 metrics／filters／名單包成一個 section，加標題）。做法：teacher-week2 與 teacher-week4 都 `statusbar.after(root)`，後載入的 Week 4 自然排前面。每個區塊上方一條粗線分隔。
 - 之後每加一週：新模組同樣 `statusbar.after(root)`、script 放在最後，就會在最上面。
+- 同日追加：Week 2 區每位學生收合時就看得到三週的痛（`.tw2-gist`：W1 觀察到的問題 → 痛點 1／2 的阻礙、★ 標學生暫選 → W3 修正後陳述），不用一個個展開。teacher-week2.js v=20261019-gist。

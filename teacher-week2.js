@@ -111,6 +111,14 @@ function renderStudent(section,c,s,name,b,usage){
  const badge=el('span',r?REVIEW_LABEL[r.review_status]||r.review_status:'—',sum);badge.className='tw2-badge tw2-badge-'+b;
  if(s.q){const qb=el('span',` 品質 ${s.q.total}/16 · 第 ${s.lv} 格`,sum);qb.className='tw2-score tw2-score-'+(s.q.total>=12?'a':s.q.total>=8?'b':'c');}
  if(r?.ai_help)el('span',' · AI 建議先找老師',sum).className='tw2-flag';
+ // 老師不用展開就看得到三週的痛各是什麼：Week 1 觀察 → Week 2 兩個候選（阻礙那一格）＋選了哪個 → Week 3 修正後陳述。
+ const cut=(v,n)=>{v=String(v||'').replace(/\s+/g,' ').trim();return v?(v.length>n?v.slice(0,n)+'…':v):'';};
+ const gist=el('span','',sum);gist.className='tw2-gist';
+ const gl=(label,text,cls)=>{if(!text)return;const sp=el('span','',gist);if(cls)sp.className=cls;el('b',label,sp);sp.append(text);};
+ gl('W1 ',cut(w?.observed_problem,40));
+ if(r){const pk=selectedIndex(r.card);(r.card.candidates||[]).forEach((cand,i)=>gl(`痛點 ${i+1}${i===pk?'★':''} `,cut(cand.problem||cand.job||cand.people,34),i===pk?'tw2-gist-pick':''));}
+ if(s.w3?.record?.statement)gl('W3 ',cut(s.w3.record.statement,40));
+ if(!w&&!r)gl('',s.roster?'還沒進入過系統':'');
 
  // ---- Week 1 ----
  const w1Box=el('section','',box);w1Box.className='tw2-week1';
