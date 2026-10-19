@@ -1,5 +1,5 @@
 import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261018-w4';
-import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks} from './teacher-remarks.mjs?v=20261019-remarks';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag} from './teacher-remarks.mjs?v=20261019-suggest';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
 // 教師洞察 · Week 4 第一輪研究
 // 老師不用按任何開關：出席＝課堂兩題在上課日 13:30–18:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
@@ -88,6 +88,7 @@ csvBtn.addEventListener('click',()=>{
  const esc=v=>{v=String(v??'').replace(/\r?\n/g,' ');return /[",]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
  const head=['班級','學號','姓名','Week 1','Week 2','Week 2 審核','Week 3','Week 3 訪談次數','Week 4 出席','Week 4 產業','卡 1 來源','卡 2 來源','卡 3 來源'];
  for(const wk of [1,2,3,4])head.push(`W${wk} 標記`,`W${wk} 備註`);
+ for(const wk of [1,2,3])head.push(`W${wk} 系統推算`);
  const lines=[head.map(esc).join(',')];
  for(const c of data.classes){
   const roster=(data.roster||[]).filter(r=>r.class_id===c.id),w1=(data.week1||[]).filter(r=>r.class_id===c.id),w2=(data.rows||[]).filter(r=>r.class_id===c.id),w3=(data.week3||[]).filter(r=>r.class_id===c.id),w4=(data.week4||[]).filter(r=>r.class_id===c.id);
@@ -101,6 +102,7 @@ csvBtn.addEventListener('click',()=>{
     r4?(attendance(st,week)?'出席':'缺席'):'缺席',d&&d.industry.card?industryName(d):'',
     ...['card1','card2','card3'].map(k=>d?(SOURCE_LABEL[d[k].source]||d[k].source||''):'')];
    for(const wk of [1,2,3,4]){const rm=findRemark(data.remarks,c.id,id,wk);row.push(tagLabel(rm?.tag),rm?.note||'');}
+   for(const wk of [1,2,3]){const g=suggestTag(wk,{w1:a,w2:b,w3:d3,interviews:d3?doneCount(d3.record):0});row.push(g?tagLabel(g.tag):'');}
    lines.push(row.map(esc).join(','));
   }
  }

@@ -16,8 +16,20 @@ export function listenRemarks(getData){
  window.addEventListener('sjl-remarks',e=>{const {classId,studentId,rows}=e.detail||{};mergeRemarks(getData(),classId,studentId,rows);});
 }
 
+/** Week 1–3 沒有課堂兩題，出席無從得知；系統只能從作業推算一個「建議標記」，老師沒點之前用虛線顯示，點了任何一個就以老師的為準。
+ * 規則（寫死、可查）：
+ *  W1 起點卡：已交＝普通；草稿＝沒參與；沒有＝缺席
+ *  W2 痛點卡：老師已確認＝積極；已交＝普通；草稿＝沒參與；沒有＝缺席
+ *  W3 訪談卡：已交且三次都記完＝積極；有記至少一次＝普通；開了頁沒記＝沒參與；沒有＝缺席 */
+export function suggestTag(week,{w1,w2,w3,interviews}={}){
+ if(week===1){if(!w1)return {tag:'absent',why:'沒有 Week 1 紀錄'};return w1.status==='submitted'?{tag:'normal',why:'Week 1 已交'}:{tag:'passive',why:'Week 1 停在草稿'};}
+ if(week===2){if(!w2)return {tag:'absent',why:'沒開始 Week 2'};if(w2.review_status==='approved')return {tag:'active',why:'Week 2 老師已確認'};return (w2.status==='submitted'||w2.submitted_at)?{tag:'normal',why:'Week 2 已交'}:{tag:'passive',why:'Week 2 停在草稿'};}
+ if(week===3){if(!w3)return {tag:'absent',why:'沒開始 Week 3'};const n=Number(interviews||0);if(w3.status==='submitted'&&n>=3)return {tag:'active',why:'Week 3 已交、三次都記完'};return n>=1?{tag:'normal',why:`Week 3 記了 ${n} 次`}:{tag:'passive',why:'Week 3 開了頁沒記'};}
+ return null;
+}
+
 /** 一格編輯器：標記四選一（再點一次取消）＋一行備註。call＝教師端的 API 呼叫函式。 */
-export function remarkEditor(parent,{classId,studentId,week,current,call,onSaved,compact=false}){
+export function remarkEditor(parent,{classId,studentId,week,current,call,onSaved,compact=false,suggested=null}){
  const box=document.createElement('div');box.className='trk'+(compact?' trk-compact':'');parent.append(box);
  let tag=current?.tag||'',note=current?.note||'',saving=false,pending=false;
  const tags=document.createElement('div');tags.className='trk-tags';box.append(tags);
@@ -27,7 +39,8 @@ export function remarkEditor(parent,{classId,studentId,week,current,call,onSaved
  const st=document.createElement('span');st.className='trk-status';box.append(st);
  input.addEventListener('change',()=>{note=input.value;save();});
  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}});
- function paint(){btns.forEach((b,i)=>b.setAttribute('aria-pressed',String(tag===REMARK_TAGS[i][0])));box.classList.toggle('trk-has',!!(tag||note.trim()));}
+ function paint(){btns.forEach((b,i)=>{const k=REMARK_TAGS[i][0];b.setAttribute('aria-pressed',String(tag===k));const sug=!tag&&suggested&&suggested.tag===k;b.classList.toggle('trk-suggest',sug);if(sug)b.title=`系統推算：${suggested.why}（老師沒點就只是建議，不會存）`;});box.classList.toggle('trk-has',!!(tag||note.trim()));
+  if(!tag&&!note.trim()&&suggested&&!st.textContent)st.textContent='推算';}
  async function save(){
   if(saving){pending=true;return;}
   saving=true;st.textContent='存檔中…';

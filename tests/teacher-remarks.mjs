@@ -26,6 +26,9 @@ const card=p.locator('.tw2-student',{hasText:SID}).first();
 ok('收合列就看得到 W4 的備註字',/W4 積極：上台講得清楚/.test((await card.locator('> summary').textContent()).replace(/\s+/g,' ')));
 await card.locator('> summary').click();await p.waitForTimeout(300);
 ok('展開後有 Week 1、2、3 三格備註',await card.locator('.tw2-remark-row').count()===3);
+const sug=await card.locator('.tw2-remark-row').evaluateAll(rows=>rows.map(r=>[...r.querySelectorAll('.trk-tag.trk-suggest')].map(b=>b.textContent).join('')));
+ok('Week 1–3 沒點之前有系統推算（W1 已交＝普通、W2 沒開始＝缺席、W3 沒開始＝缺席）',sug.join('|')==='普通|缺席|缺席',sug);
+ok('收合列有「推算」一行',/推算 W1 普通/.test((await card.locator('> summary').textContent()).replace(/\s+/g,' ')));
 const w1row=card.locator('.tw2-remark-row').nth(0);await w1row.locator('.trk-tag-absent').click();await p.waitForTimeout(600);
 ok('Week 1 點「缺席」存成功',/已存/.test(await w1row.locator('.trk-status').textContent()));
 await row.locator('button.quiet',{hasText:SID}).click();await p.waitForTimeout(300);
@@ -44,6 +47,6 @@ ok('學生端 week4_load 沒有備註',!JSON.stringify(s4).includes('上台講�
 const [dl]=await Promise.all([p.waitForEvent('download'),p.click('#teacher-week4 button:has-text("匯出評分參考 CSV")')]);
 const csv=await (await import('node:fs/promises')).readFile(await dl.path(),'utf8');
 const line=csv.split('\n').find(l=>l.includes(SID))||'';
-ok('CSV 有表頭與這位學生的列（出席、W4 標記、備註、W1 缺席）',/W4 標記,W4 備註/.test(csv)&&/缺席/.test(line)&&/積極,上台講得清楚/.test(line),line.slice(0,160));
+ok('CSV 有表頭與這位學生的列（出席、W4 標記、備註、W1 缺席、系統推算三欄）',/W4 標記,W4 備註,W1 系統推算,W2 系統推算,W3 系統推算/.test(csv)&&/缺席/.test(line)&&/積極,上台講得清楚,普通,缺席,缺席$/.test(line.trim()),line.slice(0,200));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);

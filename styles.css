@@ -465,3 +465,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tw2-remark-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0}.tw2-remark-row>b{min-width:4.5em;color:var(--green)}
 #teacher-week2 .tw2-gist .tw2-gist-remark{color:#9e362a}
 .tw4-remark{min-width:240px}.tw4-remark .trk{gap:4px}.tw4-remark .trk input{min-width:120px}
+.trk-tag.trk-suggest{border-style:dashed;border-color:var(--green);color:var(--green)}
+#teacher-week2 .tw2-gist .tw2-gist-suggest{color:#6b7a72}
