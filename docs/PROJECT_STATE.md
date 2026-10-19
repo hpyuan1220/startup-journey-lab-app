@@ -1712,3 +1712,12 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 老師要求：教師洞察先看本週。DOM 順序改為 狀態列 → `#teacher-week4` → `#teacher-week2`（含 Week 3）→ `#teacher-week1`（index.html 把 metrics／filters／名單包成一個 section，加標題）。做法：teacher-week2 與 teacher-week4 都 `statusbar.after(root)`，後載入的 Week 4 自然排前面。每個區塊上方一條粗線分隔。
 - 之後每加一週：新模組同樣 `statusbar.after(root)`、script 放在最後，就會在最上面。
 - 同日追加：Week 2 區每位學生收合時就看得到三週的痛（`.tw2-gist`：W1 觀察到的問題 → 痛點 1／2 的阻礙、★ 標學生暫選 → W3 修正後陳述），不用一個個展開。teacher-week2.js v=20261019-gist。
+
+## 2026-10-19 老師備註（學生看不到）＋評分參考 CSV
+- 老師要的是「上課時每個學生的反應」當評分參考，不是給學生看的回饋。新表 `teacher_remarks`（class_id, student_id, week, tag, note；PK 三欄；tag ∈ active／normal／passive／absent＝積極／普通／沒參與／缺席；note ≤ 500）。RLS 只有 teaches_class 可讀；寫入走 week2-api 新動作 `teacher_remark`（tag、note 都空＝刪列）；`teacher_load` 多回 `remarks`。學生端 `load／week3_load／week4_load` 不碰這張表（單元測試有驗）。
+- 前端共用模組 `teacher-remarks.mjs`：`remarkEditor`（四個標記一點就存、備註離開格子或 Enter 就存）、`findRemark／mergeRemarks／remarkText／listenRemarks`（Week 2 區與 Week 4 區各有自己的 data，存檔後用 `sjl-remarks` 事件互相同步）。
+- Week 4 區：一人一列多一欄「老師備註（學生看不到）」（本週＝week 4）；展開列顯示「前幾週備註」；新按鈕「匯出評分參考 CSV」（UTF-8 BOM；班級、學號、姓名、Week 1–3 狀態、Week 3 訪談次數、Week 4 出席、產業、三張卡來源、W1–W4 標記與備註）。
+- Week 2 區：每位學生展開後有「老師備註」Week 1／2／3 各一格；收合列的最後一行用紅字列出各週備註。
+- 測試：單元 `tests/teacher-remarks.test.mjs`（存改刪、403、401、學生端拿不到）；瀏覽器 `tests/teacher-remarks.mjs` 13/13；既有 week4-student 13/13、teacher-week2-view 9/9、單元 176/176。
+- 上線順序：SQL `supabase/migrations/20261019_teacher_remarks.sql` → push → 部署 week2-api bundle（SHA 0a27e7c37a419b50，55,192 B）→ 正式站老師帳號存一筆、重開頁、匯出 CSV。
+- 之後每週：新的週模組一樣用 `remarkEditor(..., week: N)`，CSV 的週數迴圈從 [1,2,3,4] 改成到當週。

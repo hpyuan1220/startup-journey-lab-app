@@ -8,7 +8,7 @@ import * as core from '../week2-core.mjs';import * as core3 from '../week3-core.
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'), port=Number(process.env.PORT||4210);
 const tables={classes:[{id:'class-a',name:'驗收班'}],teacher_classes:[{teacher_id:'teacher-a',class_id:'class-a'}],student_sessions:[],
  week1_submissions:[],week2_submissions:[],week1_ai_feedback:[],week1_ai_feedback_latest:[],
- learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[],week3_survey_topics:[],week3_survey_responses:[],week4_research:[],week_questions:[]};
+ learning_versions:[],week2_ai_requests:[],week2_settings:[],class_roster:[],week3_submissions:[],week3_survey_topics:[],week3_survey_responses:[],week4_research:[],week_questions:[],teacher_remarks:[]};
 let seq=0;
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(x=>x.toString(16).padStart(2,'0')).join('');
 
@@ -32,7 +32,7 @@ const db={
     let rows=t.filter(filter);
     if(op==='insert'||op==='upsert'){
      rows=[];for(const v of (Array.isArray(values)?values:[values])){
-     const key=['class_id',...(v.student_id!==undefined?['student_id']:[]),...(v.topic_id!==undefined?['topic_id']:[]),...(name==='week_questions'?['week']:[])];
+     const key=['class_id',...(v.student_id!==undefined?['student_id']:[]),...(v.topic_id!==undefined?['topic_id']:[]),...((name==='week_questions'||name==='teacher_remarks')?['week']:[])];
      const found=op==='upsert'?t.find(r=>key.every(k=>r[k]===v[k])):null;
      if(found){const before=JSON.stringify(found);Object.assign(found,structuredClone(v));
       if(JSON.stringify(found)!==before)found.version=(found.version||1)+1;rows.push(found);}

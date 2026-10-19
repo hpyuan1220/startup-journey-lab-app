@@ -1,6 +1,7 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261012-solution';
 import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261013-preclass';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks} from './teacher-remarks.mjs?v=20261019-remarks';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -12,7 +13,7 @@ el('h2','Week 2 班級互動',root);
 el('p','每位學生一張卡：Week 1 起點卡、Week 2 痛點卡、AI 建議，最底下是你的審核。按「確認進入訪談」就是替學生定案痛點。',root).className='tw2-intro';
 const status=el('p','按下載入即可查看授權班級。');status.setAttribute('role','status');
 const controls=el('div','');controls.className='tw2-controls';
-const list=el('div','');let data;
+const list=el('div','');let data;listenRemarks(()=>data);// Week 4 區存的備註也要進這裡（收合列的備註字）
 // 記住哪些卡是展開的、目前篩選什麼，重新載入後不要全部收起來。
 let openKeys=new Set(),rosterOpen=new Set(),surveyOpen=new Set(),filter='all',query='';
 
@@ -119,6 +120,8 @@ function renderStudent(section,c,s,name,b,usage){
  if(r){const pk=selectedIndex(r.card);(r.card.candidates||[]).forEach((cand,i)=>gl(`痛點 ${i+1}${i===pk?'★':''} `,cut(cand.problem||cand.job||cand.people,34),i===pk?'tw2-gist-pick':''));}
  if(s.w3?.record?.statement)gl('W3 ',cut(s.w3.record.statement,40));
  if(!w&&!r)gl('',s.roster?'還沒進入過系統':'');
+ const rk=[1,2,3,4].map(wk=>({wk,t:remarkText(findRemark(data.remarks,c.id,s.id,wk))})).filter(o=>o.t);
+ if(rk.length)gl('備註 ',rk.map(o=>`W${o.wk} ${o.t}`).join('　'),'tw2-gist-remark');
 
  // ---- Week 1 ----
  const w1Box=el('section','',box);w1Box.className='tw2-week1';
@@ -135,6 +138,11 @@ function renderStudent(section,c,s,name,b,usage){
   if(w.teacher_note)el('p','你在 Week 1 的回饋：'+w.teacher_note,full);
  }
 
+ // ---- 老師備註（學生看不到）：Week 1–3 各一格；Week 4 起在 Week 4 區那張表填 ----
+ const rkBox=el('section','',box);rkBox.className='tw2-remarks';
+ el('h4','老師備註（學生看不到，評分參考）',rkBox);
+ for(const wk of [1,2,3]){const row=el('div','',rkBox);row.className='tw2-remark-row';el('b',`Week ${wk}`,row);
+  remarkEditor(row,{classId:c.id,studentId:s.id,week:wk,current:findRemark(data.remarks,c.id,s.id,wk),call,compact:true,onSaved:rows=>mergeRemarks(data,c.id,s.id,rows)});}
  // ---- Week 2 ----
  const w2Box=el('section','',box);w2Box.className='tw2-week2';
  el('h4','Week 2 痛點探索卡',w2Box);

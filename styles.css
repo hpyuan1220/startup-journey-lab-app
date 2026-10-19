@@ -450,3 +450,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 #teacher-week2 .tw2-gist>span{display:block;overflow-wrap:anywhere}
 #teacher-week2 .tw2-gist b{color:var(--green);margin-right:4px;font-weight:800}
 #teacher-week2 .tw2-gist .tw2-gist-pick{font-weight:700;color:var(--ink)}
+
+/* 老師備註（學生看不到）：四個標記＋一行備註，一點就存 */
+.trk{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.trk-tags{display:flex;gap:4px;flex-wrap:wrap}
+.trk-tag{font-size:12px;padding:2px 8px;border:1px solid #b9b2a2;background:#fbfaf7;border-radius:999px;color:#4a5550;cursor:pointer}
+.trk-tag[aria-pressed=true]{color:#fff;border-color:transparent}
+.trk-tag-active[aria-pressed=true]{background:#1f4e3d}.trk-tag-normal[aria-pressed=true]{background:#5b6b63}.trk-tag-passive[aria-pressed=true]{background:#b26a00}.trk-tag-absent[aria-pressed=true]{background:#9e362a}
+.trk input{flex:1 1 160px;min-width:140px;font-size:13px;padding:4px 8px;margin:0}
+.trk-status{font-size:12px;color:#6b7a72;min-width:3em}
+.trk-compact input{font-size:12px;padding:3px 6px}
+.tw4-remark{min-width:260px}
+.tw2-remarks{margin:10px 0 14px}.tw2-remarks h4{margin:0 0 6px}
+.tw2-remark-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0}.tw2-remark-row>b{min-width:4.5em;color:var(--green)}
+#teacher-week2 .tw2-gist .tw2-gist-remark{color:#9e362a}
