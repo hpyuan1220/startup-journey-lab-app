@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './support/week2-harness.mjs';
-import {remarkText,tagLabel,findRemark,suggestTag} from '../teacher-remarks.mjs';
+import {remarkText,tagLabel,findRemark,suggestTag,suggestTagResearch,effectiveTag} from '../teacher-remarks.mjs';
 
 test('老師備註：存、改、清除；teacher_load 帶回；學生端拿不到', async () => {
  const h=await harness();const token=await h.student('A113270021');
@@ -33,4 +33,15 @@ test('suggestTag：Week 1–3 依作業推算（老師沒點就只是建議）',
  assert.equal(suggestTag(2,{}).tag,'absent');assert.equal(suggestTag(2,{w2:{status:'submitted',review_status:'approved'}}).tag,'active');assert.equal(suggestTag(2,{w2:{status:'submitted',review_status:'pending'}}).tag,'normal');assert.equal(suggestTag(2,{w2:{status:'draft',submitted_at:'2026-10-01'}}).tag,'normal','交過再改草稿仍算已交');assert.equal(suggestTag(2,{w2:draft}).tag,'passive');
  assert.equal(suggestTag(3,{}).tag,'absent');assert.equal(suggestTag(3,{w3:sub,interviews:3}).tag,'active');assert.equal(suggestTag(3,{w3:draft,interviews:3}).tag,'normal','三次記完沒按提交＝普通');assert.equal(suggestTag(3,{w3:draft,interviews:1}).tag,'normal');assert.equal(suggestTag(3,{w3:draft,interviews:0}).tag,'passive');
  assert.equal(suggestTag(4,{}),null,'Week 4 起看課堂兩題，不推算');
+});
+
+test('suggestTagResearch／effectiveTag：Week 4 起看出席＋三張卡；老師標記優先', () => {
+ assert.equal(suggestTagResearch(4,{present:true,cards:3}).tag,'active');
+ assert.equal(suggestTagResearch(4,{present:true,cards:1}).tag,'normal');
+ assert.equal(suggestTagResearch(4,{present:false,cards:0,answered:true}).tag,'passive','課後補答＝沒參與');
+ assert.equal(suggestTagResearch(4,{present:false,cards:2}).tag,'passive');
+ assert.equal(suggestTagResearch(4,{}).tag,'absent');
+ assert.deepEqual(effectiveTag({tag:'absent'},{tag:'active'}),{tag:'absent',source:'teacher'});
+ assert.deepEqual(effectiveTag(null,{tag:'normal'}),{tag:'normal',source:'system'});
+ assert.deepEqual(effectiveTag({tag:'',note:'x'},null),{tag:'',source:''});
 });

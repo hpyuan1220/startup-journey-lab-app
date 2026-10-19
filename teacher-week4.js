@@ -1,5 +1,5 @@
 import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261018-w4';
-import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag} from './teacher-remarks.mjs?v=20261019-suggest';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261019-freeze';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
 // 教師洞察 · Week 4 第一輪研究
 // 老師不用按任何開關：出席＝課堂兩題在上課日 13:30–18:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
@@ -16,7 +16,7 @@ const reloadBtn=el('button','重新載入 Week 4',root,'quiet');reloadBtn.type='
 const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–4 狀態、出席、三張卡來源、每週老師標記與備註';
 const body=el('div','',root);
 let data=null,open=new Set(),week=4;
-listenRemarks(()=>data);// Week 2 區存的備註也要進這裡的 data（展開列的「前幾週備註」、CSV）
+listenRemarks(()=>data,()=>load());// Week 2 區存的備註也要進這裡的 data（展開列的「前幾週備註」、CSV）
 async function call(b,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(b,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
 async function load(){status.textContent='正在載入 Week 4…';try{data=await call({action:'teacher_load'});render();}catch(e){status.textContent=e.message;}}
 reloadBtn.addEventListener('click',load);
@@ -44,13 +44,23 @@ function render(){
   saveQ.addEventListener('click',async()=>{try{await call({action:'teacher_week_questions',class_id:c.id,week,questions:{q1:q1.value,q2:q2.value,points:pts.value}});status.textContent='兩題已更新。';await load();}catch(e){status.textContent=e.message;}});
   resetQ.addEventListener('click',async()=>{try{await call({action:'teacher_week_questions',class_id:c.id,week,questions:{}});status.textContent='已回到預設題。';await load();}catch(e){status.textContent=e.message;}});
   // 即時數字
-  const rows=ids.map(id=>{const r=w4.find(x=>x.student_id===id);const d=r?normalizeWeek4(r.data):null;const st=r?.stamps||{};return {id,name:nameOf(id),r,d,st,present:attendance(st,week),q1:!!st.q1,q2:!!st.q2};});
+  const rows=ids.map(id=>{const r=w4.find(x=>x.student_id===id);const d=r?normalizeWeek4(r.data):null;const st=r?.stamps||{};const present=attendance(st,week);const cards=['card1','card2','card3'].filter(k=>st[k]).length;return {id,name:nameOf(id),r,d,st,present,q1:!!st.q1,q2:!!st.q2,cards,suggested:suggestTagResearch(week,{present,cards,answered:!!(st.q1&&st.q2)})};});
   const live=el('div','',sec,'tw4-live');
   const stat=(n,label)=>{const b=el('div','',live);el('b',String(n),b);el('span',label,b);};
   stat(`${rows.filter(x=>x.present).length} / ${rows.length}`,'出席（兩題課中答完）');
   stat(rows.filter(x=>x.q1&&x.q2&&!x.present).length,'課後補答');
   stat(rows.filter(x=>x.d&&(x.d.industry.card)).length,'已選產業');
   stat(rows.filter(x=>x.st.card1).length,'卡 1 已貼回');stat(rows.filter(x=>x.st.card2).length,'卡 2 已貼回');stat(rows.filter(x=>x.st.card3).length,'卡 3 已貼回');
+  // 把本週推算存成標記：只填老師還沒點的人；點過的不動。存完就是評分參考的正式紀錄。
+  const fz=el('div','',sec);fz.className='tw4-freeze';
+  const fzBtn=el('button','把本週推算存成標記（只填還沒點的）',fz,'quiet');fzBtn.type='button';
+  const fzMsg=el('span','',fz);fzMsg.className='tw4-freeze-msg';
+  const pending=rows.filter(x=>!findRemark(data.remarks,c.id,x.id,week)?.tag&&x.suggested);
+  fzMsg.textContent=`推算：出席＋三張卡＝積極、出席＝普通、沒出席但有做＝沒參與、沒紀錄＝缺席。還沒點的 ${pending.length} 人。`;
+  fzBtn.disabled=!pending.length;
+  fzBtn.addEventListener('click',async()=>{fzBtn.disabled=true;const items=pending.map(x=>({classId:c.id,studentId:x.id,week,tag:x.suggested.tag,note:findRemark(data.remarks,c.id,x.id,week)?.note||''}));
+   const r=await freezeSuggestions(items,call,(d,f,t)=>{fzMsg.textContent=`存檔中 ${d+f}/${t}…`;});
+   fzMsg.textContent=`已存 ${r.done} 人${r.failed?`，失敗 ${r.failed} 人`:''}。`;await load();});
   // 一人一列
   const wrap=el('div','',sec,'tw4-wrap');const table=el('table','',wrap);const thead=el('thead','',table);const tr=el('tr','',thead);
   // 備註欄放在出席旁邊（第三欄）：手機或窄視窗不用往右滑就看得到、點得到。
@@ -61,7 +71,7 @@ function render(){
    const r=el('tr','',tbody);
    const idTd=el('td','',r);const btn=el('button',x.id+(x.name?`　${x.name}`:''),idTd,'quiet');btn.type='button';btn.style.padding='2px 6px';
    const att=el('td','',r);const sp=el('span',x.present?'出席':'缺席',att,x.present?'tw4-in':'tw4-out');
-   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,onSaved:rows=>mergeRemarks(data,c.id,x.id,rows)});
+   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,suggested:x.suggested,onSaved:rows=>mergeRemarks(data,c.id,x.id,rows)});
    const ind=el('td','',r);if(x.d&&x.d.industry.card){ind.textContent=industryName(x.d)+' ';const s=document.createElement('span');s.className=stampLabel(x.st.industry)?.kind==='in'?'tw4-in':'tw4-out';s.textContent=fmt(x.st.industry);ind.append(s);}else ind.textContent='未選';
    for(const k of ['q1','q2']){const td=el('td','',r);if(x.st[k])stampCell(td,x.st[k]);else{td.textContent='未答';td.className='tw4-no';}}
    for(const k of ['card1','card2','card3']){const td=el('td','',r);stampCell(td,x.st[k]);}
@@ -88,7 +98,8 @@ csvBtn.addEventListener('click',()=>{
  const esc=v=>{v=String(v??'').replace(/\r?\n/g,' ');return /[",]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
  const head=['班級','學號','姓名','Week 1','Week 2','Week 2 審核','Week 3','Week 3 訪談次數','Week 4 出席','Week 4 產業','卡 1 來源','卡 2 來源','卡 3 來源'];
  for(const wk of [1,2,3,4])head.push(`W${wk} 標記`,`W${wk} 備註`);
- for(const wk of [1,2,3])head.push(`W${wk} 系統推算`);
+ for(const wk of [1,2,3,4])head.push(`W${wk} 系統推算`);
+ for(const wk of [1,2,3,4])head.push(`W${wk} 評分參考`);// 老師標記優先，否則推算
  const lines=[head.map(esc).join(',')];
  for(const c of data.classes){
   const roster=(data.roster||[]).filter(r=>r.class_id===c.id),w1=(data.week1||[]).filter(r=>r.class_id===c.id),w2=(data.rows||[]).filter(r=>r.class_id===c.id),w3=(data.week3||[]).filter(r=>r.class_id===c.id),w4=(data.week4||[]).filter(r=>r.class_id===c.id);
@@ -102,7 +113,10 @@ csvBtn.addEventListener('click',()=>{
     r4?(attendance(st,week)?'出席':'缺席'):'缺席',d&&d.industry.card?industryName(d):'',
     ...['card1','card2','card3'].map(k=>d?(SOURCE_LABEL[d[k].source]||d[k].source||''):'')];
    for(const wk of [1,2,3,4]){const rm=findRemark(data.remarks,c.id,id,wk);row.push(tagLabel(rm?.tag),rm?.note||'');}
-   for(const wk of [1,2,3]){const g=suggestTag(wk,{w1:a,w2:b,w3:d3,interviews:d3?doneCount(d3.record):0});row.push(g?tagLabel(g.tag):'');}
+   const sugs={};for(const wk of [1,2,3])sugs[wk]=suggestTag(wk,{w1:a,w2:b,w3:d3,interviews:d3?doneCount(d3.record):0});
+   sugs[4]=suggestTagResearch(4,{present:attendance(st,4),cards:['card1','card2','card3'].filter(k=>st[k]).length,answered:!!(st.q1&&st.q2)});
+   for(const wk of [1,2,3,4])row.push(sugs[wk]?tagLabel(sugs[wk].tag):'');
+   for(const wk of [1,2,3,4]){const e=effectiveTag(findRemark(data.remarks,c.id,id,wk),sugs[wk]);row.push(e.tag?`${tagLabel(e.tag)}${e.source==='system'?'（推算）':''}`:'');}
    lines.push(row.map(esc).join(','));
   }
  }

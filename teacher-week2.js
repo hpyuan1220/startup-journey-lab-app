@@ -1,7 +1,7 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261012-solution';
 import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261013-preclass';
-import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTag,tagLabel} from './teacher-remarks.mjs?v=20261019-suggest';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTag,tagLabel,freezeSuggestions} from './teacher-remarks.mjs?v=20261019-freeze';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
@@ -13,7 +13,7 @@ el('h2','Week 2 班級互動',root);
 el('p','每位學生一張卡：Week 1 起點卡、Week 2 痛點卡、AI 建議，最底下是你的審核。按「確認進入訪談」就是替學生定案痛點。',root).className='tw2-intro';
 const status=el('p','按下載入即可查看授權班級。');status.setAttribute('role','status');
 const controls=el('div','');controls.className='tw2-controls';
-const list=el('div','');let data;listenRemarks(()=>data);// Week 4 區存的備註也要進這裡（收合列的備註字）
+const list=el('div','');let data;listenRemarks(()=>data,()=>load());// Week 4 區存的備註也要進這裡（收合列的備註字）
 // 記住哪些卡是展開的、目前篩選什麼，重新載入後不要全部收起來。
 let openKeys=new Set(),rosterOpen=new Set(),surveyOpen=new Set(),filter='all',query='';
 
@@ -65,6 +65,12 @@ function render(){
   const progress=el('p',`已交 ${counts.submitted} 人 · 已確認進入訪談 ${counts.approved} · 需修訂 ${counts.revision} · 請先討論 ${counts.hold} · 還沒審 ${counts.todo} · 草稿中 ${counts.draft} · 尚未開始 ${counts.notstarted}${counts.absent?` · 還沒進過系統 ${counts.absent}`:''} · AI 嘗試 ${usage.length} 次${week3.length?` · Week 3 已交 ${week3.filter(r=>r.status==='submitted').length}／草稿 ${week3.filter(r=>r.status!=='submitted').length}`:''}`,section);
   progress.className='tw2-progress';
   const bar=el('div','',section);bar.className='tw2-bar';const fill=el('i','',bar);fill.style.width=(counts.submitted?Math.round(counts.approved/counts.submitted*100):0)+'%';bar.title=`已確認 ${counts.approved} / 已交 ${counts.submitted}`;
+  // 把 Week 1–3 推算存成標記：只填老師還沒點的格子，當評分參考的正式紀錄。
+  const fz=el('details','',section);fz.className='tw2-freeze';el('summary','老師備註：把 Week 1–3 的系統推算存成標記',fz);
+  el('p','規則：W1 已交＝普通、草稿＝沒參與、沒紀錄＝缺席；W2 老師已確認＝積極、已交＝普通、草稿＝沒參與、沒開始＝缺席；W3 已交且三次記完＝積極、記 1–3 次＝普通、開了頁沒記＝沒參與、沒開始＝缺席。只填你還沒點的格子，點過的不動；存完可以再逐一改。',fz).className='tw2-intro';
+  const fzItems=[];for(const s of students)for(const wk of [1,2,3]){if(findRemark(data.remarks,c.id,s.id,wk)?.tag)continue;const g=suggestTag(wk,{w1:s.w1,w2:s.r,w3:s.w3,interviews:s.w3?doneCount(s.w3.record):0});if(g)fzItems.push({classId:c.id,studentId:s.id,week:wk,tag:g.tag,note:findRemark(data.remarks,c.id,s.id,wk)?.note||''});}
+  const fzBtn=el('button',`存成標記（還沒點的 ${fzItems.length} 格）`,fz);fzBtn.type='button';fzBtn.disabled=!fzItems.length;const fzMsg=el('span','',fz);fzMsg.className='tw2-freeze-msg';
+  fzBtn.addEventListener('click',async()=>{fzBtn.disabled=true;const r=await freezeSuggestions(fzItems,call,(d,f,t)=>{fzMsg.textContent=` 存檔中 ${d+f}/${t}…`;});fzMsg.textContent=` 已存 ${r.done} 格${r.failed?`，失敗 ${r.failed} 格`:''}。`;await load();});
   const settings=el('details','',section);el('summary','班級設定（AI 上限）',settings);
   const label=el('label','每人 Week 2 AI 上限（0–10 次，留白依路徑 3／2／2 次）',settings),limit=el('input','',label);limit.type='number';limit.min=0;limit.max=10;limit.value=data.settings.find(s=>s.class_id===c.id)?.weekly_ai_limit??'';
   button('保存班級 AI 上限',async()=>{await call({action:'teacher_settings',class_id:c.id,limit:limit.value===''?null:Number(limit.value)});status.textContent='班級上限已更新。';},settings);

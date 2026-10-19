@@ -40,6 +40,14 @@ const row2=p.locator('#teacher-week4 tbody tr',{hasText:SID}).first();
 ok('重開頁：Week 4 的標記與備註都在',await row2.locator('.trk-tag-active').getAttribute('aria-pressed')==='true'&&await row2.locator('.trk input').inputValue()==='上台講得清楚');
 await row2.locator('button.quiet',{hasText:SID}).click();await p.waitForTimeout(300);
 ok('展開一列看得到「前幾週備註：W1 缺席」',/前幾週備註：W1 缺席/.test(await p.locator('#teacher-week4 .tw4-detail').first().textContent()));
+// 把推算存成標記：Week 2 區（W1–3）與 Week 4 區（本週）各一顆；只填還沒點的
+await p.click('#teacher-week2 button:has-text("載入／更新 Week 2")');await p.waitForTimeout(1500);
+const beforeTags=(await post('week2-api',{action:'teacher_load'},'teacher-token')).remarks.filter(r=>r.student_id===SID).map(r=>[r.week,r.tag]).sort();
+await p.click('#teacher-week2 .tw2-freeze summary');await p.click('#teacher-week2 .tw2-freeze button');await p.waitForTimeout(4000);
+const afterTags=(await post('week2-api',{action:'teacher_load'},'teacher-token')).remarks.filter(r=>r.student_id===SID).map(r=>[r.week,r.tag]).sort();
+ok('Week 1–3 推算存成標記：W1 老師點的「缺席」不動、W2／W3 補成推算值、W4 原樣',JSON.stringify(afterTags)===JSON.stringify([[1,'absent'],[2,'absent'],[3,'absent'],[4,'active']]),{beforeTags,afterTags});
+const w4c=p.locator('#teacher-week4 .tw4-freeze');
+ok('Week 4 區有「把本週推算存成標記」與說明',await w4c.count()===1&&/積極/.test(await w4c.textContent()));
 // 學生端拿不到
 const s4=await post('week2-api',{action:'week4_load',token});
 ok('學生端 week4_load 沒有備註',!JSON.stringify(s4).includes('上台講得清楚')&&!('remarks' in s4));
@@ -47,6 +55,6 @@ ok('學生端 week4_load 沒有備註',!JSON.stringify(s4).includes('上台講�
 const [dl]=await Promise.all([p.waitForEvent('download'),p.click('#teacher-week4 button:has-text("匯出評分參考 CSV")')]);
 const csv=await (await import('node:fs/promises')).readFile(await dl.path(),'utf8');
 const line=csv.split('\n').find(l=>l.includes(SID))||'';
-ok('CSV 有表頭與這位學生的列（出席、W4 標記、備註、W1 缺席、系統推算三欄）',/W4 標記,W4 備註,W1 系統推算,W2 系統推算,W3 系統推算/.test(csv)&&/缺席/.test(line)&&/積極,上台講得清楚,普通,缺席,缺席$/.test(line.trim()),line.slice(0,200));
+ok('CSV：表頭有 W1–W4 系統推算與評分參考；這列 W4 評分參考＝老師的積極、W1＝老師的缺席',/W4 系統推算,W1 評分參考,W2 評分參考,W3 評分參考,W4 評分參考/.test(csv)&&/積極,上台講得清楚,普通,缺席,缺席,沒參與,缺席,缺席,缺席,積極$/.test(line.trim()),line.slice(-120));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);

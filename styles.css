@@ -467,3 +467,5 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .tw4-remark{min-width:240px}.tw4-remark .trk{gap:4px}.tw4-remark .trk input{min-width:120px}
 .trk-tag.trk-suggest{border-style:dashed;border-color:var(--green);color:var(--green)}
 #teacher-week2 .tw2-gist .tw2-gist-suggest{color:#6b7a72}
+.tw4-freeze{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}.tw4-freeze-msg,.tw2-freeze-msg{font-size:13px;color:#4a5550}
+.tw2-freeze{margin:8px 0}.tw2-freeze button{margin-right:6px}
