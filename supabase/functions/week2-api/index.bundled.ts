@@ -465,6 +465,10 @@ Deno.serve(async req=>{
  // 一直開著、沒有截止；每個欄位的時間由伺服器蓋章（課中／課後給老師看）。prompt 在前端用 week4-core 組，這裡只存。
  if(b.action==='week4_load'||b.action==='week4_save'){
   const w3=must(await db.from('week3_submissions').select('record,status').match(scope).maybeSingle());
+  // 「我的痛」種子：Week 3 修正後陳述 → Week 2 痛點陳述 → Week 1 觀察到的問題。只要有 Week 1 就能直接開始，不用先補 Week 3。
+  let painSeed=String(w3?.record?.statement||'').trim(),painSource=painSeed?'week3':'';
+  if(!painSeed){const w2=must(await db.from('week2_submissions').select('card').match(scope).maybeSingle());painSeed=String(w2?.card?.statement||'').trim();if(painSeed)painSource='week2';}
+  if(!painSeed){const w1=must(await db.from('week1_submissions').select('affected_user,observed_problem').match(scope).maybeSingle());const who=String(w1?.affected_user||'').trim(),what=String(w1?.observed_problem||'').trim();painSeed=what?(who?`${who}：${what}`:what):'';if(painSeed)painSource='week1';}
   const qrow=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week:4}).maybeSingle());
   const survey=must(await db.from('week3_survey_responses').select('topic_id,experienced').match(scope));
   const experienced=(survey||[]).filter((r:any)=>r.experienced).map((r:any)=>Number(r.topic_id));
@@ -475,7 +479,7 @@ Deno.serve(async req=>{
    if(r4){if(r4.version!==b.version)return reply({error:'另一個視窗已更新這一頁，請重新載入。'},409);r4=must(await db.from('week4_research').update({data:next,stamps}).match({...scope,version:b.version}).select().maybeSingle());if(!r4)return reply({error:'內容已更新，請重新載入。'},409);}
    else r4=must(await db.from('week4_research').insert({...scope,data:next,stamps}).select().single());
   }
-  return reply({row:r4,questions:resolveQuestions(4,qrow),week3_statement:w3?.record?.statement||'',week3_status:w3?.status||null,recommended:recommendCards(experienced).map(x=>({id:x.card.id,hits:x.hits}))});
+  return reply({row:r4,questions:resolveQuestions(4,qrow),week3_statement:w3?.record?.statement||'',week3_status:w3?.status||null,pain_seed:painSeed.slice(0,300),pain_source:painSource,recommended:recommendCards(experienced).map(x=>({id:x.card.id,hits:x.hits}))});
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){

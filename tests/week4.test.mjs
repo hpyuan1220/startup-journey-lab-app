@@ -72,3 +72,21 @@ test('Edge：week4_load 帶 Week 3 一句話與推薦；save 蓋章、版本衝�
  const clear=await h.call({action:'teacher_week_questions',class_id:'class-a',week:4,questions:{}},'teacher-token');assert.equal(clear.body.week_questions.length,0);
  assert.equal((await h.call({action:'teacher_week_questions',class_id:'class-b',week:4,questions:{q1:'x'}},'teacher-token')).status,403);
 });
+
+test('Edge：「我的痛」種子遞補 Week 3 → Week 2 → Week 1；沒有 Week 1 就空的', async () => {
+ const h=await harness();
+ const t1=await h.student('A113270031');// 只有 Week 1（harness 預設帶 observed_problem）
+ const l1=await h.call({action:'week4_load',token:t1});assert.equal(l1.body.pain_source,'week1');assert.equal(l1.body.pain_seed,'午休排隊');
+ h.tables.week1_submissions.find(r=>r.student_id==='A113270031').affected_user='午休只有 50 分鐘的同學';
+ assert.equal((await h.call({action:'week4_load',token:t1})).body.pain_seed,'午休只有 50 分鐘的同學：午休排隊','有誰受影響就加在前面');
+ h.tables.week2_submissions.push({class_id:'class-a',student_id:'A113270031',status:'submitted',version:1,card:{statement:'  在午休情境中，連堂的同學想在 50 分鐘內吃完，但排隊 20 分鐘。 '}});
+ const l2=await h.call({action:'week4_load',token:t1});assert.equal(l2.body.pain_source,'week2');assert.equal(l2.body.pain_seed,'在午休情境中，連堂的同學想在 50 分鐘內吃完，但排隊 20 分鐘。');
+ h.tables.week3_submissions.push({class_id:'class-a',student_id:'A113270031',status:'draft',version:1,record:{statement:'訪談後：怕想吃的賣完，寧可不吃。'}});
+ const l3=await h.call({action:'week4_load',token:t1});assert.equal(l3.body.pain_source,'week3');assert.equal(l3.body.pain_seed,'訪談後：怕想吃的賣完，寧可不吃。');assert.equal(l3.body.week3_statement,l3.body.pain_seed,'舊欄位照舊');
+ // 已存過 Week 4 的人，種子只是回傳，不會蓋掉他自己的句子（前端只在 row 為空時帶入）
+ const s=await h.call({action:'week4_save',token:t1,data:{pain:'我自己改過的'}});assert.equal(s.body.row.data.pain,'我自己改過的');
+ const l4=await h.call({action:'week4_load',token:t1});assert.equal(l4.body.row.data.pain,'我自己改過的');assert.equal(l4.body.pain_source,'week3');
+ // 連 Week 1 都沒有：種子空、來源空
+ const token0='fixture-token-A113270032-1234567890';h.tables.student_sessions.push({class_id:'class-a',student_id:'A113270032',expires_at:'2099-01-01',token_hash:await (async s=>Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))).toString('hex'))(token0)});
+ const l0=await h.call({action:'week4_load',token:token0});assert.equal(l0.status,200);assert.equal(l0.body.pain_seed,'');assert.equal(l0.body.pain_source,'');
+});

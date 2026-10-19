@@ -25,7 +25,7 @@ el('p','WEEK 4 · 第一輪研究（個人）',head,'eyebrow');
 el('h1','從我的痛看產業，找三個機會',head);
 el('p','先答課堂兩題，選一條產業線，然後三張卡：每張都是「按一下開 AI 工具 → 貼回來 → 選來源」。下週拿這三個機會來比。',head,'w4-lead');
 const rule=el('p','',head,'w4-rule');
-const painBox=el('div','',page,'w4-pain');el('span','我的痛（Week 3 訪談後的一句話，可改）',painBox,'w4-cap');
+const painBox=el('div','',page,'w4-pain');el('span','我的痛（系統從 Week 3／2／1 帶出，可改）',painBox,'w4-cap');
 const painInput=el('textarea','',painBox);painInput.rows=2;painInput.maxLength=300;painInput.placeholder='〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕';painInput.setAttribute('aria-label','我的痛一句話');
 const painStamp=el('div','',painBox,'w4-stamp');
 
@@ -162,11 +162,13 @@ async function load(){
  if(!session?.token){msg.textContent='';page.hidden=true;el('h2','先進入你的班級',root);el('p','用學號和班級邀請碼進入後，研究頁會自動帶出你 Week 3 的痛點一句話。',root);const a=el('a','前往學生入口 →',root,'primary-link');a.href='index.html#student';return;}
  try{
   const r=await api({action:'week4_load'});
-  row=r.row;questions=r.questions;recommended=r.recommended||[];week3Statement=r.week3_statement||'';
+  row=r.row;questions=r.questions;recommended=r.recommended||[];week3Statement=r.pain_seed||r.week3_statement||'';
   data=normalizeWeek4(row?.data||emptyWeek4());
   if(!row&&!data.pain&&week3Statement)data.pain=week3Statement;
   renderQuestions();fill();
-  msg.textContent=row?`已載入（版本 ${row.version}）。`:(week3Statement?'已從 Week 3 帶出你的痛點一句話。':'還沒有 Week 3 的一句話，先在上面寫一句。');
+  // 種子來源：Week 3 最好；沒做訪談的人用 Week 2／Week 1 的句子先開始，之後再改成訪談後的版本。
+  const seedMsg={week3:'已從 Week 3 帶出你的痛點一句話，可以直接用。',week2:'你還沒有 Week 3 的訪談，先用 Week 2 的痛點陳述開始；之後問到真人再回來改。',week1:'你還沒有 Week 2、3，先用 Week 1 的觀察開始；請把它改成「〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕」。'}[r.pain_source]||'';
+  msg.textContent=row?`已載入（版本 ${row.version}）。`:(seedMsg||'系統找不到你前幾週的句子，先在上面寫一句「〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕」。');
  }catch(e){if(e.status!==401)msg.textContent=e.message;}
 }
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
