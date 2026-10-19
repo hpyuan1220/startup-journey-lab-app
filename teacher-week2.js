@@ -5,7 +5,8 @@ import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOP
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。
 const dashboard=document.getElementById('teacher-dashboard');
-const root=document.createElement('section');root.id='teacher-week2';dashboard.append(root);
+// 教師洞察的順序是「本週在最上面」：Week 4 → Week 2／3 → Week 1。這一段插在狀態列後面；Week 4 之後也插在狀態列後面，就會排在這段前面。
+const root=document.createElement('section');root.id='teacher-week2';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 const el=(tag,text,parent=root)=>{const e=document.createElement(tag);e.textContent=text||'';parent.append(e);return e;};
 el('h2','Week 2 班級互動',root);
 el('p','每位學生一張卡：Week 1 起點卡、Week 2 痛點卡、AI 建議，最底下是你的審核。按「確認進入訪談」就是替學生定案痛點。',root).className='tw2-intro';

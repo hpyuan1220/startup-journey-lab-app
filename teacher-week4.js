@@ -4,7 +4,8 @@ import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURC
 // 和一人一列（出席、Q1／Q2、產業、三張卡的時間與來源；未答排最上；點代號展開看全文）。
 const dashboard=document.getElementById('teacher-dashboard');
 if(dashboard){
-const root=document.createElement('section');root.id='teacher-week4';root.className='tw4';dashboard.append(root);
+// 本週放最上面：插在狀態列後面（teacher-week2 先插，所以這段會在它前面）。
+const root=document.createElement('section');root.id='teacher-week4';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 el('h2','Week 4 第一輪研究：出席、兩題、三張卡',root);
 el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你唯一要操作的是本週兩題的文字。',root,'tw2-intro');

@@ -1707,3 +1707,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 舊的 21 頁是研究路徑 v2（體檢六題、矩陣、YC 片段），與第三版不符，整份重寫為 22 頁：回顧 Week 3 → 共同成果 → 120 分鐘流程 → 講義四段理論（Graham／Bhidé／Shane；Blank／Ries／Christensen／Fitzpatrick；Porter／六條路徑／Osterwalder／Aulet；Denzin 三角驗證）→ 個人痛 vs 產業痛 → 六條路徑例子 → 來源五層 → 九張產業卡 → 課堂兩題 → 卡 1／卡 2（四步＋六題階梯）／卡 3 → Gemini vs NotebookLM → 好機會四問 → 研究筆記 v1 → 離堂清單 → 接下來三週。
 - 來源：`docs/WEEK4_SLIDES_SOURCE.json`，`python3 scripts/build-slides.py --source docs/WEEK4_SLIDES_SOURCE.json --out materials/Week4_教學簡報.pptx`，PDF 用 soffice 轉；每頁縮圖檢查過無溢字。
 - 內容全部對齊講義五頁與 app 實際行為（課堂兩題預設題、三張卡 prompt、九張卡名稱、出席規則）。
+
+## 2026-10-19 教師洞察順序改成「本週在最上面」
+- 老師要求：教師洞察先看本週。DOM 順序改為 狀態列 → `#teacher-week4` → `#teacher-week2`（含 Week 3）→ `#teacher-week1`（index.html 把 metrics／filters／名單包成一個 section，加標題）。做法：teacher-week2 與 teacher-week4 都 `statusbar.after(root)`，後載入的 Week 4 自然排前面。每個區塊上方一條粗線分隔。
+- 之後每加一週：新模組同樣 `statusbar.after(root)`、script 放在最後，就會在最上面。

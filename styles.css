@@ -441,3 +441,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 /* 首頁「本週」只留一行小字，地圖才是主角 */
 .thisweek{margin:-6px 0 14px;font-size:.95rem;color:#3f4a44}.thisweek b{display:inline-block;background:var(--lime);border:1px solid var(--ink);padding:1px 8px;margin-right:6px;font-weight:800;color:var(--ink)}.thisweek a{font-weight:700;white-space:nowrap}
+
+/* 教師洞察：本週在最上面（Week 4 → Week 2／3 → Week 1），每一週一個區塊 */
+#teacher-dashboard > section{border-top:3px solid var(--ink);padding-top:14px;margin-top:30px}
+#teacher-dashboard > section > h2{margin-top:0}
