@@ -1,5 +1,8 @@
 import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261020-pattern';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
+import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
+// 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。
+mountPreclass(document.querySelector('#week-four-materials .preclass'),4,{});
 // Week 4 第一輪研究頁：課堂兩題 → 選一條產業線 → 三張「問 AI 卡」（同一個形狀：一句要問什麼、一顆鈕、一個貼回框、來源）。
 // 一直開著、沒有截止。每次存，伺服器替有變動的欄位蓋時間章；上課時段內＝課中。prompt 由 week4-core 用學生自己的痛與產業組好。
 const root=document.querySelector('#week-four');

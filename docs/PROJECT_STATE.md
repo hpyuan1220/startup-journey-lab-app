@@ -1746,3 +1746,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 改法（`week4-core.mjs` 新增 `PAIN_PATTERNS／painPattern／PATTERN_HINTS`，`week4.js` 對不到時用它）：分組協調類 → 「選 2 零工排班 或 4 場地預約，或自填補習班排課／社團媒合」；早八四類 → 「找不到付錢的人，直接改選」；業者痛 → 「直接自填那一行」；其他 → 一般指引。判斷順序 unusable → biz → group（抽菸那句含「空堂」）。痛還是空白時提示改成「先寫一句痛」。
 - 關鍵字補 `飲料／喝什麼／菜單`（手搖飲那一筆原本對不到）。
 - 純前端行為；bundle 因 core 變動重建（SHA 84264ce4ef86912b），部署與否不影響行為。單元 182/182；瀏覽器 week4-student 18/18（新增分組類、早八類兩條斷言）。
+
+## 2026-10-20 Week 4 課前預習影片上線（18:31，YouTube 不公開 efvKoNkXs0E）
+- 來源是本機 `116/Week4/Week4_課前影片_本週摘要_來源.md`（八段＋開場收尾），NotebookLM「影片摘要」用「說明影片」格式＋自訂主題（10–12 分鐘、繁體臺灣用語）生成；第一次用預設「精簡」只有 0:58，所以要點「說明影片」。實際長度 18:31。
+- `week.html` Week 4 課前區：嵌入 youtube-nocookie iframe＋手機用連結（跟 Week 2／3 同款）；`week3-core.mjs` `PRECLASS_QUIZ[4]` 三題（使用者痛／業者痛／AI 說的不算來源／有來源的主張）；`week4.js` 用 `mountPreclass(...,4,{})` 掛在影片下面，不存、不登入也能做。`preclass-ui.mjs` 的 core 匯入版本號改 `20261020-w4quiz`，week4.js 版號同。
+- 簡報加第 3 頁「課前預習回顧」（版面 4，三題＋請兩位同學說），課堂流程 0–10 加「課前預習三題」；24 頁，PPT／PDF 重建，連結版號 `?v=20261020`。複製到 116/Week4。
+- YouTube Studio 裡同一支影片上傳了兩次（efvKoNkXs0E 與 R1ANGyorXeU，都 18:31 不公開）；課程頁用前者，另一支老師自己決定留或刪。
+- 單元 182/182；本機瀏覽器檢查：iframe src 正確、三題可答、答對顯示「對。」、沒有 JS 錯誤。
