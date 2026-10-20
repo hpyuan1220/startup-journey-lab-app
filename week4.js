@@ -125,7 +125,7 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
  });
  cBlocks[k]={ta,radios,stamp,opps};
 });
-function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看／改這次的問題';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;d.append(pre);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
+function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看 app 幫你問了 AI 什麼（按鈕沒複製到時，從這裡反白、⌘C）';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;d.append(pre);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
 async function openTool(prompt,btn,tool){
  const t=tool||getTool();setTool(t);
  const ok=await copyText(prompt);
