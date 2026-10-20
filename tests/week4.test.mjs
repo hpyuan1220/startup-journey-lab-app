@@ -45,6 +45,7 @@ test('prompt 帶入產業與痛；兩題有重點與無重點兩種；工具網�
  const d=normalizeWeek4({pain:'午休排隊 20 分鐘',industry:{card:1},q1:'七成來自工作經驗',card2:{text:'外送抽成 30%（來源：聯合報）'}});
  assert.match(buildPrompt('card1',d),/餐飲小店/);assert.match(buildPrompt('card1',d),/午休排隊 20 分鐘/);
  assert.match(buildPrompt('card3',d),/外送抽成 30%/);
+ assert.match(buildPrompt('card2',d),/午休排隊 20 分鐘/,'卡 2 六題要帶痛，NotebookLM 才會查對的那一段而不是整個產業');assert.match(buildPrompt('card2',d),/餐飲小店/);
  const q=resolveQuestions(4,null);assert.match(q.q1,/Bhidé/);
  assert.match(buildPrompt('q1',d,q),/【講義重點】/);
  assert.doesNotMatch(buildPrompt('q1',d,{q1:'x',q2:'y',points:''}),/講義重點/);
