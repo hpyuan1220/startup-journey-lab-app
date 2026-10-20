@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate,rankCards} from '../week4-core.mjs';
+import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate,rankCards,painPattern,PATTERN_HINTS} from '../week4-core.mjs';
 import {harness} from './support/week2-harness.mjs';
 
 test('產業板九張、推薦依普查題號排序', () => {
@@ -98,4 +98,19 @@ test('rankCards：先看痛的文字，再看普查；對不到就 related=false
  assert.equal(r2.related,false,'搶票對不到任何一條');assert.equal(r2.list[0].card.id,1,'沒對到就照普查');
  const r3=rankCards('',[]);assert.equal(r3.related,false);assert.equal(r3.list[0].card.id,1,'全空就原順序');
  assert.ok(/關係不大/.test(buildPrompt('card1',{pain:'找室友',industry:{card:5,custom:''},card1:{},card2:{},card3:{opps:[]}})),'卡 1 要 AI 先判斷關不關聯');
+});
+
+test('painPattern：對不到產業線時，分組協調／早八記帳抽菸搶票／業者痛 各給一句明確指引', () => {
+ assert.equal(painPattern('在分組做報告情境中，大學生想要順利敲定大家都行的開會時間'),'group');
+ assert.equal(painPattern('在 早八上課 情境中，鬧鐘叫不醒、常常睡過頭'),'unusable');
+ assert.equal(painPattern('在月底情境中，不會理財的人想要過好生活，但遇到錢花光，目前用記帳處理'),'unusable');
+ assert.equal(painPattern('在街頭陌生開發情境中，缺乏經驗的新進保險業務員想要精準鎖定對象'),'biz');
+ assert.equal(painPattern('在通勤時，搭乘公共交通的人想要準時抵達但遇到延遲'),'');
+ for(const k of ['group','unusable','biz',''])assert.ok(PATTERN_HINTS[k].length>20,k+' 要有提示句');
+ assert.match(PATTERN_HINTS.group,/2 零工排班|4 場地預約/);
+ assert.match(PATTERN_HINTS.biz,/自己填/);
+});
+test('關鍵字：飲料／喝什麼／菜單 對到餐飲小店', () => {
+ const r=rankCards('飲料品項太多我總是不知道要喝甚麼，目前提早查菜單',[]);
+ assert.equal(r.related,true);assert.equal(r.list[0].card.id,1);
 });

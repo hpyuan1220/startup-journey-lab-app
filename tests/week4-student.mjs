@@ -12,7 +12,11 @@ await p.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.
 await p.goto(`${BASE}/week.html?week=4#card`);await p.waitForTimeout(1500);
 ok('頁面有課堂兩題與三張卡',await p.evaluate(()=>document.querySelectorAll('.w4-q').length===2&&document.querySelectorAll('.w4-askcard').length===3));
 ok('兩題文字是預設題',await p.evaluate(()=>document.querySelector('.w4-q-title').textContent.includes('Bhidé')));
-ok('痛還是空的：看不出哪一條線，九張都秀、提示寫明',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===9&&/看不出屬於哪一條線/.test(document.querySelector('.w4-indhint').textContent)));
+ok('痛還是空的：看不出哪一條線，九張都秀、提示寫明',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===9&&/先在上面寫一句你的痛/.test(document.querySelector('.w4-indhint').textContent)));
+await p.fill('textarea[aria-label="我的痛一句話"]','在分組做報告情境中，大學生想要順利敲定大家都行的開會時間');await p.dispatchEvent('textarea[aria-label="我的痛一句話"]','change');await p.waitForTimeout(200);
+ok('痛是分組協調：九張都秀、提示直接指向 2 零工排班／4 場地預約',await p.evaluate(()=>document.querySelectorAll('.w4-card').length===9&&/分組協調/.test(document.querySelector('.w4-indhint').textContent)&&/2 零工排班/.test(document.querySelector('.w4-indhint').textContent)));
+await p.fill('textarea[aria-label="我的痛一句話"]','在 早八上課 情境中，鬧鐘叫不醒');await p.dispatchEvent('textarea[aria-label="我的痛一句話"]','change');await p.waitForTimeout(200);
+ok('痛是早八：提示說找不到付錢的人、直接改選',await p.evaluate(()=>/找不到願意付錢的人/.test(document.querySelector('.w4-indhint').textContent)));
 await p.fill('textarea[aria-label="我的痛一句話"]','午休 50 分鐘的大二同學每週兩次在餐廳排隊 20 分鐘');await p.dispatchEvent('textarea[aria-label="我的痛一句話"]','change');await p.waitForTimeout(200);
 ok('痛提到餐廳排隊：只秀兩張、餐飲小店排第一、提示寫最接近',await p.evaluate(()=>{const c=[...document.querySelectorAll('.w4-card b')].map(b=>b.textContent);return c.length===2&&c[0]==='1 餐飲小店'&&/最接近的是「餐飲小店」/.test(document.querySelector('.w4-indhint').textContent);}));
 // 答兩題、選產業、存
