@@ -1800,3 +1800,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 18/18；單元 190/190。
 - Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270032 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
 - 10/26 追加（老師：「Week 1 也可以收小？」）：改成通用版 `teacher-fold.mjs`——教師洞察每個 `section[id^=teacher-week]` 的 h2 右邊一顆「收合／展開」，收合＝標題以下全藏（含按鈕與說明），狀態記 sessionStorage；MutationObserver 接住後插入的區塊。Week 4／5 原本各自的按鈕拿掉，避免兩顆。`styles.css` 加 h2 flex 與 `.tfold`；`index.html` 載 `teacher-fold.mjs?v=20261026-fold2`、`styles.css?v=20261026-fold2`。測試改成四區（5／4／2／1）都驗 → 18/18。
+
+## 2026-10-26 Week 4 課前影片加「只看這四段」
+- 老師：18 分半太長；決定不重做，影片下面標時間點。用 ffmpeg 從 `116/Week4/Week_4_課前預習影片.mp4` 抽幀（每 20 秒＋段落邊界每 2 秒）對出來：9:16 第 3 段鎖定付費產業線、11:14 第 4 段工具查證（兩個來源）、13:36 燈泡 vs 放大鏡（Gemini／NotebookLM）、15:30 第 5 段課堂任務與總結。影片本身是理論導向，沒有逐卡操作畫面，所以四段對到「選產業／卡 2 為什麼查證／卡 1 卡 2 用什麼／卡 3 與課後」。
+- `week.html` Week 4 preclass 多一段 `.preclass-jump`，連到 `youtu.be/efvKoNkXs0E?t=秒`（新分頁）；`styles.css` 版號 `20261026-fold2`。抽幀的對照圖留在 `116/Week4/_影片檢查/sheets/`（本機，不進 repo）。

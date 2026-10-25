@@ -497,3 +497,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 /* 教師洞察：每週區塊標題旁的收合／展開 */
 #teacher-dashboard > section > h2{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 #teacher-dashboard .tfold{font-size:.85rem;font-weight:600;padding:4px 12px}
+
+/* 課前影片：只看這幾段 */
+.preclass-jump a{display:inline-block;margin:2px 0}
