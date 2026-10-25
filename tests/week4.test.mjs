@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate,rankCards,painPattern,PATTERN_HINTS} from '../week4-core.mjs';
+import {INDUSTRY_CARDS,recommendCards,stampLabel,attendance,normalizeWeek4,applyStamps,buildPrompt,resolveQuestions,toolUrl,classDate,rankCards,painPattern,PATTERN_HINTS,extractOpps} from '../week4-core.mjs';
 import {harness} from './support/week2-harness.mjs';
 
 test('產業板九張、推薦依普查題號排序', () => {
@@ -114,4 +114,11 @@ test('painPattern：對不到產業線時，分組協調／早八記帳抽菸搶
 test('關鍵字：飲料／喝什麼／菜單 對到餐飲小店', () => {
  const r=rankCards('飲料品項太多我總是不知道要喝甚麼，目前提早查菜單',[]);
  assert.equal(r.related,true);assert.equal(r.list[0].card.id,1);
+});
+
+test('extractOpps：從卡 3 貼回的【貼回摘要】抓出機會 A／B／C 三行', () => {
+ const t='機會 1：…很長\n\n【貼回摘要】\n機會A：包租業者室友不合頻繁退租 → 第一個付錢的人：管理 50 套以上的包租業者\n機會B：新生開學前找不到可信室友 → 第一個付錢的人：新生家長\n機會C：合租水電分攤算不清 → 第一個付錢的人：個體代管業者';
+ const o=extractOpps(t);assert.equal(o.length,3);assert.match(o[0],/^包租業者/);assert.match(o[1],/新生家長$/);assert.match(o[2],/^合租水電/);
+ assert.deepEqual(extractOpps('沒有摘要的回答'),[]);
+ assert.equal(extractOpps('機會 a: 第一個\n機會 B：第二個')[1],'第二個','沒有【貼回摘要】也能抓、大小寫都收');
 });
