@@ -1,7 +1,7 @@
 // 課前預習的互動區：影片下方「做三題」＋（Week 3）「寫下你要問的第一個問題」。
 // 三題只在畫面上給解釋、不計分、可以重選；存進卡的只有「選了什麼」和那一句問題，老師端看得到誰做了預習。
 // 沒登入也能做三題；要存問題才需要先進班級。
-import {PRECLASS_QUIZ} from './week3-core.mjs?v=20261020-w4quiz';
+import {PRECLASS_QUIZ} from './week3-core.mjs?v=20261025-w5';
 
 const el=(tag,text,parent)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(parent)parent.append(e);return e;};
 

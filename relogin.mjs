@@ -4,7 +4,7 @@
 // Week 2 顯示「可按重新載入」，但重新載入永遠卡在同一個畫面。學生因此以為作業不見了。
 // 這裡：講清楚資料都在，給一顆按了就能走的按鈕；清掉作廢的登入，登入後自動回到原本那一週。
 
-export const RETURN_PAGES={week2:'week.html?week=2#card',week3:'week.html?week=3#card',week4:'week.html?week=4#card'};
+export const RETURN_PAGES={week2:'week.html?week=2#card',week3:'week.html?week=3#card',week4:'week.html?week=4#card',week5:'week.html?week=5#card'};
 
 /** 學生入口登入成功後要去哪裡；只接受白名單，不接受任意網址。 */
 export function returnTarget(search){

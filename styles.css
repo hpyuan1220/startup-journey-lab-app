@@ -476,3 +476,20 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .w4-prompt button{margin-top:6px}.w4-copied{font-size:.85rem;color:#3b5a2a;margin-left:8px}
 
 .w4-done{border-radius:10px;padding:12px 14px;border:1px solid #d9d4c7;background:#fbf8f1}.w4-done[data-state=done]{background:#e8f3e4;border-color:#9ec49a}.w4-done-title{font-weight:700;margin:0 0 4px}.w4-done p{margin:4px 0}.w4-done .w4-row{margin-top:8px;flex-wrap:wrap;gap:8px}
+
+/* Week 5 比較頁 */
+.w5-opp{display:flex;align-items:center;gap:8px;margin:6px 0}.w5-opp input{flex:1;min-width:0}
+.w5-opp-k{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#1f3b2d;color:#fff;font-size:.85rem;flex:none}
+.w5-q{border:1px solid #d9d4c7;border-radius:10px;padding:10px 12px;margin:10px 0;background:#fff}
+.w5-q-title{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}.w5-q-ask{font-size:.9rem;color:#4b5a53}
+.w5-levels{font-size:.85rem;color:#3b4a43;margin:4px 0 8px}.w5-levels summary{cursor:pointer;color:#2f5d50}.w5-levels ul{margin:4px 0 4px 18px;padding:0}.w5-theory{margin:4px 0 0;color:#6b7a72}
+.w5-cell{display:grid;grid-template-columns:26px auto 1fr;gap:8px;align-items:center;margin:6px 0}.w5-cell input{min-width:0}
+.w5-cell.w5-off{opacity:.35;pointer-events:none}.w5-cell.w5-noev input{border-color:#c9893a;background:#fff8ec}
+.w5-score{display:inline-flex;gap:4px}.w5-sbtn{min-width:34px;height:34px;border:1px solid #9aa79f;border-radius:8px;background:#fff;font-weight:700;cursor:pointer}
+.w5-sbtn[aria-pressed=true]{background:#1f3b2d;color:#fff;border-color:#1f3b2d}
+.w5-totals{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}.w5-total{border:1px solid #d9d4c7;border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;min-width:120px;background:#fbf8f1}
+.w5-total.is-top{background:#e8f3e4;border-color:#9ec49a}.w5-total-n{font-size:1.3rem;font-weight:700}.w5-total-s{font-size:.8rem;color:#4b5a53}
+.w5-choice label{margin-right:14px}.w5-reason{margin-top:8px}.w5-reason textarea{width:100%}
+.w5-rounds{margin-top:8px}.w5-round{border-left:3px solid #c9893a;padding:4px 10px;margin:6px 0;font-size:.92rem}.w5-round p{margin:2px 0}.w5-me{color:#2f5d50}.w5-sum{font-size:.92rem;background:#fbf8f1;padding:6px 10px;border-radius:8px}
+.w5-para{margin:10px 0}.w5-para b{display:block;margin-bottom:4px}.w5-para textarea{width:100%}
+@media (max-width:480px){.w5-cell{grid-template-columns:26px auto;grid-template-rows:auto auto}.w5-cell input{grid-column:1 / -1}}

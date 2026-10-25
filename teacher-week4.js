@@ -1,6 +1,7 @@
 import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261018-w4';
-import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261019-freeze';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
+import {normalizeWeek5,totals as totals5,topChoice,week5Progress,OPP_KEYS} from './week5-core.mjs?v=20261025-w5';
 // 教師洞察 · Week 4 第一輪研究
 // 老師不用按任何開關：出席＝課堂兩題在上課日 13:30–18:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
 // 和一人一列（出席、Q1／Q2、產業、三張卡的時間與來源；未答排最上；點代號展開看全文）。
@@ -13,7 +14,7 @@ el('h2','Week 4 第一輪研究：出席、兩題、三張卡',root);
 el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你要操作的只有兩件事：本週兩題的文字，和每位學生那一列的「老師備註」（四個標記一點就存、備註打完按 Enter；學生看不到）。表格太寬時可以左右滑。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 4',root,'quiet');reloadBtn.type='button';
-const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–4 狀態、出席、三張卡來源、每週老師標記與備註';
+const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–5 狀態、出席、三張卡來源、Week 5 分數與選擇、每週老師標記與備註';
 const body=el('div','',root);
 let data=null,open=new Set(),week=4;
 listenRemarks(()=>data,()=>load());// Week 2 區存的備註也要進這裡的 data（展開列的「前幾週備註」、CSV）
@@ -96,14 +97,14 @@ function render(){
 csvBtn.addEventListener('click',()=>{
  if(!data){status.textContent='先載入 Week 4。';return;}
  const esc=v=>{v=String(v??'').replace(/\r?\n/g,' ');return /[",]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
- const head=['班級','學號','姓名','Week 1','Week 2','Week 2 審核','Week 3','Week 3 訪談次數','Week 4 出席','Week 4 產業','卡 1 來源','卡 2 來源','卡 3 來源'];
- for(const wk of [1,2,3,4])head.push(`W${wk} 標記`,`W${wk} 備註`);
- for(const wk of [1,2,3,4])head.push(`W${wk} 系統推算`);
- for(const wk of [1,2,3,4])head.push(`W${wk} 評分參考`);// 老師標記優先，否則推算
+ const head=['班級','學號','姓名','Week 1','Week 2','Week 2 審核','Week 3','Week 3 訪談次數','Week 4 出席','Week 4 產業','卡 1 來源','卡 2 來源','卡 3 來源','Week 5 出席','W5 A 分','W5 B 分','W5 C 分','W5 選','W5 非最高分','W5 估計格','W5 反方回合','W5 一頁段數'];
+ for(const wk of [1,2,3,4,5])head.push(`W${wk} 標記`,`W${wk} 備註`);
+ for(const wk of [1,2,3,4,5])head.push(`W${wk} 系統推算`);
+ for(const wk of [1,2,3,4,5])head.push(`W${wk} 評分參考`);// 老師標記優先，否則推算
  const lines=[head.map(esc).join(',')];
  for(const c of data.classes){
-  const roster=(data.roster||[]).filter(r=>r.class_id===c.id),w1=(data.week1||[]).filter(r=>r.class_id===c.id),w2=(data.rows||[]).filter(r=>r.class_id===c.id),w3=(data.week3||[]).filter(r=>r.class_id===c.id),w4=(data.week4||[]).filter(r=>r.class_id===c.id);
-  const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(r=>r.student_id),...w2.map(r=>r.student_id),...w3.map(r=>r.student_id),...w4.map(r=>r.student_id)])].sort();
+  const roster=(data.roster||[]).filter(r=>r.class_id===c.id),w1=(data.week1||[]).filter(r=>r.class_id===c.id),w2=(data.rows||[]).filter(r=>r.class_id===c.id),w3=(data.week3||[]).filter(r=>r.class_id===c.id),w4=(data.week4||[]).filter(r=>r.class_id===c.id),w5=(data.week5||[]).filter(r=>r.class_id===c.id);
+  const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(r=>r.student_id),...w2.map(r=>r.student_id),...w3.map(r=>r.student_id),...w4.map(r=>r.student_id),...w5.map(r=>r.student_id)])].sort();
   for(const id of ids){
    const a=w1.find(r=>r.student_id===id),b=w2.find(r=>r.student_id===id),d3=w3.find(r=>r.student_id===id),r4=w4.find(r=>r.student_id===id);
    const d=r4?normalizeWeek4(r4.data):null,st=r4?.stamps||{};
@@ -112,11 +113,15 @@ csvBtn.addEventListener('click',()=>{
     d3?(d3.status==='submitted'?'已交':'草稿'):'無',d3?doneCount(d3.record):0,
     r4?(attendance(st,week)?'出席':'缺席'):'缺席',d&&d.industry.card?industryName(d):'',
     ...['card1','card2','card3'].map(k=>d?(SOURCE_LABEL[d[k].source]||d[k].source||''):'')];
-   for(const wk of [1,2,3,4]){const rm=findRemark(data.remarks,c.id,id,wk);row.push(tagLabel(rm?.tag),rm?.note||'');}
+   const r5=w5.find(r=>r.student_id===id),d5=r5?normalizeWeek5(r5.data):null,st5=r5?.stamps||{},p5=d5?week5Progress(d5):null,t5=d5?totals5(d5):null;
+   row.push(r5?(attendance(st5,5)?'出席':'缺席'):'缺席',...OPP_KEYS.map(k=>t5&&t5[k].scored?t5[k].sum:''),p5?.choice||'',p5&&p5.choice&&p5.choice!==topChoice(d5)?(p5.choiceOk?'是（有理由）':'是（沒理由）'):'',t5?OPP_KEYS.reduce((n,k)=>n+t5[k].estimated,0):'',p5?p5.rounds:'',p5?p5.pageN:'');
+   const parts5=p5?[p5.scoredAll,!!p5.choice&&p5.choiceOk,p5.rounds>=1,p5.pageN>=6].filter(Boolean).length:0;
+   for(const wk of [1,2,3,4,5]){const rm=findRemark(data.remarks,c.id,id,wk);row.push(tagLabel(rm?.tag),rm?.note||'');}
    const sugs={};for(const wk of [1,2,3])sugs[wk]=suggestTag(wk,{w1:a,w2:b,w3:d3,interviews:d3?doneCount(d3.record):0});
    sugs[4]=suggestTagResearch(4,{present:attendance(st,4),cards:['card1','card2','card3'].filter(k=>st[k]).length,answered:!!(st.q1&&st.q2)});
-   for(const wk of [1,2,3,4])row.push(sugs[wk]?tagLabel(sugs[wk].tag):'');
-   for(const wk of [1,2,3,4]){const e=effectiveTag(findRemark(data.remarks,c.id,id,wk),sugs[wk]);row.push(e.tag?`${tagLabel(e.tag)}${e.source==='system'?'（推算）':''}`:'');}
+   sugs[5]=suggestTagResearch(5,{present:attendance(st5,5),cards:parts5>=4?3:parts5>=2?1:0,answered:!!(st5.q1&&st5.q2),what:'計分、選、反方、一頁都做完',unit:'段'});
+   for(const wk of [1,2,3,4,5])row.push(sugs[wk]?tagLabel(sugs[wk].tag):'');
+   for(const wk of [1,2,3,4,5]){const e=effectiveTag(findRemark(data.remarks,c.id,id,wk),sugs[wk]);row.push(e.tag?`${tagLabel(e.tag)}${e.source==='system'?'（推算）':''}`:'');}
    lines.push(row.map(esc).join(','));
   }
  }

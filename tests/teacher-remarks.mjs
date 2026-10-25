@@ -55,6 +55,6 @@ ok('學生端 week4_load 沒有備註',!JSON.stringify(s4).includes('上台講�
 const [dl]=await Promise.all([p.waitForEvent('download'),p.click('#teacher-week4 button:has-text("匯出評分參考 CSV")')]);
 const csv=await (await import('node:fs/promises')).readFile(await dl.path(),'utf8');
 const line=csv.split('\n').find(l=>l.includes(SID))||'';
-ok('CSV：表頭有 W1–W4 系統推算與評分參考；這列 W4 評分參考＝老師的積極、W1＝老師的缺席',/W4 系統推算,W1 評分參考,W2 評分參考,W3 評分參考,W4 評分參考/.test(csv)&&/積極,上台講得清楚,普通,缺席,缺席,沒參與,缺席,缺席,缺席,積極$/.test(line.trim()),line.slice(-120));
+ok('CSV：表頭有 W1–W5 系統推算與評分參考；這列 W4 評分參考＝老師的積極、W1＝老師的缺席、W5 缺席（推算）',/W5 系統推算,W1 評分參考,W2 評分參考,W3 評分參考,W4 評分參考,W5 評分參考/.test(csv)&&/積極,上台講得清楚,,,普通,缺席,缺席,沒參與,缺席,缺席,缺席,缺席,積極,缺席（推算）$/.test(line.trim()),line.slice(-120));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);

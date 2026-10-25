@@ -1,7 +1,7 @@
 import {priority,readiness,fields,triageFields,depthFields,check,selectedIndex} from './week2-core.mjs';
 import {assess,completion,TARGETS} from './week2-quality.mjs?v=20261012-solution';
 import {interviewFields,fitsOptions,judgmentOptions,doneCount,DEFAULT_SURVEY_TOPICS,surveySummary} from './week3-core.mjs?v=20261013-preclass';
-import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTag,tagLabel,freezeSuggestions} from './teacher-remarks.mjs?v=20261019-freeze';
+import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTag,tagLabel,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · Week 2
 // 每位學生一張卡：上半 Week 1 起點卡（一句摘要，可展開全文），下半 Week 2 兩個候選、選題、訪談題、AI 建議，
 // 底下就是三顆審核按鈕和一句回饋。最上面有進度（已確認 X／已交 Y）和篩選，老師可以只看「還沒看的」。

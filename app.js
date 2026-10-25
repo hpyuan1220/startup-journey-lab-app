@@ -185,7 +185,7 @@ function askFirstTime(typedId){
 // 與 relogin.mjs 的 RETURN_PAGES 相同（app.js 不是 module，不能 import）。
 function studentReturnTarget(){
   const key=new URLSearchParams(location.search).get('return');
-  const pages={week2:'week.html?week=2#card',week3:'week.html?week=3#card'};
+  const pages={week2:'week.html?week=2#card',week3:'week.html?week=3#card',week4:'week.html?week=4#card',week5:'week.html?week=5#card'};
   return Object.prototype.hasOwnProperty.call(pages,key)?pages[key]:null;
 }
 async function enterStudent(confirmNew){

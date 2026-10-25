@@ -1782,3 +1782,14 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   ```
 - Week 2／3 的表同樣有快照觸發器，清那兩週也要照做（week=2／3）。
 - 可考慮的根治：把 week4_research 的 snapshot 觸發器改成 `on conflict do nothing`，或在 delete 上加觸發器連動清快照；目前沒改，先記規則。
+
+## 2026-10-25 Week 5「三個機會比一比」整套：比較頁、教師端、教材
+- 決定（老師 10/25）：可以選非最高分，但要多寫一段理由（≥20 字）；反方預設 Claude；120 分鐘＝0–20 回顧、20–45 五問理論、45–75 打分、75–100 反方、100–120 寫一頁。
+- 資料：`week5_compare`（migration `20261025_week5.sql`，沿用 `week4_bump_version` 與 `snapshot_learning('5')`；**要在正式庫 Run**）；Edge `week5_load`（回 row、本週兩題、`seed_opps`＝Week 4 卡 3 三句、`week4_has_cards`）／`week5_save`；`teacher_load` 多回 `week5`。bundle 含 week5-core。
+- 核心 `week5-core.mjs`：`FIVE_QUESTIONS`（題目、0／1／2 意思、理論出處）、`normalizeWeek5`、`totals`（每機會總分、估計格數）、`topChoice`、`choiceNeedsReason／choiceOk`、`applyStamps5`、`week5Progress`（missing 清單）、`buildPrompt5('rebuttal')`（老闆三回合、最後輸出【反方紀錄】固定格式）、`parseRebuttal`、`draftPage`、`extractOpps` 不在此（在 week4-core）。
+- 學生頁 `week5.js`（`week.html?week=5#card`）：兩題 → 三個機會（自動帶出、可改）→ 3×5 計分表（每格 0／1／2 鍵＋證據；打了分沒證據變橘）→ 總分／最高分 → 選一個（非最高分出理由框）→ 反方（工具選單、貼回、自動拆三回合）→ 一頁六段（「用計分表填草稿」）→ 完成方塊＋v2 範本／講義連結。登入失效走 relogin（`return=week5` 已加進 app.js／relogin.mjs）。
+- 教師端 `teacher-week5.js`：排最上；每列出席、備註、A／B／C 總分、選（非最高分有／沒理由）、估計格、反方回合、一頁段數、Q1／Q2；點開看五格證據、理由、反方、六段；本週兩題可改；推算存標記。CSV（teacher-week4.js）加 W5 九欄，備註／推算／評分參考迴圈到 5。`suggestTagResearch` 多 `what／unit` 參數改字。
+- 課前三題 `PRECLASS_QUIZ[5]`（這一格該打幾分）。影片還沒生：來源 `116/Week5/Week5_課前影片_本週摘要_來源.md`（六段，8–10 分鐘；NotebookLM 用「說明影片」格式）。
+- 教材：`docs/WEEK5_SLIDES_SOURCE.json` → `materials/Week5_教學簡報.pptx／.pdf`（16 頁）；`materials/Week5_講義.pdf`（4 頁：為什麼要比／五問出處與 0／1／2／反方五種拒絕與證據回法／一頁與期中怎麼組）；`materials/Week5_研究筆記v2範本.docx`（八節＝期中 PDF）。
+- 測試：單元 190/190（新 `tests/week5.test.mjs` 7 條）；瀏覽器 `tests/week5-student.mjs` 17/17（學生全流程＋重開＋教師端＋CSV）；week4-student 18／week3-student 15／teacher-remarks 17 沒壞。
+- 待做：老師 Run migration → 部署 Edge（bundle 含 week5 actions，**這次一定要部署**）→ 線上用測試帳號走一次 → NotebookLM 生影片、嵌入、把 week.js／week.html 的「影片準備中」換掉。

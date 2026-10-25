@@ -31,11 +31,11 @@ export function suggestTag(week,{w1,w2,w3,interviews}={}){
 }
 
 /** Week 4 起有課堂兩題，推算用出席＋三張卡：出席且三張卡都貼回＝積極；出席＝普通；沒出席但有做（課後補答或貼了卡）＝沒參與；什麼都沒有＝缺席。 */
-export function suggestTagResearch(week,{present,cards,answered}={}){
+export function suggestTagResearch(week,{present,cards,answered,what='三張卡都貼回',unit='卡'}={}){
  const n=Number(cards||0);
- if(present&&n>=3)return {tag:'active',why:`Week ${week} 出席、三張卡都貼回`};
- if(present)return {tag:'normal',why:`Week ${week} 出席（卡 ${n}/3）`};
- if(answered||n>=1)return {tag:'passive',why:`Week ${week} 沒在課堂時段答兩題，但有做（卡 ${n}/3）`};
+ if(present&&n>=3)return {tag:'active',why:`Week ${week} 出席、${what}`};
+ if(present)return {tag:'normal',why:`Week ${week} 出席（${unit} ${n}/3）`};
+ if(answered||n>=1)return {tag:'passive',why:`Week ${week} 沒在課堂時段答兩題，但有做（${unit} ${n}/3）`};
  return {tag:'absent',why:`Week ${week} 沒有任何紀錄`};
 }
 
