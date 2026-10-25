@@ -1,4 +1,4 @@
-import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261020-seg';
+import {INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261025-src';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
 // 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。
@@ -91,7 +91,7 @@ function renderCards(){
 // 三張卡
 const CARDS=[
  ['card1','這一行的錢流與困難','問 AI：這一行誰付錢給誰、業者自己最常說的困難、現在用什麼撐著。追問一次：「哪一個困難是業者最常花錢想解決的？」','複製問題、開我的 AI 工具','把 AI 的回答貼回來（整段或挑重點都可以）',false],
- ['card2','用 NotebookLM 查證','先加 5–8 個來源（政府統計、公會報告、近一年新聞、業者訪談影片、論壇抱怨文），再貼六題問它。每一點要有引用。找來源時用「你的痛那一段」的關鍵字（例：學生租屋、包租代管、室友），不要搜整個產業（例：飯店、民宿）——六題也只問那一段。','複製六題、開 NotebookLM','把有引用的答案貼回來，每點後面留（來源：XX）',true],
+ ['card2','用 NotebookLM 查證','先加 5–8 個來源（政府統計、公會報告、近一年新聞、業者訪談影片、論壇抱怨文），再貼六題問它；答案每一點會自帶（來源：XX）。找來源時用「你的痛那一段」的關鍵字（例：學生租屋、包租代管、室友），不要搜整個產業（例：飯店、民宿）——六題也只問那一段。','複製六題、開 NotebookLM','把 NotebookLM 的答案貼回來（每點後面會自帶「來源：XX」）',true],
  ['card3','要三個機會','把卡 2 的證據一起帶給 AI：請它給三個小團隊能切入的機會，每個寫解誰的哪個困難、第一個會付錢的人、為什麼是現在。','複製問題＋證據、開我的 AI 工具','AI 的完整回答（選填）',false],
 ];
 const cBlocks={};
@@ -106,7 +106,7 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
  const note=el('p',(nb?'六題：這一行多大／誰在賺錢／最常被抱怨的三件事／過去三年什麼變了／有人試過解決嗎／台灣跟國外差在哪。':'問題已用你的痛點和產業填好。工具可以換；查證一律用 NotebookLM。')+' 貼回才算做完：AI 的對話只在你自己的帳號裡，老師看不到；貼回來、標來源，才是你的證據，下一張卡和研究筆記都要用。',sec,'w4-note');
  // 操作步驟寫死在卡上：按鈕只做「複製＋開工具」，貼上、送出、貼回是學生自己的三個動作。
  const steps=el('ol','',sec,'w4-steps');
- for(const t of (nb?['按上面的按鈕：六題已複製、NotebookLM 已打開（先建筆記本；「新增來源」→「網路」用你那一段的關鍵字搜，加 5–8 個）','在 NotebookLM 的對話框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），一題一題問','每個答案都要有引用；在 NotebookLM 回答下方按「複製」，回到這一頁在下面的框按 ⌘V，每點留（來源：XX）']:['按上面的按鈕：問題已複製、AI 工具已打開（Gemini／Copilot 打開是空的，正常）','在工具的輸入框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），送出','複製回答：在回答最下面按「複製」圖示（Gemini、ChatGPT 都有；或用滑鼠反白），回到這一頁在下面的框按 ⌘V。整段貼，或只貼最後的【貼回摘要】三行都可以；有數字的句子後面寫出處或「估計」']))el('li',t,steps);
+ for(const t of (nb?['按上面的按鈕：六題已複製、NotebookLM 已打開（先建筆記本；「新增來源」→「網路」用你那一段的關鍵字搜，加 5–8 個）','在 NotebookLM 的對話框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），一題一題問','答完後按回答下方的「複製」，回到這一頁在下面的框按 ⌘V 就好——六題已經要求 NotebookLM 在每一點後面寫（來源：XX），不用自己改']:['按上面的按鈕：問題已複製、AI 工具已打開（Gemini／Copilot 打開是空的，正常）','在工具的輸入框按 ⌘V（Windows：Ctrl+V；手機：長按→貼上），送出','複製回答：在回答最下面按「複製」圖示（Gemini、ChatGPT 都有；或用滑鼠反白），回到這一頁在下面的框按 ⌘V。整段貼，或只貼最後的【貼回摘要】三行都可以；有數字的句子後面寫出處或「估計」']))el('li',t,steps);
  let opps=null;
  if(k==='card3'){opps=[0,1,2].map(n=>{const inp=el('input','',sec);inp.type='text';inp.maxLength=200;inp.placeholder=`機會 ${'ABC'[n]}：一句話（誰的哪個困難 → 第一個付錢的人）`;inp.className='w4-opp';inp.setAttribute('aria-label',`機會 ${'ABC'[n]}`);inp.addEventListener('input',()=>{data.card3.opps[n]=inp.value;touch();});return inp;});}
  const ta=el('textarea','',sec);ta.rows=4;ta.maxLength=6000;ta.placeholder=ph;ta.setAttribute('aria-label',title+' 貼回');
