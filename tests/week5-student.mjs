@@ -55,6 +55,8 @@ await tp.click('#teacher-week5 tbody tr td button');await tp.waitForTimeout(300)
 const det=await tp.evaluate(()=>document.querySelector('#teacher-week5 .tw4-detail')?.innerText||'');
 ok('點開：看得到五格證據、理由、反方三回合、一頁',/機會 B 計分/.test(det)&&/選非最高分的理由/.test(det)&&/拒絕 1/.test(det)&&/一頁六段/.test(det));
 const csv=await tp.evaluate(async()=>{let got='';const orig=URL.createObjectURL;URL.createObjectURL=b=>{got=b;return 'blob:x';};HTMLAnchorElement.prototype.click=function(){};document.querySelector('#teacher-week4 button[title*="Week 1–5"]').click();await new Promise(r=>setTimeout(r,300));return got?await got.text():'';});
+const fold=await tp.evaluate(async()=>{const r={};for(const w of [5,4]){const sec=document.querySelector('#teacher-week'+w);const b=[...sec.querySelectorAll('button')].find(x=>/收合 Week/.test(x.textContent));if(!b){r[w]='no-btn';continue;}b.click();await new Promise(r=>setTimeout(r,50));const hid=sec.querySelector('h2').nextElementSibling&&[...sec.children].some(c=>c.hidden&&c.tagName==='DIV');const t1=b.textContent;b.click();await new Promise(r=>setTimeout(r,50));r[w]={hidWhenFolded:hid,t1,t2:b.textContent,shown:![...sec.children].some(c=>c.hidden&&c.tagName==='DIV')};}return r;});
+ok('教師端 Week 5／Week 4 有收合按鈕：收合後列表隱藏、再按展開',[5,4].every(w=>fold[w]&&fold[w].hidWhenFolded&&/展開/.test(fold[w].t1)&&/收合/.test(fold[w].t2)&&fold[w].shown),fold);
 ok('CSV 有 Week 5 欄位與這位學生的分數',/W5 A 分,W5 B 分,W5 C 分,W5 選,W5 非最高分/.test(csv)&&csv.split('\n').some(l=>l.includes(SID)&&/,10,5,0,B,是（有理由）,5,3,6,/.test(l)),csv.split('\n').find(l=>l.includes(SID))?.slice(0,200));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);

@@ -1793,3 +1793,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 教材：`docs/WEEK5_SLIDES_SOURCE.json` → `materials/Week5_教學簡報.pptx／.pdf`（16 頁）；`materials/Week5_講義.pdf`（4 頁：為什麼要比／五問出處與 0／1／2／反方五種拒絕與證據回法／一頁與期中怎麼組）；`materials/Week5_研究筆記v2範本.docx`（八節＝期中 PDF）。
 - 測試：單元 190/190（新 `tests/week5.test.mjs` 7 條）；瀏覽器 `tests/week5-student.mjs` 17/17（學生全流程＋重開＋教師端＋CSV）；week4-student 18／week3-student 15／teacher-remarks 17 沒壞。
 - 待做：老師 Run migration → 部署 Edge（bundle 含 week5 actions，**這次一定要部署**）→ 線上用測試帳號走一次 → NotebookLM 生影片、嵌入、把 week.js／week.html 的「影片準備中」換掉。
+
+## 2026-10-26 教師端 Week 4／Week 5 區加「收合／展開」
+- 問題（老師 10/26）：按「載入 Week 5」後 47 列全展開（約 4,400px），沒有辦法收回去；Week 4 區同樣。教師洞察也沒有 Week 3 區（Week 3 訪談資料在 `teacher_load.week3`，頁面沒做）——Week 3 區待做，排在 Week 5 影片之後、Week 6 頁之前。
+- 改法：`teacher-week4.js`／`teacher-week5.js` 在「重新載入」旁加 `收合 Week N`／`展開 Week N` 按鈕（載入成功後才出現；收合＝`body.hidden`，並捲到該區頂端；`aria-expanded`）。只動前端，不動 Edge。`index.html` 版號 `?v=20261026-fold`。
+- 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 18/18；單元 190/190。
+- Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270032 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
