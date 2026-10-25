@@ -1772,3 +1772,13 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 純前端；bundle 重建。單元 182/182。
 - 同日：卡 3 也加「【貼回摘要】」——要 Gemini 最後用三行「機會A：〔困難〕→ 第一個付錢的人：〔誰〕」收尾；學生把整段貼回時，A／B／C 三格空著就自動抓（`extractOpps`），可再改。單元 183/183；瀏覽器測過貼回→自動填→重整後還在。
 - 同日：研究頁最下面加「完成狀態」方塊（`.w4-done`）：三張卡都貼回＝綠色「✅ Week 4 研究頁完成，已存雲端」＋下一步（研究筆記 v1 五段）＋「下載研究筆記 v1 範本」「看講義第 5 頁」兩個連結；沒完成就寫「還沒完成：差 卡 2、卡 3」。輸入時即時更新（存檔中會寫「正在存…」）。另：prompt 開頭加「這是大學創業課的產業研究作業」（老師實測 Gemini Pro 對同一段問題誤拒答一次）。
+
+## 2026-10-25 清測試帳號 Week 4 資料：要連 learning_versions 一起刪（踩過的坑）
+- 只 `delete from week4_research where student_id=…` 會留下 `learning_versions`（week=4）的版本快照；之後該帳號任何 Week 4 存檔（insert version 1）都撞唯一鍵 `(class_id,student_id,week,version)`，Edge Function 回「資料讀寫失敗」，畫面上內容看似填了但全部沒存。老師實測時卡 1–3 做完才發現，內容靠瀏覽器 localStorage 備份救回。
+- 正確的清法（老師在 SQL Editor 跑）：
+  ```sql
+  delete from learning_versions where student_id = 'A1130309125' and week = 4;
+  delete from week4_research   where student_id = 'A1130309125';
+  ```
+- Week 2／3 的表同樣有快照觸發器，清那兩週也要照做（week=2／3）。
+- 可考慮的根治：把 week4_research 的 snapshot 觸發器改成 `on conflict do nothing`，或在 delete 上加觸發器連動清快照；目前沒改，先記規則。
