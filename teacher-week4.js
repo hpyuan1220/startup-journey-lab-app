@@ -14,15 +14,12 @@ el('h2','Week 4 第一輪研究：出席、兩題、三張卡',root);
 el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你要操作的只有兩件事：本週兩題的文字，和每位學生那一列的「老師備註」（四個標記一點就存、備註打完按 Enter；學生看不到）。表格太寬時可以左右滑。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 4',root,'quiet');reloadBtn.type='button';
-const foldBtn=el('button','收合 Week 4',root,'quiet');foldBtn.type='button';foldBtn.hidden=true;foldBtn.setAttribute('aria-expanded','true');
 const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–5 狀態、出席、三張卡來源、Week 5 分數與選擇、每週老師標記與備註';
 const body=el('div','',root);
-function fold(on){body.hidden=on;foldBtn.textContent=on?'展開 Week 4':'收合 Week 4';foldBtn.setAttribute('aria-expanded',String(!on));if(on)root.scrollIntoView({block:'start'});}
-foldBtn.addEventListener('click',()=>fold(!body.hidden));
 let data=null,open=new Set(),week=4;
 listenRemarks(()=>data,()=>load());// Week 2 區存的備註也要進這裡的 data（展開列的「前幾週備註」、CSV）
 async function call(b,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(b,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
-async function load(){status.textContent='正在載入 Week 4…';try{data=await call({action:'teacher_load'});render();foldBtn.hidden=false;fold(false);}catch(e){status.textContent=e.message;}}
+async function load(){status.textContent='正在載入 Week 4…';try{data=await call({action:'teacher_load'});render();}catch(e){status.textContent=e.message;}}
 reloadBtn.addEventListener('click',load);
 const fmt=iso=>{if(!iso)return '';const d=new Date(iso);const p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;};
 function stampCell(td,iso){if(!iso){td.textContent='—';td.className='';return;}const l=stampLabel(iso);const s=document.createElement('span');s.className=l?.kind==='in'?'tw4-in':'tw4-out';s.textContent=fmt(iso)+(l?.kind==='in'?' 課中':' 課後');td.replaceChildren(s);}

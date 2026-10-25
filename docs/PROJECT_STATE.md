@@ -1799,3 +1799,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 改法：`teacher-week4.js`／`teacher-week5.js` 在「重新載入」旁加 `收合 Week N`／`展開 Week N` 按鈕（載入成功後才出現；收合＝`body.hidden`，並捲到該區頂端；`aria-expanded`）。只動前端，不動 Edge。`index.html` 版號 `?v=20261026-fold`。
 - 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 18/18；單元 190/190。
 - Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270032 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
+- 10/26 追加（老師：「Week 1 也可以收小？」）：改成通用版 `teacher-fold.mjs`——教師洞察每個 `section[id^=teacher-week]` 的 h2 右邊一顆「收合／展開」，收合＝標題以下全藏（含按鈕與說明），狀態記 sessionStorage；MutationObserver 接住後插入的區塊。Week 4／5 原本各自的按鈕拿掉，避免兩顆。`styles.css` 加 h2 flex 與 `.tfold`；`index.html` 載 `teacher-fold.mjs?v=20261026-fold2`、`styles.css?v=20261026-fold2`。測試改成四區（5／4／2／1）都驗 → 18/18。

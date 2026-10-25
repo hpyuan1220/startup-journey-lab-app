@@ -493,3 +493,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .w5-rounds{margin-top:8px}.w5-round{border-left:3px solid #c9893a;padding:4px 10px;margin:6px 0;font-size:.92rem}.w5-round p{margin:2px 0}.w5-me{color:#2f5d50}.w5-sum{font-size:.92rem;background:#fbf8f1;padding:6px 10px;border-radius:8px}
 .w5-para{margin:10px 0}.w5-para b{display:block;margin-bottom:4px}.w5-para textarea{width:100%}
 @media (max-width:480px){.w5-cell{grid-template-columns:26px auto;grid-template-rows:auto auto}.w5-cell input{grid-column:1 / -1}}
+
+/* 教師洞察：每週區塊標題旁的收合／展開 */
+#teacher-dashboard > section > h2{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#teacher-dashboard .tfold{font-size:.85rem;font-weight:600;padding:4px 12px}

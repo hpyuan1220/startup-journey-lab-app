@@ -12,14 +12,11 @@ el('h2','Week 5 三個機會比一比：出席、計分、選擇、反方、一�
 el('p','出席規則同 Week 4：課堂兩題在上課日 13:30–18:00 內存檔＝出席。老師看的是證據不是分數：「估計」欄是學生自己標估計或沒寫證據的格數；選了非最高分的人，列上會標「非最高分」，點開看理由。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 5',root,'quiet');reloadBtn.type='button';
-const foldBtn=el('button','收合 Week 5',root,'quiet');foldBtn.type='button';foldBtn.hidden=true;foldBtn.setAttribute('aria-expanded','true');
 const body=el('div','',root);
-function fold(on){body.hidden=on;foldBtn.textContent=on?'展開 Week 5':'收合 Week 5';foldBtn.setAttribute('aria-expanded',String(!on));if(on)root.scrollIntoView({block:'start'});}
-foldBtn.addEventListener('click',()=>fold(!body.hidden));
 let data=null,open=new Set(),week=5;
 listenRemarks(()=>data,()=>load());
 async function call(b,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(b,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
-async function load(){status.textContent='正在載入 Week 5…';try{data=await call({action:'teacher_load'});render();foldBtn.hidden=false;fold(false);}catch(e){status.textContent=e.message;}}
+async function load(){status.textContent='正在載入 Week 5…';try{data=await call({action:'teacher_load'});render();}catch(e){status.textContent=e.message;}}
 reloadBtn.addEventListener('click',load);
 const fmt=iso=>{if(!iso)return '';const d=new Date(iso);const p=n=>String(n).padStart(2,'0');return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;};
 function stampCell(td,iso){if(!iso){td.textContent='—';td.className='';return;}const l=stampLabel(iso);const s=document.createElement('span');s.className=l?.kind==='in'?'tw4-in':'tw4-out';s.textContent=fmt(iso)+(l?.kind==='in'?' 課中':' 課後');td.replaceChildren(s);}
