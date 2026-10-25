@@ -145,9 +145,14 @@ const foot=el('div','',page,'w4-foot');
 const saveBtn=el('button','存',foot,'primary w4-save');saveBtn.type='button';
 el('p','離開會自動存草稿。三張卡都有貼回，下週就能比。講義與課前影片在「學習藍圖與教材」。',foot,'w4-hint');
 const prog=el('p','',foot,'w4-prog');
+// 完成狀態＋下一步：三張卡都貼回＝本週研究頁完成；還沒完成就列出缺哪些。研究筆記範本直接在這裡給連結。
+const done=el('div','',foot,'w4-done');done.hidden=true;
+const doneTitle=el('p','',done,'w4-done-title');const doneBody=el('p','',done);
+const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載研究筆記 v1 範本（Word）',doneRow,'primary-link');tplLink.href='materials/Week4_研究筆記範本.docx?v=20261018';tplLink.setAttribute('download','');
+const guideLink=el('a','看講義第 5 頁：五段怎麼寫',doneRow,'button-link');guideLink.href='materials/Week4_講義.pdf?v=20261018';guideLink.target='_blank';guideLink.rel='noreferrer';
 
 function snapshot(){data.pain=painInput.value;data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data.q1_ai=qBlocks.q1.ai.value;data.q2_ai=qBlocks.q2.ai.value;for(const k of ['card1','card2','card3'])data[k].text=cBlocks[k].ta.value;if(data.industry.card==='custom')data.industry.custom=customInput.value.trim();return normalizeWeek4(data);}
-function touch(){dirty=true;saveBtn.textContent='存';clearTimeout(timer);timer=setTimeout(()=>save(true),1800);}
+function touch(){dirty=true;saveBtn.textContent='存';clearTimeout(timer);timer=setTimeout(()=>save(true),1800);renderProgress();}
 [painInput,qBlocks.q1.ta,qBlocks.q2.ta,qBlocks.q1.ai,qBlocks.q2.ai].forEach(x=>x.addEventListener('input',touch));
 saveBtn.addEventListener('click',()=>save(false));
 async function save(auto){
@@ -175,7 +180,11 @@ function renderStamps(){
  for(const k of ['q1','q2'])qBlocks[k].stamp.textContent=st[k]?'已存 '+fmt(st[k]):'未存';
  for(const k of ['card1','card2','card3'])cBlocks[k].stamp.textContent=st[k]?'已存 '+fmt(st[k]):'未存';
 }
-function renderProgress(){const p=week4Progress(data);prog.textContent=`兩題 ${[p.q1,p.q2].filter(Boolean).length}/2 · 產業 ${p.industry?'已選':'未選'} · 三張卡 ${p.cards}/3`;}
+function renderProgress(){const p=week4Progress(data);prog.textContent=`兩題 ${[p.q1,p.q2].filter(Boolean).length}/2 · 產業 ${p.industry?'已選':'未選'} · 三張卡 ${p.cards}/3`;
+ const missing=[!p.industry&&'選產業線',!p.card1&&'卡 1',!p.card2&&'卡 2',!p.card3&&'卡 3'].filter(Boolean);
+ done.hidden=false;
+ if(!missing.length){done.dataset.state='done';doneTitle.textContent=dirty?'✅ 三張卡都貼回了，正在存…':'✅ Week 4 研究頁完成，已存雲端。';doneBody.textContent=(p.q1&&p.q2?'':'課堂兩題還沒答（不影響完成，但上課時段內答完才算出席）。')+'下一步：把三張卡貼回的內容整理成「研究筆記 v1」五段（產業一句話／錢流／三個挑戰附來源／三個機會與第一個付錢的人／我還不確定的事），Week 5 上課帶來比三個機會。';}
+ else{done.dataset.state='todo';doneTitle.textContent=`還沒完成：差 ${missing.join('、')}。`;doneBody.textContent='三張卡都貼回才算完成；每一格存了就在（離開會自動存草稿）。做完這裡會變成綠色。';}}
 function renderQuestions(){qBlocks.q1.title.textContent='Q1 '+(questions?.q1||'');qBlocks.q2.title.textContent='Q2 '+(questions?.q2||'');}
 
 async function load(){
