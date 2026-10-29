@@ -207,7 +207,7 @@ async function load(){
   renderQuestions();fill();
   if(!data.opps.some(Boolean))oppHint.textContent='Week 4 卡 3 還沒有三個機會：先回 Week 4 把卡 3 做完（卡 2 有證據，卡 3 才會打開），這一頁才有東西可以比。';
   else if(!hasCards)oppHint.textContent='Week 4 卡 1／卡 2 還沒貼回：計分表的證據會找不到東西填。建議先回 Week 4 補，再回來打分。';
-  msg.textContent=row?'':'這一頁已帶出你的三個機會。從計分表開始，每格打分＋一句證據。';
+  msg.textContent=row?'':(data.opps.some(Boolean)?'這一頁已帶出你的三個機會。從計分表開始，每格打分＋一句證據。':'你的 Week 4 卡 3 還沒有三個機會，這一頁先是空的。先回 Week 4 做完三張卡，再回來打分。');
  }catch(e){if(e.status!==401)msg.textContent=e.message;}
 }
 window.addEventListener('beforeunload',()=>{if(dirty&&!saving)save(true);});
