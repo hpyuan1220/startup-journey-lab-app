@@ -1861,3 +1861,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 10/30 Week 4 發一頁「痛對不上產業線怎麼辦」（116/Week4），文字與 app 的 PATTERN_HINTS 一致。
 - 待做：10/30 後依學生實際產業線調島 6、做產業地圖文件（含 9 產業線 × 3 方向）、Week 8 建組、Week 9／10 遊戲頁進 app。
 - 2026-10-29 21:40 Week 6 頁接上簡報：`week.html` Week 5 教材區多兩顆「11/6 後半場：AI 新創地圖簡報 PDF／PPT」；新增 `#week-six-materials`（簡報＋「11/6 的課堂兩題在 Week 5 頁作答」＋連到 Week 5）；`week.js` Week 6 列改「教材已提供」、步驟第一行改成到 Week 5 答兩題；`week.js?v=20261029-w6`。純前端、不用部署 Edge。單元 196/196、week5-student 18/18、progress-student 6/6。
+
+## 2026-10-29 Week 6 課前影片上線（9:36，YouTube 不公開 ZGPb1bSGqUE）
+- 來源：本機 `116/Week6/Week6_課前影片_本週摘要_來源.md`（照 Week 5 的學長口吻與格式：開場＋六段＋收尾；六段＝AI 拿走多少錢、錢先流到底層、發電廠／引擎／零件／汽車、4 大區 10 座島、世界模型、島 6 對照組與台灣在哪一層）。刻意只講公司「做什麼」，不講收費、客戶、估值，避免洩漏 11/27 群島遊戲答案。
+- NotebookLM 筆記本「AI 新創地圖」，貼上文字為唯一來源；影片摘要「說明影片」、中文（繁體）、自訂主題（8–10 分鐘、學長口吻、不講收費估值、不出題）。產出標題「AI 新創地圖：全球視角與你的產業」，9:36。老師下載、上 YouTube 不公開：`https://youtu.be/ZGPb1bSGqUE`。
+- `week.html` Week 6 區加 `.preclass`（iframe 用 data-src，搬好才載入）＋手機連結；不加影片三題、不加課堂兩題（老師決定：11/6 兩題在 Week 5 頁）。`week.js`：n===6 時把 .preclass 搬到標題下、藏「本週影片重點」；Week 6 highlight 換成影片標題＋六段；status 加「課前影片」；`week.js?v=20261029-w6video`。
+- 測試：單元 196/196；容器 Playwright 手機寬度 Week 6／Week 5 頁影片皆在標題下、iframe 有載入、無頁面錯誤。
