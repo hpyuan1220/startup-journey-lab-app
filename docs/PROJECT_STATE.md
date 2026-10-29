@@ -1797,10 +1797,15 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 ## 2026-10-26 教師端 Week 4／Week 5 區加「收合／展開」
 - 問題（老師 10/26）：按「載入 Week 5」後 47 列全展開（約 4,400px），沒有辦法收回去；Week 4 區同樣。教師洞察也沒有 Week 3 區（Week 3 訪談資料在 `teacher_load.week3`，頁面沒做）——Week 3 區待做，排在 Week 5 影片之後、Week 6 頁之前。
 - 改法：`teacher-week4.js`／`teacher-week5.js` 在「重新載入」旁加 `收合 Week N`／`展開 Week N` 按鈕（載入成功後才出現；收合＝`body.hidden`，並捲到該區頂端；`aria-expanded`）。只動前端，不動 Edge。`index.html` 版號 `?v=20261026-fold`。
-- 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 18/18；單元 190/190。
+- 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 全過（這支共 17 條；先前筆記寫 18 是數錯）；單元 190/190。
 - Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270032 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
 - 10/26 追加（老師：「Week 1 也可以收小？」）：改成通用版 `teacher-fold.mjs`——教師洞察每個 `section[id^=teacher-week]` 的 h2 右邊一顆「收合／展開」，收合＝標題以下全藏（含按鈕與說明），狀態記 sessionStorage；MutationObserver 接住後插入的區塊。Week 4／5 原本各自的按鈕拿掉，避免兩顆。`styles.css` 加 h2 flex 與 `.tfold`；`index.html` 載 `teacher-fold.mjs?v=20261026-fold2`、`styles.css?v=20261026-fold2`。測試改成四區（5／4／2／1）都驗 → 18/18。
 
 ## 2026-10-26 Week 4 課前影片加「只看這四段」
 - 老師：18 分半太長；決定不重做，影片下面標時間點。用 ffmpeg 從 `116/Week4/Week_4_課前預習影片.mp4` 抽幀（每 20 秒＋段落邊界每 2 秒）對出來：9:16 第 3 段鎖定付費產業線、11:14 第 4 段工具查證（兩個來源）、13:36 燈泡 vs 放大鏡（Gemini／NotebookLM）、15:30 第 5 段課堂任務與總結。影片本身是理論導向，沒有逐卡操作畫面，所以四段對到「選產業／卡 2 為什麼查證／卡 1 卡 2 用什麼／卡 3 與課後」。
 - `week.html` Week 4 preclass 多一段 `.preclass-jump`，連到 `youtu.be/efvKoNkXs0E?t=秒`（新分頁）；`styles.css` 版號 `20261026-fold2`。抽幀的對照圖留在 `116/Week4/_影片檢查/sheets/`（本機，不進 repo）。
+
+## 2026-10-29 Week 5 課前影片上線
+- NotebookLM 筆記本「AI 創業課第五」，來源＝`Week5_課前影片_本週摘要_來源.md`（複製的文字），格式「說明影片」，13:32。老師自己聽過、下載、上 YouTube 不公開：`https://youtu.be/HApPzgSvv9E`（標題「Week 5 課前預習：這週要做什麼」）。
+- `week.html` Week 5 preclass 改成嵌入 `youtube-nocookie.com/embed/HApPzgSvv9E`＋youtu.be 連結，說明改成六段摘要；`week.js` Week 5 highlight 從「準備中」換成影片標題＋六段一句，status 加「課前影片」；`week.js?v=20261029-w5video`。課前三題 `PRECLASS_QUIZ[5]` 不變。
+- 測試：單元 190/190；`tests/week5-student.mjs` 17/17。Week 5 至此全部就緒（app、Edge、教材、影片、三題）。
