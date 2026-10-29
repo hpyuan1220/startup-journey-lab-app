@@ -1860,3 +1860,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 研究：美國／歐洲 13 大類與世界模型原稿、15 家審核表都在 116/1106_AI新創群島（本機）。
 - 10/30 Week 4 發一頁「痛對不上產業線怎麼辦」（116/Week4），文字與 app 的 PATTERN_HINTS 一致。
 - 待做：10/30 後依學生實際產業線調島 6、做產業地圖文件（含 9 產業線 × 3 方向）、Week 8 建組、Week 9／10 遊戲頁進 app。
+- 2026-10-29 21:40 Week 6 頁接上簡報：`week.html` Week 5 教材區多兩顆「11/6 後半場：AI 新創地圖簡報 PDF／PPT」；新增 `#week-six-materials`（簡報＋「11/6 的課堂兩題在 Week 5 頁作答」＋連到 Week 5）；`week.js` Week 6 列改「教材已提供」、步驟第一行改成到 Week 5 答兩題；`week.js?v=20261029-w6`。純前端、不用部署 Edge。單元 196/196、week5-student 18/18、progress-student 6/6。
