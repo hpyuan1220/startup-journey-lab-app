@@ -1,4 +1,4 @@
-import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261029-1700';
+import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261029-typhoon';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
 // 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。

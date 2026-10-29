@@ -66,7 +66,7 @@ export function rankCards(painText,surveyRecommended){
 // 上課日 13:00–17:00（台北，UTC+8；老師 10/29 從 13:30–18:00 改）。存檔時間落在任何一個上課日的時段內＝課中。
 export const CLASS_SCHEDULE={
  tz:'+08:00',start:'13:00',end:'17:00',
- days:[[4,'2026-10-23'],[5,'2026-10-30'],[6,'2026-11-06'],[7,'2026-11-13'],[8,'2026-11-20'],[9,'2026-11-27'],[10,'2026-12-04'],[11,'2026-12-11'],[12,'2026-12-18']],
+ days:[[4,'2026-10-30'],[5,'2026-11-06'],[7,'2026-11-13'],[8,'2026-11-20'],[9,'2026-11-27'],[10,'2026-12-04'],[11,'2026-12-11'],[12,'2026-12-18']],
 };
 export const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||null;
 export function classWindow(date){const s=CLASS_SCHEDULE;return [Date.parse(`${date}T${s.start}:00${s.tz}`),Date.parse(`${date}T${s.end}:00${s.tz}`)];}

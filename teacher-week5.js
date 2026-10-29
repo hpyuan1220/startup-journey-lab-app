@@ -1,4 +1,4 @@
-import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-1700';
+import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-typhoon';
 import {normalizeWeek5,totals,topChoice,choiceNeedsReason,parseRebuttal,week5Progress,OPP_KEYS,FIVE_QUESTIONS,MAX_SCORE} from './week5-core.mjs?v=20261025-w5';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTagResearch,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · Week 5 三個機會比一比

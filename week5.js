@@ -1,5 +1,5 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5} from './week5-core.mjs?v=20261025-w5';
-import {labelText,classDate,CLASS_SCHEDULE} from './week4-core.mjs?v=20261029-1700';
+import {labelText,classDate,CLASS_SCHEDULE} from './week4-core.mjs?v=20261029-typhoon';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。

@@ -1833,3 +1833,23 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：`tests/progress.test.mjs` 6 條（單元 196/196）；`tests/progress-student.mjs` 5 條（API、登入有條、本週自動算、沒登入沒條、無 JS 錯）。
 - 上線要兩步：push → Edge 重新部署（新 action 在 bundle 裡）。
 - 10/29 追加：「我的進度」也放到每週頁面（`week.html`）最上面那組「上一週／下一週」下面，卡片頁、藍圖頁都看得到；現在這頁那一格加框（`.mp-here`）。只動前端：`progress.js?v=20261029-mp2`、`styles.css?v=20261029-mp2`、week.html 多載一支 module。`tests/progress-student.mjs` 加 1 條 → 6/6。不用重新部署 Edge。
+
+## 2026-10-29 AI 新創群島定案：Week 9 猜、Week 10 揭曉（只改文件）
+- 老師決定：群島不是期中用，也不在 11/6 玩；11/6 只講地圖。玩法改成「猜生意＋估值加分題」：11 家公司各猜誰付錢／怎麼收費／取代誰（各 1 分）＋估值區間（1 分），個人計分、不計成績。國防（Anduril）、科學（CuspAI）不出題，換成 Perplexity、ElevenLabs；再加 Skild AI 第 11 題（② 新增選項「授權」）。
+- 新文件 `docs/GAME_AI_ISLANDS.md`（題目、答案、出處、計分、兩週流程、待決定）；`COURSE_V3_12WEEKS.md` 第 6／9／10 週列與第二輪段落更新。
+- 查證：Sierra 按成果收費＝官方部落格 2024-12-10；Figure 每月約 1,000 美元＝Sacra（據報）；ElevenLabs 自助／企業約各半＝Sacra。
+- 待做：12/1 前重查估值；Week 9 頁（作答＋鎖住）、Week 10 揭曉、方向卡兩格；老師待決定 12/4 時間分配。10/25 的《Week6_1106_課堂一頁》已過時。
+
+## 2026-10-29 颱風停課：上課日整個往後移（Week 4＝10/30、Week 5＝11/6）
+- 老師：10/23 颱風停課，Week 4 還沒上。新排程：10/30 Week 4；11/6 Week 5＋AI agent 新創介紹（原 Week 6 併進來）；11/13 期中；11/20 AI agent 工具＋建組（只有課堂兩題）；11/27 介紹 11 家＋群島作答鎖住＋方向卡 v1；12/4 揭曉＋NotebookLM＋方向卡 v2；12/11 三題比較；12/18 期末。
+- `week4-core.mjs` `CLASS_SCHEDULE.days`：[4,10-30]、[5,11-06]、[7,11-13]…；Week 6 沒有自己的上課日（拿掉）。課中戳記、出席、「本週」都吃這張表。10/23 存的課堂兩題現在算「課後」（那天停課）。
+- 版號：五支 import 改 `week4-core.mjs?v=20261029-typhoon`；`index.html` 靜態「本週 Week 4（10/23）」→（10/30）；progress.js 註解。
+- `tests/week4.test.mjs` 日期改 10/30、11/06，加一條「10/23 不是上課日」。
+- 測試：單元 196/196；bundled week2-api 36/36；瀏覽器 week4-student 18、week5-student 18、progress-student 6、teacher-remarks 17、preclass 18、prior-relogin 24，全過（在雲端工作區跑；preclass／prior-relogin 的 executablePath 只在測試副本裡改成預設，repo 不動）。
+- `week2-api` bundle 重建：SHA 6c386a44971dbd4b（82674 B）。**要部署**：push → 三方雜湊 → Dashboard 貼 index.bundled.ts → Deploy。
+- 待做：week.js 的 Week 6／9／10 藍圖文字還是舊版（群島與日期），排在 Week 9 頁那批改。
+
+## 2026-10-29 Week 6 簡報（11/6 後半場 60 分鐘：AI 新創地圖）
+- 新 `docs/WEEK6_SLIDES_SOURCE.json` → `materials/Week6_教學簡報.pptx／.pdf`（13 頁）：流程、三個數字（Crunchbase Q1／Q3）、錢先流到底層、發電廠／引擎／零件／汽車、4 大區 10 座島、島 1、三個方向各一頁（只講「做什麼」，不洩漏 11/27 要猜的誰付錢／收費／取代誰）、台灣在哪一層（右欄標推論）、接下來四週、一句話收尾。複製到 116/Week6。
+- Week 5 簡報最後一頁「Week 6（11/6）」改成「今天後半場（約 60 分鐘）AI 新創地圖」；PPTX／PDF 重建，複製到 116/Week5。
+- 簡報在雲端工作區建（python-pptx＋LibreOffice），字型渲染可能和本機版略有不同。

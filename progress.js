@@ -1,12 +1,12 @@
 // 課程地圖：「本週」自動算（照 CLASS_SCHEDULE），登入的學生多一條「我的進度」（Week 1–5 一格一個狀態，點了跳那一週）。
-import {CLASS_SCHEDULE} from './week4-core.mjs?v=20261029-1700';
+import {CLASS_SCHEDULE} from './week4-core.mjs?v=20261029-typhoon';
 const WEEK_NAMES={1:'課程說明與創業起點',2:'問題探索與選題',3:'使用者訪談',4:'從我的痛看產業',5:'三個機會比一比',6:'AI 新創現況',7:'期中：個人報告',8:'AI agent 工具更新＋建組',9:'第二輪研究：三個方向',10:'第二輪研究工作坊',11:'三題比較與預演',12:'期末：小組報告'};
 const CARD_LINK={1:'index.html#student',2:'week.html?week=2#card',3:'week.html?week=3#card',4:'week.html?week=4#card',5:'week.html?week=5#card'};
-// 本週＝最近一個「上課日 ≤ 今天（台北）」的週；開學前是 Week 1。Week 1–3 的日期表裡沒有，所以 10/23 之前都算 Week 3 以前＝不改。
+// 本週＝最近一個「上課日 ≤ 今天（台北）」的週；開學前是 Week 1。Week 1–3 的日期表裡沒有，所以 10/30 之前都算 Week 3 以前＝不改。
 export function currentWeek(now=new Date()){
  const taipei=new Date(now.getTime()+8*3600e3).toISOString().slice(0,10);
  let cur=null;for(const [w,d] of CLASS_SCHEDULE.days){if(d<=taipei)cur=[w,d];}
- return cur;// null＝還沒到 10/23
+ return cur;// null＝還沒到 10/30
 }
 function renderThisWeek(){
  const cur=currentWeek();if(!cur)return;const [w,d]=cur;
