@@ -1,4 +1,4 @@
-import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-typhoon';
+import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-open';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
 import {normalizeWeek5,totals as totals5,topChoice,week5Progress,OPP_KEYS} from './week5-core.mjs?v=20261025-w5';

@@ -68,6 +68,15 @@ export const CLASS_SCHEDULE={
  tz:'+08:00',start:'13:00',end:'17:00',
  days:[[4,'2026-10-30'],[5,'2026-11-06'],[7,'2026-11-13'],[8,'2026-11-20'],[9,'2026-11-27'],[10,'2026-12-04'],[11,'2026-12-11'],[12,'2026-12-18']],
 };
+// ---- 開放作答時間（老師 10/29 定）：Week 4、Week 5 都從 10/30 13:00（台北）起才能存；之前看得到題目、不能存。
+// 課前影片、簡報、講義不受影響。測試帳號不鎖。伺服器判斷、回 write_open 給前端；可用環境變數 SJL_WRITE_OPEN_AT 覆寫（驗收測試用）。
+export const WRITE_OPEN_AT='2026-10-30T13:00:00+08:00';
+export const WRITE_OPEN_LABEL='10/30（五）13:00';
+export const TEST_STUDENT_IDS=['A1130309125'];
+export function writeOpen(studentId,now=Date.now(),openAt=WRITE_OPEN_AT){
+ if(TEST_STUDENT_IDS.includes(String(studentId||'').trim().toUpperCase()))return true;
+ const t=Date.parse(openAt);return !Number.isFinite(t)||now>=t;
+}
 export const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||null;
 export function classWindow(date){const s=CLASS_SCHEDULE;return [Date.parse(`${date}T${s.start}:00${s.tz}`),Date.parse(`${date}T${s.end}:00${s.tz}`)];}
 /** 回 {kind:'in',week} 或 {kind:'after'}；無效時間回 null */

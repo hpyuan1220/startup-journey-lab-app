@@ -20,7 +20,7 @@ export async function harness({modelFails=false,directions=[],reserveNull=false}
  const file=bundled?'../../supabase/functions/week2-api/index.bundled.ts':'../../supabase/functions/week2-api/index.ts';
  let source=fs.readFileSync(new URL(file,import.meta.url),'utf8').replace(/^import .*;\n/gm,'');source=stripTypeScriptTypes(source).replace('Deno.serve(','return (');
  // bundle 自己宣告了 week2-core 那些名字，不能再當參數傳進去（會重複宣告）。
- const all={...core,...core3,...core4,...core5,...coreP};const names=bundled?[]:Object.keys(all),handler=new Function('createClient','Deno','fetch',...names,source)(()=>db,{env:{get:k=>k==='OPENAI_API_KEY'?'test-only-secret':'test'}},modelFetch,...names.map(n=>all[n]));
+ const all={...core,...core3,...core4,...core5,...coreP};const names=bundled?[]:Object.keys(all),handler=new Function('createClient','Deno','fetch',...names,source)(()=>db,{env:{get:k=>k==='SJL_WRITE_OPEN_AT'?(globalThis.SJL_WRITE_OPEN_AT??'2000-01-01T00:00:00Z'):(k==='OPENAI_API_KEY'?'test-only-secret':'test')}},modelFetch,...names.map(n=>all[n]));
  async function call(body,jwt){const r=await handler(new Request('http://localhost/functions/v1/week2-api',{method:'POST',headers:{'Content-Type':'application/json',...(jwt?{Authorization:'Bearer '+jwt}:{})},body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};}
  return {tables,student,handler,call,get modelCalls(){return calls},inputs};
 }

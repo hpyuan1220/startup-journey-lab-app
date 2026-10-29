@@ -1,4 +1,4 @@
-import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS} from './week4-core.mjs?v=20261029-typhoon';
+import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261029-open';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
 // 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。
@@ -155,8 +155,15 @@ function snapshot(){data.pain=painInput.value;data.q1=qBlocks.q1.ta.value;data.q
 function touch(){dirty=true;saveBtn.textContent='存';clearTimeout(timer);timer=setTimeout(()=>save(true),1800);renderProgress();}
 [painInput,qBlocks.q1.ta,qBlocks.q2.ta,qBlocks.q1.ai,qBlocks.q2.ai].forEach(x=>x.addEventListener('input',touch));
 saveBtn.addEventListener('click',()=>save(false));
+
+// 開放作答前：看得到題目、不能存。全部表單元件反灰、上面一行說明；時間到自動重新載入。
+let locked=false;
+function applyLock(r){locked=r.write_open===false;if(!locked)return;
+ const note=document.createElement('p');note.className='w4-msg w4-lock';note.setAttribute('role','status');note.textContent=`${WRITE_OPEN_LABEL} 開放作答：現在可以先看題目和要做什麼，還不能填、不能存。課前影片和簡報可以先看。`;page.before(note);
+ page.querySelectorAll('input,textarea,select,button').forEach(x=>{x.disabled=true;});queueMicrotask(()=>{msg.textContent='';});
+ const ms=Date.parse(r.write_open_at||'')-Date.now();if(ms>0&&ms<864e5)setTimeout(()=>location.reload(),ms+1500);}
 async function save(auto){
- if(saving||expired||!session?.token)return;
+ if(saving||expired||locked||!session?.token)return;
  const snap=snapshot();saving=true;if(!auto)saveBtn.textContent='存檔中…';
  try{
   const r=await api({action:'week4_save',version:row?.version??null,data:snap});
@@ -196,7 +203,7 @@ async function load(){
   row=r.row;questions=r.questions;recommended=r.recommended||[];week3Statement=r.pain_seed||r.week3_statement||'';
   data=normalizeWeek4(row?.data||emptyWeek4());
   if(!row&&!data.pain&&week3Statement)data.pain=week3Statement;
-  renderQuestions();fill();
+  renderQuestions();fill();applyLock(r);
   // 種子來源：Week 3 最好；沒做訪談的人用 Week 2／Week 1 的句子先開始，之後再改成訪談後的版本。
   const seedMsg={week3:'已從 Week 3 帶出你的痛點一句話，可以直接用。',week2:'你還沒有 Week 3 的訪談，先用 Week 2 的痛點陳述開始；之後問到真人再回來改。',week1:'你還沒有 Week 2、3，先用 Week 1 的觀察開始；請把它改成「〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕」。'}[r.pain_source]||'';
   msg.textContent=row?`已載入（版本 ${row.version}）。`:(seedMsg||'系統找不到你前幾週的句子，先在上面寫一句「〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕」。');

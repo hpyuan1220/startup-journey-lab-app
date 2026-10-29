@@ -1,5 +1,5 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5} from './week5-core.mjs?v=20261025-w5';
-import {labelText,classDate,CLASS_SCHEDULE} from './week4-core.mjs?v=20261029-typhoon';
+import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261029-open';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
@@ -138,8 +138,15 @@ function snapshot(){data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data
 function touch(){dirty=true;saveBtn.textContent='存';clearTimeout(timer);timer=setTimeout(()=>save(true),1800);renderProgress();}
 [qBlocks.q1.ta,qBlocks.q2.ta,qBlocks.q1.ai,qBlocks.q2.ai].forEach(x=>x.addEventListener('input',touch));
 saveBtn.addEventListener('click',()=>save(false));
+
+// 開放作答前：看得到題目、不能存。全部表單元件反灰、上面一行說明；時間到自動重新載入。
+let locked=false;
+function applyLock(r){locked=r.write_open===false;if(!locked)return;
+ const note=document.createElement('p');note.className='w4-msg w4-lock';note.setAttribute('role','status');note.textContent=`${WRITE_OPEN_LABEL} 開放作答：現在可以先看題目和要做什麼，還不能填、不能存。課前影片和簡報可以先看。`;page.before(note);
+ page.querySelectorAll('input,textarea,select,button').forEach(x=>{x.disabled=true;});queueMicrotask(()=>{msg.textContent='';});
+ const ms=Date.parse(r.write_open_at||'')-Date.now();if(ms>0&&ms<864e5)setTimeout(()=>location.reload(),ms+1500);}
 async function save(auto){
- if(saving||expired||!session?.token)return;
+ if(saving||expired||locked||!session?.token)return;
  const snap=snapshot();saving=true;if(!auto)saveBtn.textContent='存檔中…';
  try{
   const r=await api({action:'week5_save',version:row?.version??null,data:snap});
@@ -204,7 +211,7 @@ async function load(){
   data=normalizeWeek5(row?.data||emptyWeek5());
   // 三個機會：本週沒存過就用 Week 4 卡 3 的；存過但某一格空、Week 4 有＝也帶（學生可能在 Week 4 補填）。
   data.opps=data.opps.map((o,n)=>o||seedOpps[n]||'');
-  renderQuestions();fill();
+  renderQuestions();fill();applyLock(r);
   if(!data.opps.some(Boolean))oppHint.textContent='Week 4 卡 3 還沒有三個機會：先回 Week 4 把卡 3 做完（卡 2 有證據，卡 3 才會打開），這一頁才有東西可以比。';
   else if(!hasCards)oppHint.textContent='Week 4 卡 1／卡 2 還沒貼回：計分表的證據會找不到東西填。建議先回 Week 4 補，再回來打分。';
   msg.textContent=row?'':(data.opps.some(Boolean)?'這一頁已帶出你的三個機會。從計分表開始，每格打分＋一句證據。':'你的 Week 4 卡 3 還沒有三個機會，這一頁先是空的。先回 Week 4 做完三張卡，再回來打分。');

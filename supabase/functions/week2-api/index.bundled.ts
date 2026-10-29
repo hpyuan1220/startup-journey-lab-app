@@ -300,6 +300,15 @@ const CLASS_SCHEDULE={
  tz:'+08:00',start:'13:00',end:'17:00',
  days:[[4,'2026-10-30'],[5,'2026-11-06'],[7,'2026-11-13'],[8,'2026-11-20'],[9,'2026-11-27'],[10,'2026-12-04'],[11,'2026-12-11'],[12,'2026-12-18']],
 };
+// ---- 開放作答時間（老師 10/29 定）：Week 4、Week 5 都從 10/30 13:00（台北）起才能存；之前看得到題目、不能存。
+// 課前影片、簡報、講義不受影響。測試帳號不鎖。伺服器判斷、回 write_open 給前端；可用環境變數 SJL_WRITE_OPEN_AT 覆寫（驗收測試用）。
+const WRITE_OPEN_AT='2026-10-30T13:00:00+08:00';
+const WRITE_OPEN_LABEL='10/30（五）13:00';
+const TEST_STUDENT_IDS=['A1130309125'];
+function writeOpen(studentId,now=Date.now(),openAt=WRITE_OPEN_AT){
+ if(TEST_STUDENT_IDS.includes(String(studentId||'').trim().toUpperCase()))return true;
+ const t=Date.parse(openAt);return !Number.isFinite(t)||now>=t;
+}
 const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||null;
 function classWindow(date){const s=CLASS_SCHEDULE;return [Date.parse(`${date}T${s.start}:00${s.tz}`),Date.parse(`${date}T${s.end}:00${s.tz}`)];}
 /** 回 {kind:'in',week} 或 {kind:'after'}；無效時間回 null */
@@ -711,13 +720,15 @@ Deno.serve(async req=>{
   const seedOpps=w4.card3.opps.map((o:string)=>o.slice(0,200));
   const qrow=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week:5}).maybeSingle());
   let r5=must(await db.from('week5_compare').select('*').match(scope).maybeSingle());
+  const envOpen=Deno.env.get('SJL_WRITE_OPEN_AT'),openAt=envOpen&&Number.isFinite(Date.parse(envOpen))?envOpen:WRITE_OPEN_AT,canWrite=writeOpen(s.student_id,Date.now(),openAt);
   if(b.action==='week5_save'){
+   if(!canWrite)return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再存。`,write_open:false,write_open_at:openAt},423);
    const prev=r5?normalizeWeek5(r5.data):null,next=normalizeWeek5(b.data);
    const stamps=applyStamps5(prev,next,r5?.stamps,new Date().toISOString());
    if(r5){if(r5.version!==b.version)return reply({error:'另一個視窗已更新這一頁，請重新載入。'},409);r5=must(await db.from('week5_compare').update({data:next,stamps}).match({...scope,version:b.version}).select().maybeSingle());if(!r5)return reply({error:'內容已更新，請重新載入。'},409);}
    else r5=must(await db.from('week5_compare').insert({...scope,data:next,stamps}).select().single());
   }
-  return reply({row:r5,questions:resolveQuestions(5,qrow),seed_opps:seedOpps,week4_industry:w4.industry,week4_pain:w4.pain.slice(0,300),week4_has_cards:!!(w4.card1.text&&w4.card2.text)});
+  return reply({row:r5,write_open:canWrite,write_open_at:openAt,questions:resolveQuestions(5,qrow),seed_opps:seedOpps,week4_industry:w4.industry,week4_pain:w4.pain.slice(0,300),week4_has_cards:!!(w4.card1.text&&w4.card2.text)});
  }
  if(b.action==='week4_load'||b.action==='week4_save'){
   const w3=must(await db.from('week3_submissions').select('record,status').match(scope).maybeSingle());
@@ -729,13 +740,15 @@ Deno.serve(async req=>{
   const survey=must(await db.from('week3_survey_responses').select('topic_id,experienced').match(scope));
   const experienced=(survey||[]).filter((r:any)=>r.experienced).map((r:any)=>Number(r.topic_id));
   let r4=must(await db.from('week4_research').select('*').match(scope).maybeSingle());
+  const envOpen=Deno.env.get('SJL_WRITE_OPEN_AT'),openAt=envOpen&&Number.isFinite(Date.parse(envOpen))?envOpen:WRITE_OPEN_AT,canWrite=writeOpen(s.student_id,Date.now(),openAt);
   if(b.action==='week4_save'){
+   if(!canWrite)return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再存。`,write_open:false,write_open_at:openAt},423);
    const prev=r4?normalizeWeek4(r4.data):null,next=normalizeWeek4(b.data);
    const stamps=applyStamps(prev,next,r4?.stamps,new Date().toISOString());
    if(r4){if(r4.version!==b.version)return reply({error:'另一個視窗已更新這一頁，請重新載入。'},409);r4=must(await db.from('week4_research').update({data:next,stamps}).match({...scope,version:b.version}).select().maybeSingle());if(!r4)return reply({error:'內容已更新，請重新載入。'},409);}
    else r4=must(await db.from('week4_research').insert({...scope,data:next,stamps}).select().single());
   }
-  return reply({row:r4,questions:resolveQuestions(4,qrow),week3_statement:w3?.record?.statement||'',week3_status:w3?.status||null,pain_seed:painSeed.slice(0,300),pain_source:painSource,recommended:recommendCards(experienced).map(x=>({id:x.card.id,hits:x.hits}))});
+  return reply({row:r4,write_open:canWrite,write_open_at:openAt,questions:resolveQuestions(4,qrow),week3_statement:w3?.record?.statement||'',week3_status:w3?.status||null,pain_seed:painSeed.slice(0,300),pain_source:painSource,recommended:recommendCards(experienced).map(x=>({id:x.card.id,hits:x.hits}))});
  }
  if(w1?.status!=='submitted')return reply({error:'請先完成並提交 Week 1 個人起點卡。'},409);
  if(b.action==='save'){

@@ -1867,3 +1867,12 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - NotebookLM 筆記本「AI 新創地圖」，貼上文字為唯一來源；影片摘要「說明影片」、中文（繁體）、自訂主題（8–10 分鐘、學長口吻、不講收費估值、不出題）。產出標題「AI 新創地圖：全球視角與你的產業」，9:36。老師下載、上 YouTube 不公開：`https://youtu.be/ZGPb1bSGqUE`。
 - `week.html` Week 6 區加 `.preclass`（iframe 用 data-src，搬好才載入）＋手機連結；不加影片三題、不加課堂兩題（老師決定：11/6 兩題在 Week 5 頁）。`week.js`：n===6 時把 .preclass 搬到標題下、藏「本週影片重點」；Week 6 highlight 換成影片標題＋六段；status 加「課前影片」；`week.js?v=20261029-w6video`。
 - 測試：單元 196/196；容器 Playwright 手機寬度 Week 6／Week 5 頁影片皆在標題下、iframe 有載入、無頁面錯誤。
+- 2026-10-29 22:40 老師頁改 Week 5 課堂兩題（資料庫，不是程式）：Q1 留白＝預設（earlyvangelist 五特徵寫兩個）；Q2＝「你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。」老師頁「學生目前看到」與學生 Week 5 卡片頁（測試帳號）皆已顯示新 Q2。
+
+## 2026-10-29 Week 4／5 開放作答時間：10/30 13:00（台北）起才能存
+- 老師 10/29 定：Week 4、Week 5 都從 10/30（五）13:00 開放作答（不是各自上課日）；開放前看得到題目、不能存。課前影片、簡報、講義、影片三題照舊先開放。測試帳號 A1130309125 不鎖。
+- 伺服器判斷（單一事實來源）：`week4-core.mjs` 新增 `WRITE_OPEN_AT='2026-10-30T13:00:00+08:00'`、`WRITE_OPEN_LABEL`、`TEST_STUDENT_IDS`、`writeOpen(studentId,now,openAt)`。`week2-api` 的 week4_save／week5_save 開放前回 423「10/30（五）13:00 開放作答，到時候再存。」、不寫入；week4_load／week5_load 多回 `write_open`、`write_open_at`。環境變數 `SJL_WRITE_OPEN_AT` 可覆寫（驗收用；正式不設）。
+- 前端 week4.js／week5.js：`write_open===false` 時頁面上方一行說明、研究頁／比較頁全部 input/textarea/select/button 反灰、save 直接不送；開頁時距離開放 24 小時內，時間到自動重新載入。core 版本號 `week4-core.mjs?v=20261029-open`（week4/5、teacher-week4/5、progress 同步）；week.html 的 week4.js／week5.js `?v=20261029-open`。
+- 出席規則不變（各週上課日 13:00–17:00 兩題存檔）。
+- 測試：單元 198/198（新增 writeOpen 邊界、Edge 423 不寫入＋測試帳號可存）；容器 Playwright：week4-student、week5-student 全綠（SJL_WRITE_OPEN_AT 設過去）；鎖定檢查：一般學號 Week 4（42 個元件）／Week 5（88 個）全反灰＋說明，測試帳號不鎖，無 JS 錯誤。bundle SHA256 前 16 碼 b69c7e58abb222ad。
+- 待：老師 push＋Supabase Dashboard 部署 week2-api（index.bundled.ts）。

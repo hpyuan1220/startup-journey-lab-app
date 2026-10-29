@@ -56,7 +56,7 @@ const db={
 const load=(file,extraNames=[],extraVals=[])=>{
  let src=fsSync.readFileSync(new URL(file,import.meta.url),'utf8').replace(/^import .*;\n/gm,'');
  src=stripTypeScriptTypes(src).replace('Deno.serve(','return (');
- return new Function('createClient','Deno','fetch',...extraNames,src)(()=>db,{env:{get:k=>k==='OPENAI_API_KEY'?'test':'test'}},
+ return new Function('createClient','Deno','fetch',...extraNames,src)(()=>db,{env:{get:k=>k==='SJL_WRITE_OPEN_AT'?(process.env.SJL_WRITE_OPEN_AT||''):(k==='OPENAI_API_KEY'?'test':'test')}},
    async()=>new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({status:'revise',strength:'清楚',gaps:['補一次事件'],assumptions:['頻率未驗證'],questions:['上次何時發生？','當時怎麼處理？'],next_action:'記錄一次事件',directions:[]})}}],usage:{total_tokens:10}}),{status:200}),
    ...extraVals);
 };

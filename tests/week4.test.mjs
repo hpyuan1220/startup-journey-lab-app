@@ -124,3 +124,29 @@ test('extractOpps：從卡 3 貼回的【貼回摘要】抓出機會 A／B／C �
  assert.deepEqual(extractOpps('沒有摘要的回答'),[]);
  assert.equal(extractOpps('機會 a: 第一個\n機會 B：第二個')[1],'第二個','沒有【貼回摘要】也能抓、大小寫都收');
 });
+
+import {writeOpen,WRITE_OPEN_AT,TEST_STUDENT_IDS} from '../week4-core.mjs';
+test('開放作答：10/30 13:00（台北）前不能存、之後可以；測試帳號不鎖',()=>{
+ const t=Date.parse(WRITE_OPEN_AT);
+ assert.equal(WRITE_OPEN_AT,'2026-10-30T13:00:00+08:00');
+ assert.equal(writeOpen('A113270032',t-1),false);
+ assert.equal(writeOpen('A113270032',t),true);
+ assert.equal(writeOpen('A113270032',Date.parse('2026-10-30T12:59:59+08:00')),false);
+ assert.equal(writeOpen('a1130309125',t-864e5),true);
+ assert.ok(TEST_STUDENT_IDS.includes('A1130309125'));
+ assert.equal(writeOpen('A113270032',0,'不是日期'),true);
+});
+
+test('Edge：開放前 week4_save／week5_save 回 423、不寫入；load 帶 write_open=false；測試帳號可存',async()=>{
+ globalThis.SJL_WRITE_OPEN_AT='2999-01-01T00:00:00+08:00';
+ try{
+  const h=await harness();const token=await h.student('A113270088');
+  const l=await h.call({action:'week4_load',token});assert.equal(l.status,200);assert.equal(l.body.write_open,false);assert.equal(l.body.write_open_at,'2999-01-01T00:00:00+08:00');
+  const s4=await h.call({action:'week4_save',token,version:null,data:{q1:'先答'}});assert.equal(s4.status,423);assert.match(s4.body.error,/開放作答/);
+  assert.equal(h.tables.week4_research.length,0,'沒有寫入');
+  const s5=await h.call({action:'week5_save',token,version:null,data:{}});assert.equal(s5.status,423);assert.equal(h.tables.week5_compare.length,0);
+  const l5=await h.call({action:'week5_load',token});assert.equal(l5.body.write_open,false);
+  const tt=await h.student('A1130309125');
+  const ok=await h.call({action:'week4_save',token:tt,version:null,data:{q1:'測試'}});assert.equal(ok.status,200);
+ }finally{delete globalThis.SJL_WRITE_OPEN_AT;}
+});
