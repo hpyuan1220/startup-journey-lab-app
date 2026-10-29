@@ -1853,3 +1853,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 新 `docs/WEEK6_SLIDES_SOURCE.json` → `materials/Week6_教學簡報.pptx／.pdf`（13 頁）：流程、三個數字（Crunchbase Q1／Q3）、錢先流到底層、發電廠／引擎／零件／汽車、4 大區 10 座島、島 1、三個方向各一頁（只講「做什麼」，不洩漏 11/27 要猜的誰付錢／收費／取代誰）、台灣在哪一層（右欄標推論）、接下來四週、一句話收尾。複製到 116/Week6。
 - Week 5 簡報最後一頁「Week 6（11/6）」改成「今天後半場（約 60 分鐘）AI 新創地圖」；PPTX／PDF 重建，複製到 116/Week5。
 - 簡報在雲端工作區建（python-pptx＋LibreOffice），字型渲染可能和本機版略有不同。
+- 2026-10-29 19:08 上線：commit 965a17b 已 push；week2-api 三方雜湊一致 6c386a44971dbd4b（本機／GitHub／Dashboard 部署後重載）。第一次 Deploy 送出的是舊碼（用 executeEdits 貼入但頁面沒標 M），第二次補一次真鍵盤輸入、看到 index.ts 標 M 才按，成功。正式站：首頁「本週 Week 4（10/30）」、Week 4 頁「上課日 10/30 13:00–17:00」。教訓：Dashboard 貼碼後要看到檔名旁的 M 再請老師按 Deploy，部署後一定重載比對雜湊。
+
+## 2026-10-29 晚 群島遊戲改版定案（只改文件）
+- 遊戲改成 2D 航海是非題＋AI 老師（Gemini），15 家計分＋Mistral 示範，滿分 59；國防島拿掉、島 9 改世界模型；島 6 出題 Owner／Gorgias／EliseAI。細節見 `GAME_AI_ISLANDS.md` 最上面新版。
+- 研究：美國／歐洲 13 大類與世界模型原稿、15 家審核表都在 116/1106_AI新創群島（本機）。
+- 10/30 Week 4 發一頁「痛對不上產業線怎麼辦」（116/Week4），文字與 app 的 PATTERN_HINTS 一致。
+- 待做：10/30 後依學生實際產業線調島 6、做產業地圖文件（含 9 產業線 × 3 方向）、Week 8 建組、Week 9／10 遊戲頁進 app。
