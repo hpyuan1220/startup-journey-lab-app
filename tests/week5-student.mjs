@@ -14,6 +14,7 @@ await p.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.
 await p.goto(`${BASE}/week.html?week=5#card`);await p.waitForTimeout(1500);
 ok('頁面有兩題、三個機會、計分表、選一個、反方、一頁',await p.evaluate(()=>document.querySelectorAll('#week-five .w4-q').length===2&&document.querySelectorAll('.w5-opp').length===3&&document.querySelectorAll('.w5-q').length===5&&!!document.querySelector('.w5-choice')&&!!document.querySelector('textarea[aria-label="反方紀錄 貼回"]')&&document.querySelectorAll('.w5-para').length===6));
 ok('三個機會從 Week 4 卡 3 帶出',await p.evaluate(()=>[...document.querySelectorAll('.w5-opp input')].map(i=>i.value)[0].startsWith('滷味攤')));
+ok('每題的 0／1／2 意思一直顯示、按鈕有提示',await p.evaluate(()=>document.querySelectorAll('.w5-q .w5-legend').length===5&&document.querySelector('.w5-q').querySelectorAll('.w5-lg').length===3&&/已經有人付錢/.test(document.querySelector('.w5-q .w5-legend').textContent)&&/2 分＝/.test(document.querySelector('.w5-sbtn[aria-label$="2 分"]').title)));
 ok('Week 5 預設兩題',await p.evaluate(()=>/earlyvangelist/.test(document.querySelector('#week-five .w4-q-title').textContent)));
 ok('完成狀態：一開始列出差什麼',await p.evaluate(()=>/還沒完成/.test(document.querySelector('#week-five .w4-done-title').textContent)));
 // 打分：A 全 2、B 全 1、C 全 0，每格寫證據

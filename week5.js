@@ -71,12 +71,13 @@ const cells={};
 for(const q of FIVE_QUESTIONS){
  const box=el('div','',scSec,'w5-q');
  const t=el('div','',box,'w5-q-title');el('b',`${q.n}. ${q.title}`,t);el('span',q.ask,t,'w5-q-ask');
- const lv=el('details','',box,'w5-levels');el('summary','0／1／2 分各是什麼意思、理論出處',lv);
- const ul=el('ul','',lv);q.levels.forEach((s,i)=>el('li',`${i} 分：${s}`,ul));el('p','出處：'+q.theory,lv,'w5-theory');
+ // 0／1／2 的意思一直顯示（不用點開），出處才收在 details 裡
+ const lg=el('div','',box,'w5-legend');q.levels.forEach((s,i)=>{const c=el('span','',lg,'w5-lg');el('b',String(i),c);c.append(' '+s);});
+ const lv=el('details','',box,'w5-levels');el('summary','理論出處',lv);el('p',q.theory,lv,'w5-theory');
  for(const k of OPP_KEYS){
   const row=el('div','',box,'w5-cell');el('b',k,row,'w5-opp-k');
   const btns=el('div','',row,'w5-score');
-  const bs=[0,1,2].map(v=>{const b=el('button',String(v),btns,'w5-sbtn');b.type='button';b.setAttribute('aria-label',`機會 ${k} 第 ${q.n} 問 ${v} 分`);b.addEventListener('click',()=>{const c=data.scores[k][q.key];c.score=c.score===v?null:v;touch();renderScores();});return b;});
+  const bs=[0,1,2].map(v=>{const b=el('button',String(v),btns,'w5-sbtn');b.type='button';b.setAttribute('aria-label',`機會 ${k} 第 ${q.n} 問 ${v} 分`);b.title=`${v} 分＝${q.levels[v]}`;b.addEventListener('click',()=>{const c=data.scores[k][q.key];c.score=c.score===v?null:v;touch();renderScores();});return b;});
   const ev=el('input','',row);ev.type='text';ev.maxLength=240;ev.placeholder='一句證據（來源：卡 1／卡 2 的哪一句）或「估計」';ev.setAttribute('aria-label',`機會 ${k} 第 ${q.n} 問 證據`);
   ev.addEventListener('input',()=>{data.scores[k][q.key].evidence=ev.value;touch();renderScores(false);});
   cells[k+q.key]={bs,ev,row};

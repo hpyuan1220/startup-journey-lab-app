@@ -1809,3 +1809,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - NotebookLM 筆記本「AI 創業課第五」，來源＝`Week5_課前影片_本週摘要_來源.md`（複製的文字），格式「說明影片」，13:32。老師自己聽過、下載、上 YouTube 不公開：`https://youtu.be/HApPzgSvv9E`（標題「Week 5 課前預習：這週要做什麼」）。
 - `week.html` Week 5 preclass 改成嵌入 `youtube-nocookie.com/embed/HApPzgSvv9E`＋youtu.be 連結，說明改成六段摘要；`week.js` Week 5 highlight 從「準備中」換成影片標題＋六段一句，status 加「課前影片」；`week.js?v=20261029-w5video`。課前三題 `PRECLASS_QUIZ[5]` 不變。
 - 測試：單元 190/190；`tests/week5-student.mjs` 17/17。Week 5 至此全部就緒（app、Edge、教材、影片、三題）。
+
+## 2026-10-29 Week 5 計分表：0／1／2 的意思改成一直顯示
+- 老師：「沒人知道要點那一行」。原本 0／1／2 的意思收在 `<details>`（一行小字）裡，學生會漏。改成每題標題下直接列三行（0／1／2 各一行，`.w5-legend`），只有「理論出處」還收在 details；每顆分數按鈕加 `title`（滑過顯示「2 分＝…」）。`week5.js?v=20261029-legend`、`styles.css?v=20261029-legend`。
+- 測試：`tests/week5-student.mjs` 加 1 條 → 18/18；單元 190/190。
