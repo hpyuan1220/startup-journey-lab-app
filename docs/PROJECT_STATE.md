@@ -1832,3 +1832,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 發現並修掉：課程地圖的「本週 Week 4（10/23）」和格子的 `current` 是寫死在 index.html 的，不會自己換週（之前我說會自動變是錯的）。現在 `progress.js` 照 `CLASS_SCHEDULE` 算（最近一個 ≤ 今天的上課日），10/30 起自動顯示 Week 5，頂欄「本週學習卡」也跟著指到 Week 5。
 - 測試：`tests/progress.test.mjs` 6 條（單元 196/196）；`tests/progress-student.mjs` 5 條（API、登入有條、本週自動算、沒登入沒條、無 JS 錯）。
 - 上線要兩步：push → Edge 重新部署（新 action 在 bundle 裡）。
+- 10/29 追加：「我的進度」也放到每週頁面（`week.html`）最上面那組「上一週／下一週」下面，卡片頁、藍圖頁都看得到；現在這頁那一格加框（`.mp-here`）。只動前端：`progress.js?v=20261029-mp2`、`styles.css?v=20261029-mp2`、week.html 多載一支 module。`tests/progress-student.mjs` 加 1 條 → 6/6。不用重新部署 Edge。

@@ -14,6 +14,10 @@ await p.goto(`${BASE}/index.html`);await p.waitForTimeout(1500);
 const v=await p.evaluate(()=>({box:!!document.getElementById('my-progress'),cells:[...document.querySelectorAll('#my-progress .mp-grid li')].map(li=>li.className+':'+li.querySelector('span').textContent),next:document.querySelector('#my-progress .mp-next')?.textContent,msg:document.querySelector('#my-progress .mp-msg')?.textContent,href4:document.querySelector('#my-progress .mp-grid li:nth-child(4) a')?.getAttribute('href'),thisweek:document.querySelector('#home .thisweek')?.textContent,current:[...document.querySelectorAll('#home .week-grid li.current a')].map(a=>a.getAttribute('href'))}));
 ok('課程地圖登入後有「我的進度」：五格、Week 4 橘色 1/3、下一步 Week 1',v.box&&v.cells.length===5&&v.cells[3]==='mp-partial:三張卡 1/3'&&v.cells[0]==='mp-none:還沒開始'&&/Week 1/.test(v.next||'')&&v.msg==='0/5 週完成'&&v.href4==='week.html?week=4#card',v);
 ok('「本週」照上課日表自動算（10/30 以後是 Week 5）',/本週 Week \d/.test(v.thisweek||'')&&v.current.length===1,{thisweek:v.thisweek,current:v.current});
+// 每週頁面也有這一條（卡片頁），而且現在這週那格有框
+await p.goto(`${BASE}/week.html?week=4#card`);await p.waitForTimeout(1500);
+const w=await p.evaluate(()=>({box:!!document.getElementById('my-progress'),afterPager:document.getElementById('my-progress')?.previousElementSibling?.className,here:document.querySelector('#my-progress .mp-here b')?.textContent,cells:document.querySelectorAll('#my-progress .mp-grid li').length}));
+ok('Week 4 頁最上面也有「我的進度」，Week 4 那格標成現在這頁',w.box&&w.afterPager==='week-pager'&&w.here==='Week 4'&&w.cells===5,w);
 // 沒登入：沒有那一條
 const p2=await (await b.newContext({viewport:{width:390,height:844}})).newPage();await p2.goto(`${BASE}/index.html`);await p2.waitForTimeout(800);
 ok('沒登入：課程地圖沒有「我的進度」',await p2.evaluate(()=>!document.getElementById('my-progress')));

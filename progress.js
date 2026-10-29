@@ -17,10 +17,12 @@ function renderThisWeek(){
 }
 async function renderMine(){
  let session=null;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
- const host=document.querySelector('#home .thisweek');if(!host)return;
+ // 課程地圖：放在「本週」那行下面；每週頁面：放在最上面那組「上一週／下一週」下面（卡片頁、藍圖頁都看得到）。
+ const host=document.querySelector('#home .thisweek')||document.querySelector('main > nav.week-pager');if(!host)return;
  let box=document.getElementById('my-progress');
  if(!session?.token){if(box)box.remove();return;}
  if(!box){box=document.createElement('section');box.id='my-progress';box.className='my-progress';host.after(box);}
+ const here=Number(new URLSearchParams(location.search).get('week'))||0;box.dataset.week=String(here);
  box.innerHTML='<p class="mp-head"><b>我的進度</b> <span class="mp-id"></span> <span class="mp-msg">讀取中…</span></p>';
  box.querySelector('.mp-id').textContent=session.student_id||'';
  const cfg=window.STARTUP_JOURNEY_CONFIG;
@@ -28,7 +30,7 @@ async function renderMine(){
   const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({action:'my_progress',token:session.token})});
   const j=await r.json();if(!r.ok)throw Error(j.error||'讀不到進度');
   const ol=document.createElement('ol');ol.className='mp-grid';
-  for(const w of j.weeks){const li=document.createElement('li');li.className='mp-'+w.state;const a=document.createElement('a');a.href=w.href;
+  for(const w of j.weeks){const li=document.createElement('li');li.className='mp-'+w.state+(w.week===here?' mp-here':'');const a=document.createElement('a');a.href=w.href;
    const b=document.createElement('b');b.textContent=`Week ${w.week}`;const s=document.createElement('span');s.textContent=w.label;a.append(b,s);
    if(w.detail){const sm=document.createElement('small');sm.textContent=w.detail;a.append(sm);}
    li.append(a);ol.append(li);}
@@ -37,5 +39,7 @@ async function renderMine(){
  }catch(e){box.querySelector('.mp-msg').textContent=/過期|重新進入/.test(e.message)?'登入已過期，進入學生入口重新登入後會顯示。':e.message;}
 }
 renderThisWeek();renderMine();
+// 每週頁面：存檔後狀態會變，回到這頁（例如從卡片切回藍圖）時重抓一次。
+window.addEventListener('pageshow',e=>{if(e.persisted)renderMine();});
 window.addEventListener('hashchange',()=>{if(location.hash==='#home'||location.hash==='')renderMine();});
 window.addEventListener('storage',e=>{if(e.key==='sjl-student-session')renderMine();});
