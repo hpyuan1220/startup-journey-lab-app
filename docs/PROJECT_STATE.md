@@ -1825,4 +1825,10 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 版號：`week4-core.mjs?v=20261029-1700`（四個 import 一起改）、`week4.js`／`week5.js`／`teacher-week4.js`／`teacher-week5.js`／`week.js` 同版號；簡報 `?v=20261029`。
 - 測試：`tests/week4.test.mjs` 時段斷言改成 13:00／12:59／16:59／17:01；單元 190/190；week4-student 18、week5-student 18。
 - 待做：目前沒有教師端可改時段的介面（排在總表那批）。
-- 10/29 部署：Edge `week2-api` 已換成 a2edbe8 的 bundle（SHA-256 前 16 碼 `99e6e50f3a1b65fc`，含 13:00–17:00）。第一次按 Deploy 時內容還沒貼進編輯器，等於重部署舊版（重新整理後仍是 `d38f8b87`）；重貼再按一次才成功，重新整理後 `99e6e50f`、M 標記 0。線上 `week5_load` 用測試帳號打 200。GitHub Pages 同步在 a2edbe8。
+
+## 2026-10-29 學生端「我的進度」＋課程地圖「本週」自動算
+- 老師：「學生在 app 裡怎麼知道自己的狀態？」——之前只能一週一週點進去看。新：登入的學生在課程地圖（index.html#home）最上面看到一條「我的進度」：Week 1–5 一格一個狀態（綠＝做完、橘＝做了一部分、紅＝老師退回、灰＝沒開始），格子點了跳那一週的卡，底下一句「下一步 → Week N：…」。沒登入不顯示。
+- 判定在新檔 `progress-core.mjs`（`studentProgress`、`progressWeekN`；W1 status、W2 status＋review_status、W3 `doneCount`／submitted、W4 `week4Progress.cards`、W5 `week5Progress.done`），**老師端之後的全班總表要用同一支**。Edge 新 action `my_progress`（學生 token；bundle 多串 progress-core，build script 已改）。前端 `progress.js`（module，index.html 最後載）、`styles.css .my-progress/.mp-*`。
+- 發現並修掉：課程地圖的「本週 Week 4（10/23）」和格子的 `current` 是寫死在 index.html 的，不會自己換週（之前我說會自動變是錯的）。現在 `progress.js` 照 `CLASS_SCHEDULE` 算（最近一個 ≤ 今天的上課日），10/30 起自動顯示 Week 5，頂欄「本週學習卡」也跟著指到 Week 5。
+- 測試：`tests/progress.test.mjs` 6 條（單元 196/196）；`tests/progress-student.mjs` 5 條（API、登入有條、本週自動算、沒登入沒條、無 JS 錯）。
+- 上線要兩步：push → Edge 重新部署（新 action 在 bundle 裡）。

@@ -506,3 +506,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .w5-lg{display:flex;gap:8px;align-items:flex-start;line-height:1.35}
 .w5-lg b{flex:0 0 22px;height:22px;border:1px solid #9aa79f;border-radius:6px;background:#fff;font-weight:700;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center}
 .w5-levels{margin:0 0 8px}
+
+/* 課程地圖：我的進度 */
+.my-progress{border:1px solid var(--ink);border-radius:12px;padding:10px 14px;margin:0 0 16px;background:#fff}
+.mp-head{margin:0 0 8px;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}.mp-id{color:#5d6c68;font-size:.9rem}.mp-msg{color:#3f4a44;font-size:.9rem}
+.mp-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+@media(max-width:560px){.mp-grid{grid-template-columns:repeat(2,1fr)}}
+.mp-grid a{display:block;border:1px solid #c9d3ce;border-radius:10px;padding:8px 10px;text-decoration:none;color:inherit;min-width:0;background:#f7f8f6}
+.mp-grid b{display:block;font-size:.8rem;letter-spacing:.04em;color:#5d6c68}.mp-grid span{display:block;font-weight:700}.mp-grid small{display:block;color:#5d6c68;font-size:.78rem;line-height:1.3;margin-top:2px}
+.mp-done a{background:var(--lime);border-color:var(--ink)}.mp-partial a{background:#fff3d6;border-color:#d9a441}.mp-revise a{background:#fde3df;border-color:#c2442b}.mp-none a{background:#f1f2f0}
+.mp-next{margin:8px 0 0;font-weight:600}

@@ -3,6 +3,7 @@ import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '.
 import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
 import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommendCards} from '../../../week4-core.mjs';
 import {normalizeWeek5,applyStamps5,OPP_KEYS} from '../../../week5-core.mjs';
+import {studentProgress} from '../../../progress-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
 const sha=async(s:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -103,6 +104,13 @@ Deno.serve(async req=>{
   const feedback=must(await db.from('week2_ai_requests').select('feedback,state,kind,submission_version,created_at').match(scope).order('created_at',{ascending:false}));
   const week1_feedback=must(await db.from('week1_ai_feedback_latest').select('feedback_json').match({...scope,week_number:1}).maybeSingle());
   return reply({week1:w1,week1_feedback,row,settings,versions,feedback});
+ }
+ // ---- 我的進度（課程地圖最上面一條）：五週各一格，判定在 progress-core，學生端與老師端共用 ----
+ if(b.action==='my_progress'){
+  const w3=must(await db.from('week3_submissions').select('status,record').match(scope).maybeSingle());
+  const w4=must(await db.from('week4_research').select('data').match(scope).maybeSingle());
+  const w5=must(await db.from('week5_compare').select('data').match(scope).maybeSingle());
+  return reply({student_id:s.student_id,...studentProgress({week1:w1,week2:row,week3:w3,week4:w4,week5:w5})});
  }
  // ---- Week 3 訪談紀錄卡 ----
  // 準備單來自 Week 2 的卡（暫定痛點、受訪者、兩題問題）；Week 2 還是草稿也給，但沒有 Week 2 就請先回去填。
