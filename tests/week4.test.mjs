@@ -11,16 +11,17 @@ test('產業板九張、推薦依普查題號排序', () => {
  assert.equal(recommendCards([])[0].card.id,1,'沒命中就原順序');
 });
 
-test('課中判定：台北 13:30–18:00；出席要兩題都課中', () => {
+test('課中判定：台北 13:00–17:00；出席要兩題都課中', () => {
  assert.equal(classDate(4),'2026-10-23');
- assert.deepEqual(stampLabel('2026-10-23T05:30:00Z'),{kind:'in',week:4},'13:30 台北剛好開始');
- assert.deepEqual(stampLabel('2026-10-23T09:59:00Z'),{kind:'in',week:4});
- assert.deepEqual(stampLabel('2026-10-23T10:01:00Z'),{kind:'after'},'18:01 台北就是課後');
+ assert.deepEqual(stampLabel('2026-10-23T05:00:00Z'),{kind:'in',week:4},'13:00 台北剛好開始');
+ assert.deepEqual(stampLabel('2026-10-23T04:59:00Z'),{kind:'after'},'12:59 還沒上課');
+ assert.deepEqual(stampLabel('2026-10-23T08:59:00Z'),{kind:'in',week:4},'16:59 還在課中');
+ assert.deepEqual(stampLabel('2026-10-23T09:01:00Z'),{kind:'after'},'17:01 台北就是課後');
  assert.deepEqual(stampLabel('2026-10-24T06:00:00Z'),{kind:'after'},'隔天不是上課日');
  assert.deepEqual(stampLabel('2026-10-30T06:00:00Z'),{kind:'in',week:5});
  assert.equal(stampLabel('nope'),null);
  assert.equal(attendance({q1:'2026-10-23T06:00:00Z',q2:'2026-10-23T06:05:00Z'},4),true);
- assert.equal(attendance({q1:'2026-10-23T06:00:00Z',q2:'2026-10-23T13:05:00Z'},4),false,'Q2 課後就不算出席');
+ assert.equal(attendance({q1:'2026-10-23T06:00:00Z',q2:'2026-10-23T09:05:00Z'},4),false,'Q2 課後就不算出席');
  assert.equal(attendance({q1:'2026-10-30T06:00:00Z',q2:'2026-10-30T06:05:00Z'},4),false,'下週課中不算這週');
 });
 

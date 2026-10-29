@@ -1,4 +1,4 @@
-import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261025-ctx';
+import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-1700';
 import {normalizeWeek5,totals,topChoice,choiceNeedsReason,parseRebuttal,week5Progress,OPP_KEYS,FIVE_QUESTIONS,MAX_SCORE} from './week5-core.mjs?v=20261025-w5';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTagResearch,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · Week 5 三個機會比一比
@@ -9,7 +9,7 @@ if(dashboard){
 const root=document.createElement('section');root.id='teacher-week5';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 el('h2','Week 5 三個機會比一比：出席、計分、選擇、反方、一頁',root);
-el('p','出席規則同 Week 4：課堂兩題在上課日 13:30–18:00 內存檔＝出席。老師看的是證據不是分數：「估計」欄是學生自己標估計或沒寫證據的格數；選了非最高分的人，列上會標「非最高分」，點開看理由。',root,'tw2-intro');
+el('p','出席規則同 Week 4：課堂兩題在上課日 13:00–17:00 內存檔＝出席。老師看的是證據不是分數：「估計」欄是學生自己標估計或沒寫證據的格數；選了非最高分的人，列上會標「非最高分」，點開看理由。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 5',root,'quiet');reloadBtn.type='button';
 const body=el('div','',root);

@@ -1,9 +1,9 @@
-import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261018-w4';
+import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261029-1700';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
 import {normalizeWeek5,totals as totals5,topChoice,week5Progress,OPP_KEYS} from './week5-core.mjs?v=20261025-w5';
 // 教師洞察 · Week 4 第一輪研究
-// 老師不用按任何開關：出席＝課堂兩題在上課日 13:30–18:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
+// 老師不用按任何開關：出席＝課堂兩題在上課日 13:00–17:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
 // 和一人一列（出席、Q1／Q2、產業、三張卡的時間與來源；未答排最上；點代號展開看全文）。
 const dashboard=document.getElementById('teacher-dashboard');
 if(dashboard){
@@ -11,7 +11,7 @@ if(dashboard){
 const root=document.createElement('section');root.id='teacher-week4';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 el('h2','Week 4 第一輪研究：出席、兩題、三張卡',root);
-el('p','出席規則固定：課堂兩題在上課日 13:30–18:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你要操作的只有兩件事：本週兩題的文字，和每位學生那一列的「老師備註」（四個標記一點就存、備註打完按 Enter；學生看不到）。表格太寬時可以左右滑。',root,'tw2-intro');
+el('p','出席規則固定：課堂兩題在上課日 13:00–17:00 內存檔＝出席。研究頁一直開著、沒有截止，每個欄位只記學生實際存檔的時間（課中／課後）。你要操作的只有兩件事：本週兩題的文字，和每位學生那一列的「老師備註」（四個標記一點就存、備註打完按 Enter；學生看不到）。表格太寬時可以左右滑。',root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const reloadBtn=el('button','重新載入 Week 4',root,'quiet');reloadBtn.type='button';
 const csvBtn=el('button','匯出評分參考 CSV',root,'quiet');csvBtn.type='button';csvBtn.title='學號、姓名、Week 1–5 狀態、出席、三張卡來源、Week 5 分數與選擇、每週老師標記與備註';

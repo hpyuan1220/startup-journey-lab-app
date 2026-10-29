@@ -1819,3 +1819,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：selector 從 `#week-N-materials` 改成 `#week-blueprint`（preclass.mjs、prior-relogin.mjs）。全部跑一次：單元 190/190；week4 18、week5 18、week3 15、preclass 18、prior-relogin 24、teacher-remarks 17，全過。`week.js?v=20261029-preup`。
 - 跑瀏覽器測試的提醒：serve-acceptance 是記憶體資料，跨套件連跑會互相污染（Week 5 測試改過的課堂兩題會讓 Week 4 的「預設題」斷言失敗）；每套前重啟。
 - 10/29 追加：模擬「沒做 Week 4 的學生」開 Week 5——五題、0／1／2 說明、45 顆分數鍵都在，三個機會欄空＋提示回 Week 4；但頁首那句「這一頁已帶出你的三個機會」對這種學生是錯的，改成依 opps 有無分兩句。`week5.js?v=20261029-legend2`。
+
+## 2026-10-29 上課時段改 13:00–17:00（老師決定）
+- `week4-core.mjs` `CLASS_SCHEDULE` start 13:30→13:00、end 18:00→17:00（每週共用；課中戳記、出席、教師端推算都吃這個；Edge bundle 也含它 → **要重新部署**）。教師端兩區說明、`week.js` 每週一句、Week 4／5 簡報來源與 PPTX／PDF（重建）、期中／期末上傳截止「13:30 前」→「13:00 前」一起改。
+- 版號：`week4-core.mjs?v=20261029-1700`（四個 import 一起改）、`week4.js`／`week5.js`／`teacher-week4.js`／`teacher-week5.js`／`week.js` 同版號；簡報 `?v=20261029`。
+- 測試：`tests/week4.test.mjs` 時段斷言改成 13:00／12:59／16:59／17:01；單元 190/190；week4-student 18、week5-student 18。
+- 待做：目前沒有教師端可改時段的介面（排在總表那批）。
