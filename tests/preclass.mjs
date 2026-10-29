@@ -27,7 +27,7 @@ const quizState=(p,sel)=>p.evaluate(sel=>{const q=document.querySelector(sel+' .
  總結:q.querySelector('.preclass-summary')?.textContent, 問題框:!!q.querySelector('.preclass-question textarea'), 存鈕:q.querySelector('.preclass-actions button')?.disabled,
  訊息:q.querySelector('.preclass-msg')?.textContent, 問題值:q.querySelector('.preclass-question textarea')?.value||''};},sel);
 const pick=(p,sel,i,v)=>p.evaluate(([sel,i,v])=>{const r=document.querySelector(`${sel} .preclass-item[data-index="${i}"] input[value="${v}"]`);if(!r)return 'no';r.click();return 'ok';},[sel,i,v]);
-const W3='#week-three-materials';
+const W3='#week-blueprint';
 // 1) 沒登入：三題可以做、有解釋、不能存
 {const {p,errs}=await open('week.html?week=3#card');let s=await quizState(p,W3);
  ok('沒登入：Week 3 影片下有三題、每題四個選項、問題框在但存鈕停用、有導去入口的訊息', !s.none&&s.題數===3&&s.選項數===4&&s.問題框&&s.存鈕===true&&/先進入班級/.test(s.訊息||''), s);
@@ -60,9 +60,9 @@ const W3='#week-three-materials';
  ok('沒有 Week 2：三題在、存鈕停用、訊息「先填 Week 2」', !s.none&&s.題數===3&&s.存鈕===true&&/先填 Week 2/.test(s.訊息||''), s);
  ok('沒有 Week 2：沒有 JS 錯誤', errs.length===0, errs);await p.context().close();}
 // 4) Week 2 頁：只有三題、沒有問題框
-{const {p,errs}=await open('week.html?week=2#card');const s=await quizState(p,'#week-two-materials');
+{const {p,errs}=await open('week.html?week=2#card');const s=await quizState(p,'#week-blueprint');
  ok('Week 2 頁：影片下有三題、沒有問題框', !s.none&&s.題數===3&&!s.問題框, s);
- await pick(p,'#week-two-materials',1,'b');const s2=await quizState(p,'#week-two-materials');
+ await pick(p,'#week-blueprint',1,'b');const s2=await quizState(p,'#week-blueprint');
  ok('Week 2 第 2 題選「解法先行」是對的', s2.狀態[1]==='right', s2.狀態);
  ok('Week 2 頁：沒有 JS 錯誤', errs.length===0, errs);await p.context().close();}
 // 5) 教師端

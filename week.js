@@ -53,11 +53,22 @@ if(n===2||n===3||n===4||n===5){
  const materials=document.querySelector(ids[1]);
  const cardSection=document.querySelector(ids[2]);
  navigation.hidden=false;
+ // 課前預習（影片＋三題）搬到標題和一句摘要的正下方、影片放最前面，學生一進頁就看到；有影片時「本週影片重點」那塊（內容重複）藏起來。等 module 把三題掛進 .preclass 之後再搬（DOMContentLoaded 在 module 之後）。
+ // 影片 iframe 等到學習藍圖真的顯示時才載入（搬動 iframe 會重新載入；卡片頁也不用先載影片）。
+ const pre=materials.querySelector('.preclass');
+ if(pre){pre.querySelectorAll('iframe[src]').forEach(f=>{f.dataset.src=f.getAttribute('src');f.removeAttribute('src');});}
+ let moved=false;
+ document.addEventListener('DOMContentLoaded',()=>{
+  const lead=document.querySelector('#week-blueprint .lead'),vh=document.querySelector('#week-blueprint .video-highlight');
+  if(pre&&lead){lead.after(pre);const vid=pre.querySelector('.preclass-video'),eb=pre.querySelector('.eyebrow');if(vid&&eb)eb.after(vid);if(vid&&vh)vh.hidden=true;}
+  moved=true;loadVideo();});
+ function loadVideo(){if(!pre||!moved||document.querySelector('#week-blueprint').hidden)return;pre.querySelectorAll('iframe[data-src]').forEach(f=>{f.src=f.dataset.src;delete f.dataset.src;});}
  function showWeekView(){
   const cardView=['#card','#week-two','#week-three','#week-four','#week-five'].includes(location.hash);
   document.querySelector('#week-blueprint').hidden=cardView;
   materials.hidden=cardView;
   cardSection.hidden=!cardView;
+  if(!cardView)loadVideo();
   navigation.querySelectorAll('[data-week-view]').forEach(link=>{
    if(link.dataset.weekView===(cardView?'card':'learning'))link.setAttribute('aria-current','page');
    else link.removeAttribute('aria-current');

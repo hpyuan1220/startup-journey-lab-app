@@ -1813,3 +1813,8 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 ## 2026-10-29 Week 5 計分表：0／1／2 的意思改成一直顯示
 - 老師：「沒人知道要點那一行」。原本 0／1／2 的意思收在 `<details>`（一行小字）裡，學生會漏。改成每題標題下直接列三行（0／1／2 各一行，`.w5-legend`），只有「理論出處」還收在 details；每顆分數按鈕加 `title`（滑過顯示「2 分＝…」）。`week5.js?v=20261029-legend`、`styles.css?v=20261029-legend`。
 - 測試：`tests/week5-student.mjs` 加 1 條 → 18/18；單元 190/190。
+
+## 2026-10-29 課前影片搬到頁面最上面（Week 2–5）
+- 老師：「Week 4 沒影片？」——其實在，但在頁面往下 1,900px 的「課前預習」區，學生看不到。改：`week.js` 在 DOMContentLoaded（module 已把三題掛進 `.preclass` 之後）把 `.preclass` 整塊搬到 `#week-blueprint` 的標題＋一句摘要（`.lead`）正下方，影片 `.preclass-video` 放到 eyebrow 之後、說明之前；有影片時原本的「本週影片重點」方塊（內容重複）藏起來。iframe 的 `src` 先搬到 `data-src`，等學習藍圖真的顯示（且已搬好）才載入——避免搬動 iframe 重複載入、卡片頁也不白載影片。
+- 測試：selector 從 `#week-N-materials` 改成 `#week-blueprint`（preclass.mjs、prior-relogin.mjs）。全部跑一次：單元 190/190；week4 18、week5 18、week3 15、preclass 18、prior-relogin 24、teacher-remarks 17，全過。`week.js?v=20261029-preup`。
+- 跑瀏覽器測試的提醒：serve-acceptance 是記憶體資料，跨套件連跑會互相污染（Week 5 測試改過的課堂兩題會讓 Week 4 的「預設題」斷言失敗）；每套前重啟。
