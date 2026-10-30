@@ -519,3 +519,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 main > .my-progress{margin:12px 0 16px}
 .mp-here a{outline:2px solid var(--ink);outline-offset:1px}
+/* 10/30：研究筆記草稿、課堂兩題 AI 評語 */
+.w4-draft{margin:14px 0 10px;padding-top:10px;border-top:1px dashed currentColor}
+.w4-draft-out textarea{width:100%;box-sizing:border-box;font:inherit;font-size:.92rem;margin:8px 0}
+.w4-near{flex-basis:100%;margin:4px 0 0}
+.w4-ai{width:100%;box-sizing:border-box;font:inherit;font-size:.92rem;margin-top:6px}

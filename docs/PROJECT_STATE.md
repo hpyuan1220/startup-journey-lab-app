@@ -1881,3 +1881,12 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 現象（老師課堂回報）：學生按了沒看到回應。原因（推論＋程式確認）：①狀態訊息只寫在頁面最上方 `.w4-msg`，手機上捲到課堂兩題時看不到（沒寫答案時的「先寫下你的答案」也只在上方）；②`window.open` 在 `await copyText()` 之後才呼叫，手機 Safari 會把失去使用者手勢的開分頁當彈出視窗擋掉。
 - 改：week4.js／week5.js `openTool` 先同步啟動複製、同步開新分頁、再等複製結果；新增 `near(btn,text)` 把同一句狀態寫在按鈕旁（`.w4-near`），沒寫答案的提示也一樣。week.html `week4.js／week5.js?v=20261030-aibtn`。只改前端，不用部署 Edge。
 - 測試：單元 198/198；容器 Playwright 手機寬度：空答案按鈕旁出現提示、填答後會開新分頁（Gemini／Claude）且按鈕旁出現「已開 …」說明；week4-student 全綠；無 JS 錯誤。
+
+## 2026-10-30 晚：課堂兩題 AI 評語改在 app 內＋研究筆記 v1 草稿
+- 老師課後回報：學生仍拿不到 AI 評語；以為「下載研究筆記範本」會把內容存成報告。查證：原本按鈕＝複製提示→開 Gemini（空的）→學生自己貼、送出、再複製回 app，手機上要切換 App 好幾次；範本按鈕只下載空白 Word。
+- 新增 `week2-api` action `class_q_ai`（week 4／5，q1／q2）：用伺服器上已存的答案＋`buildPrompt`／`buildPrompt5` 問模型（`WEEK2_OPENAI_MODEL`／`OPENAI_MODEL`，預設 gpt-4o-mini；system 說明學生文字不可信、兩句、不打分不代寫），評語直接寫進 `data.q1_ai／q2_ai`；每題每人 `CLASS_Q_AI_LIMIT=3` 次，次數記在該列 `stamps.qai`（不用新表、不用 migration）；沒存 409、沒答 422、個資 422、開放前 423、用完 429、模型失敗 502 不扣次數。
+- 前端 week4.js／week5.js：「讓 AI 評我的答案」＝先存、再呼叫 class_q_ai、評語出現在答案下面（改成多行框 `.w4-ai`），按鈕旁顯示還剩幾次；保留「自己用 Gemini 問」（舊流程）。
+- Week 4 完成框：新增「把我的研究頁整理成研究筆記草稿」→ `buildNoteDraft`（五段：產業一句話／錢流（卡 1）／三個挑戰與來源（卡 2）／三個機會（卡 3）／我還不確定的事）＋「複製全文」＋「下載成 Word」（HTML .doc，檔名 Week4_research_note_v1_學號.doc）；原範本改名「下載空白範本（Word）」。
+- 版本號：`week4-core.mjs?v=20261030-qai`、`week4.js／week5.js?v=20261030-qai`、`styles.css?v=20261030-qai`。
+- 測試：單元 201/201（草稿五段＋跳脫、class_q_ai 次數／擋法／Week 5、模型失敗不扣次數）；bundled 版 week4.test 16/16；容器 Playwright Pixel 7：Week 4／5 空答案提示、填答後評語寫入、重整後還在、草稿五段、複製、下載 .doc；week4-student／week5-student 全綠。
+- 待：老師 push＋Dashboard 部署 week2-api。

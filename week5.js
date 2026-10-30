@@ -1,5 +1,5 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5} from './week5-core.mjs?v=20261025-w5';
-import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261029-open';
+import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261030-qai';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
@@ -48,15 +48,31 @@ const rule=el('p','',head,'w4-rule');
 // 課堂兩題
 const quiz=el('section','',page,'w4-quiz');
 const quizHead=el('div','',quiz,'w4-quiz-head');el('h2','課堂兩題',quizHead);const quizWhen=el('span','',quizHead,'w4-quiz-when');
-el('p','上課時段內答完就算出席；之後還是可以答，但標「課後」、不算出席。答完可以按「讓 AI 評我的答案」，貼回一句評語（選填、不計分）。',quiz,'w4-hint');
+el('p','上課時段內答完就算出席；之後還是可以答，但標「課後」、不算出席。答完可以按「讓 AI 評我的答案」，評語直接出現在答案下面（選填、不計分、每題 3 次）。',quiz,'w4-hint');
 const qBlocks={};
 for(const k of ['q1','q2']){
  const b=el('div','',quiz,'w4-q');const title=el('p','',b,'w4-q-title');
  const ta=el('textarea','',b);ta.rows=2;ta.maxLength=600;ta.placeholder='寫一到兩句';ta.setAttribute('aria-label',k==='q1'?'第一題答案':'第二題答案');
  const row2=el('div','',b,'w4-row');const btn=el('button','讓 AI 評我的答案',row2,'button-link w4-small');btn.type='button';
- const ai=el('input','',row2);ai.type='text';ai.maxLength=400;ai.placeholder='貼回 AI 的一句評語（選填，不計分）';ai.setAttribute('aria-label',k==='q1'?'第一題 AI 評語':'第二題 AI 評語');
+ const ai=el('textarea','',b,'w4-ai');ai.rows=2;ai.maxLength=400;ai.placeholder='按「讓 AI 評我的答案」，評語會出現在這裡（不計分）';ai.setAttribute('aria-label',k==='q1'?'第一題 AI 評語':'第二題 AI 評語');
  const stamp=el('div','',b,'w4-stamp');
- btn.addEventListener('click',async()=>{if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}await openTool(buildPrompt5(k,snapshot(),questions),btn);});
+ // 10/30 起：課堂兩題的 AI 評語直接在 app 裡回（伺服器用已存的答案問模型，評語寫進下面那格）；想自己問的人保留「自己用 Gemini 問」。
+ const own=el('button','自己用 Gemini 問',row2,'button-link w4-small w4-own');own.type='button';
+ own.addEventListener('click',async()=>{if(!ta.value.trim()){near(btn,'先寫下你的答案，再問 AI。');return;}await openTool(buildPrompt5(k,snapshot(),questions),btn);});
+ btn.addEventListener('click',async()=>{
+  if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}
+  if(locked||btn.disabled)return;
+  btn.disabled=true;const label=btn.textContent;btn.textContent='AI 看你的答案中…';near(btn,'先幫你存答案，再請 AI 看（約 5–15 秒）。');
+  try{
+   for(let i=0;i<20&&saving;i++)await new Promise(r=>setTimeout(r,150));
+   if(dirty||!row){clearTimeout(timer);await save(true);}
+   if(dirty||!row)throw Error('答案還沒存好，請再按一次。');
+   let r;try{r=await api({action:'class_q_ai',week:5,q:k});}catch(e){if(e.status===409&&e.body?.retry)r=await api({action:'class_q_ai',week:5,q:k});else throw e;}
+   row=r.row;data[`${k}_ai`]=r.feedback;ai.value=r.feedback;
+   near(btn,`AI 評語放在下面那格了（不計分；這題還能再問 ${Math.max(0,r.limit-r.used)} 次）。改好答案記得存。`);
+  }catch(e){if(e.status!==401)near(btn,e.message||'AI 暫時沒有回應，請再按一次。');}
+  finally{btn.disabled=false;btn.textContent=label;}
+ });
  qBlocks[k]={title,ta,ai,stamp};
 }
 

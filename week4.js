@@ -1,4 +1,4 @@
-import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261029-open';
+import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS,WRITE_OPEN_LABEL,buildNoteDraft,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
 import {showRelogin} from './relogin.mjs?v=20261016-prior';
 import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
 // 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。
@@ -36,15 +36,31 @@ painInput.addEventListener('change',()=>renderCards());
 // 課堂兩題
 const quiz=el('section','',page,'w4-quiz');
 const quizHead=el('div','',quiz,'w4-quiz-head');el('h2','課堂兩題',quizHead);const quizWhen=el('span','',quizHead,'w4-quiz-when');
-el('p','上課時段內答完就算出席；之後還是可以答，但標「課後」、不算出席。答完可以按「讓 AI 評我的答案」，貼回一句評語（選填、不計分）。',quiz,'w4-hint');
+el('p','上課時段內答完就算出席；之後還是可以答，但標「課後」、不算出席。答完可以按「讓 AI 評我的答案」，評語直接出現在答案下面（選填、不計分、每題 3 次）。',quiz,'w4-hint');
 const qBlocks={};
 for(const k of ['q1','q2']){
  const b=el('div','',quiz,'w4-q');const title=el('p','',b,'w4-q-title');
  const ta=el('textarea','',b);ta.rows=2;ta.maxLength=600;ta.placeholder='寫一到兩句';ta.setAttribute('aria-label',k==='q1'?'第一題答案':'第二題答案');
  const row2=el('div','',b,'w4-row');const btn=el('button','讓 AI 評我的答案',row2,'button-link w4-small');btn.type='button';
- const ai=el('input','',row2);ai.type='text';ai.maxLength=400;ai.placeholder='貼回 AI 的一句評語（選填，不計分）';ai.setAttribute('aria-label',k==='q1'?'第一題 AI 評語':'第二題 AI 評語');
+ const ai=el('textarea','',b,'w4-ai');ai.rows=2;ai.maxLength=400;ai.placeholder='按「讓 AI 評我的答案」，評語會出現在這裡（不計分）';ai.setAttribute('aria-label',k==='q1'?'第一題 AI 評語':'第二題 AI 評語');
  const stamp=el('div','',b,'w4-stamp');
- btn.addEventListener('click',async()=>{if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}await openTool(buildPrompt(k,snapshot(),questions),btn);});
+ // 10/30 起：課堂兩題的 AI 評語直接在 app 裡回（伺服器用已存的答案問模型，評語寫進下面那格）；想自己問的人保留「自己用 Gemini 問」。
+ const own=el('button','自己用 Gemini 問',row2,'button-link w4-small w4-own');own.type='button';
+ own.addEventListener('click',async()=>{if(!ta.value.trim()){near(btn,'先寫下你的答案，再問 AI。');return;}await openTool(buildPrompt(k,snapshot(),questions),btn);});
+ btn.addEventListener('click',async()=>{
+  if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}
+  if(locked||btn.disabled)return;
+  btn.disabled=true;const label=btn.textContent;btn.textContent='AI 看你的答案中…';near(btn,'先幫你存答案，再請 AI 看（約 5–15 秒）。');
+  try{
+   for(let i=0;i<20&&saving;i++)await new Promise(r=>setTimeout(r,150));
+   if(dirty||!row){clearTimeout(timer);await save(true);}
+   if(dirty||!row)throw Error('答案還沒存好，請再按一次。');
+   let r;try{r=await api({action:'class_q_ai',week:4,q:k});}catch(e){if(e.status===409&&e.body?.retry)r=await api({action:'class_q_ai',week:4,q:k});else throw e;}
+   row=r.row;data[`${k}_ai`]=r.feedback;ai.value=r.feedback;
+   near(btn,`AI 評語放在下面那格了（不計分；這題還能再問 ${Math.max(0,r.limit-r.used)} 次）。改好答案記得存。`);
+  }catch(e){if(e.status!==401)near(btn,e.message||'AI 暫時沒有回應，請再按一次。');}
+  finally{btn.disabled=false;btn.textContent=label;}
+ });
  qBlocks[k]={title,ta,ai,stamp};
 }
 
@@ -153,7 +169,20 @@ const prog=el('p','',foot,'w4-prog');
 // 完成狀態＋下一步：三張卡都貼回＝本週研究頁完成；還沒完成就列出缺哪些。研究筆記範本直接在這裡給連結。
 const done=el('div','',foot,'w4-done');done.hidden=true;
 const doneTitle=el('p','',done,'w4-done-title');const doneBody=el('p','',done);
-const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載研究筆記 v1 範本（Word）',doneRow,'primary-link');tplLink.href='materials/Week4_研究筆記範本.docx?v=20261018';tplLink.setAttribute('download','');
+// 研究筆記 v1 草稿（10/30 課堂：學生以為「下載範本」會把內容存成報告）。按一下把研究頁排進五段，可以複製全文或下載成 Word；空白範本保留。
+const draftBox=el('div','',done,'w4-draft');
+const draftBtn=el('button','把我的研究頁整理成研究筆記草稿',draftBox,'primary-link w4-draft-btn');draftBtn.type='button';
+el('p','會把產業線、我的痛、卡 1（錢流）、卡 2（挑戰與來源）、卡 3（三個機會）排進五段。內容一樣存在雲端；草稿是給你改寫成研究筆記用的。',draftBox,'w4-hint');
+const draftOut=el('div','',draftBox,'w4-draft-out');draftOut.hidden=true;
+const draftTa=el('textarea','',draftOut);draftTa.rows=12;draftTa.readOnly=true;draftTa.setAttribute('aria-label','研究筆記 v1 草稿');
+const draftRow=el('div','',draftOut,'w4-row');
+const copyBtn=el('button','複製全文',draftRow,'button-link');copyBtn.type='button';
+const wordBtn=el('button','下載成 Word（可用 Word／Pages／Google 文件開）',draftRow,'button-link');wordBtn.type='button';
+const draftNote=el('p','',draftOut,'w4-hint');draftNote.setAttribute('role','status');
+draftBtn.addEventListener('click',()=>{draftTa.value=buildNoteDraft(snapshot(),session?.student_id||'');draftOut.hidden=false;draftNote.textContent='草稿好了：可以複製貼到 Google 文件／Word，或直接下載。';draftOut.scrollIntoView({block:'nearest'});});
+copyBtn.addEventListener('click',async()=>{const ok=await copyText(draftTa.value);if(!ok){draftTa.readOnly=false;draftTa.focus();draftTa.select();}draftNote.textContent=ok?'已複製。到 Google 文件或 Word 貼上（手機：長按→貼上）。':'自動複製失敗：文字已全選，請按「拷貝」。';});
+wordBtn.addEventListener('click',()=>{const blob=new Blob(['\ufeff'+noteDraftHtml(draftTa.value)],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Week4_research_note_v1${session?.student_id?'_'+session.student_id:''}.doc`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);draftNote.textContent='已下載。iPhone：在預覽畫面按「分享」→ 選 Word／Pages／Google 文件；Android：在「下載」資料夾。';});
+const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載空白範本（Word）',doneRow,'button-link');tplLink.href='materials/Week4_研究筆記範本.docx?v=20261018';tplLink.setAttribute('download','');
 const guideLink=el('a','看講義第 5 頁：五段怎麼寫',doneRow,'button-link');guideLink.href='materials/Week4_講義.pdf?v=20261018';guideLink.target='_blank';guideLink.rel='noreferrer';
 
 function snapshot(){data.pain=painInput.value;data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data.q1_ai=qBlocks.q1.ai.value;data.q2_ai=qBlocks.q2.ai.value;for(const k of ['card1','card2','card3'])data[k].text=cBlocks[k].ta.value;if(data.industry.card==='custom')data.industry.custom=customInput.value.trim();return normalizeWeek4(data);}

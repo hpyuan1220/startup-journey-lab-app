@@ -150,3 +150,37 @@ test('Edge：開放前 week4_save／week5_save 回 423、不寫入；load 帶 wr
   const ok=await h.call({action:'week4_save',token:tt,version:null,data:{q1:'測試'}});assert.equal(ok.status,200);
  }finally{delete globalThis.SJL_WRITE_OPEN_AT;}
 });
+
+import {buildNoteDraft,noteDraftHtml,CLASS_Q_AI_LIMIT} from '../week4-core.mjs';
+test('研究筆記草稿：五段依序、帶入產業線／痛／卡 1–3／三個機會；HTML 會跳脫',()=>{
+ const t=buildNoteDraft({pain:'午休排隊 20 分鐘',industry:{card:1},card1:{text:'客人付店家；店家付外送平台抽成 30%',source:'gemini'},card2:{text:'挑戰一：人力（來源：聯合報）',source:'notebooklm'},card3:{text:'x',opps:['店長排班','外送抽成','']}},'A1130309125');
+ const order=['一、產業一句話','二、錢流','三、三個挑戰','四、三個機會','五、我還不確定的事'].map(h=>t.indexOf(h));
+ assert.ok(order.every((v,i)=>v>0&&(i===0||v>order[i-1])),'五段依序');
+ assert.match(t,/餐飲小店/);assert.match(t,/午休排隊 20 分鐘/);assert.match(t,/抽成 30%/);assert.match(t,/NotebookLM 查到/);assert.match(t,/機會 A：店長排班/);assert.match(t,/機會 B：外送抽成/);assert.doesNotMatch(t,/機會 C/);assert.match(t,/A1130309125/);
+ assert.match(buildNoteDraft({}),/還沒選產業線/);
+ const h=noteDraftHtml('標題\n說明\n\n一、x\n<b>a</b>&');assert.match(h,/<h1>標題<\/h1>/);assert.match(h,/&lt;b&gt;a&lt;\/b&gt;&amp;/);assert.match(h,/charset="utf-8"/);
+});
+test('Edge：class_q_ai 用已存答案問模型、評語寫進 q1_ai、每題 3 次；沒存／沒答／開放前被擋；Week 5 也能用',async()=>{
+ const h=await harness();const token=await h.student('A113270091');
+ const none=await h.call({action:'class_q_ai',token,week:4,q:'q1'});assert.equal(none.status,409);
+ await h.call({action:'week4_save',token,version:null,data:{q2:'有答'}});
+ const empty=await h.call({action:'class_q_ai',token,week:4,q:'q1'});assert.equal(empty.status,422);
+ const bad=await h.call({action:'class_q_ai',token,week:7,q:'q1'});assert.equal(bad.status,400);
+ const before=h.modelCalls;
+ const r1=await h.call({action:'class_q_ai',token,week:4,q:'q2'});assert.equal(r1.status,200);assert.ok(r1.body.feedback.length>0);assert.equal(r1.body.used,1);assert.equal(r1.body.limit,CLASS_Q_AI_LIMIT);
+ assert.equal(h.modelCalls,before+1);assert.match(JSON.stringify(h.inputs.at(-1)),/有答/,'送給模型的是已存的答案');
+ const row=h.tables.week4_research[0];assert.equal(row.data.q2_ai,r1.body.feedback.slice(0,400));assert.equal(row.stamps.qai.q2.n,1);assert.equal(r1.body.row.version,row.version);
+ const sv=await h.call({action:'week4_save',token,version:row.version,data:{...row.data,q1:'後來答'}});assert.equal(sv.status,200);assert.equal(h.tables.week4_research[0].stamps.qai.q2.n,1,'一般存檔不會洗掉次數');
+ for(let i=1;i<CLASS_Q_AI_LIMIT;i++)assert.equal((await h.call({action:'class_q_ai',token,week:4,q:'q2'})).status,200);
+ const over=await h.call({action:'class_q_ai',token,week:4,q:'q2'});assert.equal(over.status,429);
+ assert.equal((await h.call({action:'class_q_ai',token,week:4,q:'q1'})).status,200,'另一題另外算');
+ await h.call({action:'week5_save',token,version:null,data:{q1:'有問題、有預算'}});
+ const r5=await h.call({action:'class_q_ai',token,week:5,q:'q1'});assert.equal(r5.status,200);assert.ok(h.tables.week5_compare[0].data.q1_ai);
+ globalThis.SJL_WRITE_OPEN_AT='2999-01-01T00:00:00+08:00';
+ try{assert.equal((await h.call({action:'class_q_ai',token,week:4,q:'q1'})).status,423);}finally{delete globalThis.SJL_WRITE_OPEN_AT;}
+});
+test('Edge：class_q_ai 模型失敗回 502、不扣次數',async()=>{
+ const h=await harness({modelFails:true});const token=await h.student('A113270092');
+ await h.call({action:'week4_save',token,version:null,data:{q1:'答'}});
+ const r=await h.call({action:'class_q_ai',token,week:4,q:'q1'});assert.equal(r.status,502);assert.equal(h.tables.week4_research[0].stamps.qai,undefined);
+});
