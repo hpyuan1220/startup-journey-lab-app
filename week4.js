@@ -44,7 +44,7 @@ for(const k of ['q1','q2']){
  const row2=el('div','',b,'w4-row');const btn=el('button','讓 AI 評我的答案',row2,'button-link w4-small');btn.type='button';
  const ai=el('input','',row2);ai.type='text';ai.maxLength=400;ai.placeholder='貼回 AI 的一句評語（選填，不計分）';ai.setAttribute('aria-label',k==='q1'?'第一題 AI 評語':'第二題 AI 評語');
  const stamp=el('div','',b,'w4-stamp');
- btn.addEventListener('click',async()=>{if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';return;}await openTool(buildPrompt(k,snapshot(),questions),btn);});
+ btn.addEventListener('click',async()=>{if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}await openTool(buildPrompt(k,snapshot(),questions),btn);});
  qBlocks[k]={title,ta,ai,stamp};
 }
 
@@ -131,14 +131,19 @@ CARDS.forEach(([k,title,hint,btnText,ph,nb],i)=>{
 function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看 app 幫你問了 AI 什麼（貼不出來時用）';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;pre.setAttribute('aria-label','這次複製給 AI 的問題');d.append(pre);const again=document.createElement('button');again.type='button';again.className='button-link w4-small';again.textContent='⌘V 貼出來是空的？按這裡再複製一次';const st=document.createElement('span');st.className='w4-copied';again.addEventListener('click',async()=>{const ok=await copyText(pre.value);st.textContent=ok?'已複製，到 AI 工具按 ⌘V':'這個瀏覽器不讓網頁複製：請在上面的框按 ⌘A 全選、⌘C';});d.append(again,st);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
 async function openTool(prompt,btn,tool){
  const t=tool||getTool();setTool(t);
- const ok=await copyText(prompt);
+ // 先同步開新分頁再等複製：手機 Safari 在 await 之後開分頁會被當成彈出視窗擋掉（10/30 課堂：按了沒反應）。
+ const cp=copyText(prompt);
  window.open(toolUrl(t,prompt),'_blank','noopener');
+ const ok=await cp;
  const td=TOOLS.find(x=>x[0]===t)||TOOLS[0],name=td[1],prefill=td[3];
  // Gemini／Copilot 沒有「網址帶問題」的功能，開出來一定是空的：問題在剪貼簿裡，要自己貼。ChatGPT／Claude 會直接帶進輸入框。
  if(prefill)msg.textContent=ok?`已開 ${name}，問題已帶進輸入框（也複製了一份）。送出後把回答貼回來。`:`已開 ${name}，問題已帶進輸入框。送出後把回答貼回來。`;
  else msg.textContent=ok?`已開 ${name}。${name} 打開會是空的，這是正常的：問題已經複製好了，到 ${name} 的輸入框按 Ctrl+V（Mac：⌘V；手機：長按→貼上）再送出。`:`已開 ${name}；複製失敗，請把下面的問題全選複製，貼到 ${name}。`;
  showPrompt(btn.closest('section')||page,prompt,!prefill||!ok);
+ near(btn,msg.textContent);
 }
+// 狀態訊息也顯示在按鈕旁邊：頁面頂端那行在手機上看不到，學生以為按了沒反應。
+function near(btn,text){let p=btn.parentElement.querySelector(':scope > .w4-near');if(!p){p=document.createElement('p');p.className='w4-hint w4-near';p.setAttribute('role','status');btn.parentElement.append(p);}p.textContent=text;}
 
 // 存檔
 const foot=el('div','',page,'w4-foot');

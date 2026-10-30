@@ -1875,4 +1875,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 前端 week4.js／week5.js：`write_open===false` 時頁面上方一行說明、研究頁／比較頁全部 input/textarea/select/button 反灰、save 直接不送；開頁時距離開放 24 小時內，時間到自動重新載入。core 版本號 `week4-core.mjs?v=20261029-open`（week4/5、teacher-week4/5、progress 同步）；week.html 的 week4.js／week5.js `?v=20261029-open`。
 - 出席規則不變（各週上課日 13:00–17:00 兩題存檔）。
 - 測試：單元 198/198（新增 writeOpen 邊界、Edge 423 不寫入＋測試帳號可存）；容器 Playwright：week4-student、week5-student 全綠（SJL_WRITE_OPEN_AT 設過去）；鎖定檢查：一般學號 Week 4（42 個元件）／Week 5（88 個）全反灰＋說明，測試帳號不鎖，無 JS 錯誤。bundle SHA256 前 16 碼 b69c7e58abb222ad。
-- 待：老師 push＋Supabase Dashboard 部署 week2-api（index.bundled.ts）。
+- 上線（實證，2026-10-29 23:05）：origin/main＝681695b；Dashboard 第一次 Deploy 送出舊碼（編輯器尚未登記修改就按了），重注入＋實際按鍵、出現 M 後第二次 Deploy 成功；重載後編輯器 SHA b69c7e58abb222ad、M 標記 0。線上 week4_load／week5_load（測試帳號）回 write_open=true、write_open_at=2026-10-30T13:00:00+08:00；一般學號的鎖定只在容器驗收（不在正式庫建合成學生）。
+
+## 2026-10-30 14:10 課中修：「讓 AI 評我的答案」按了像沒反應
+- 現象（老師課堂回報）：學生按了沒看到回應。原因（推論＋程式確認）：①狀態訊息只寫在頁面最上方 `.w4-msg`，手機上捲到課堂兩題時看不到（沒寫答案時的「先寫下你的答案」也只在上方）；②`window.open` 在 `await copyText()` 之後才呼叫，手機 Safari 會把失去使用者手勢的開分頁當彈出視窗擋掉。
+- 改：week4.js／week5.js `openTool` 先同步啟動複製、同步開新分頁、再等複製結果；新增 `near(btn,text)` 把同一句狀態寫在按鈕旁（`.w4-near`），沒寫答案的提示也一樣。week.html `week4.js／week5.js?v=20261030-aibtn`。只改前端，不用部署 Edge。
+- 測試：單元 198/198；容器 Playwright 手機寬度：空答案按鈕旁出現提示、填答後會開新分頁（Gemini／Claude）且按鈕旁出現「已開 …」說明；week4-student 全綠；無 JS 錯誤。
