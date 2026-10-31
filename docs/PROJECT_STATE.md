@@ -1890,3 +1890,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 版本號：`week4-core.mjs?v=20261030-qai`、`week4.js／week5.js?v=20261030-qai`、`styles.css?v=20261030-qai`。
 - 測試：單元 201/201（草稿五段＋跳脫、class_q_ai 次數／擋法／Week 5、模型失敗不扣次數）；bundled 版 week4.test 16/16；容器 Playwright Pixel 7：Week 4／5 空答案提示、填答後評語寫入、重整後還在、草稿五段、複製、下載 .doc；week4-student／week5-student 全綠。
 - 待：老師 push＋Dashboard 部署 week2-api。
+- 2026-10-31 22:47 上線後實測（測試帳號）：class_q_ai 回 502（模型呼叫失敗）。推論：正式環境的模型（WEEK2_OPENAI_MODEL／OPENAI_MODEL）不接受 `temperature`／`max_tokens`（Week 2 的呼叫本來就沒帶這兩個參數）。修：拿掉這兩個參數，與 Week 2 相同；失敗時 console.error 狀態碼與前 300 字，之後可在 Supabase Logs 查。
