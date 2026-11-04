@@ -103,6 +103,26 @@ export function buildPrompt5(kind,d,q){
  return '';
 }
 /** 從貼回的【反方紀錄】抓三回合與總結；抓不到回合就回空陣列（老師端看得出學生只貼了一段話）。 */
+// ---- 11/4：反方三回合改在 app 裡進行（手機不用在兩個 App 之間來回貼）。紀錄仍存成 parseRebuttal 讀得懂的格式。
+export const REBUTTAL_AI_LIMIT=8;
+/** 依目前紀錄判斷下一步：reject（老闆給第 n 個拒絕）／reply（等學生回第 n 回合）／summary（老闆總結）／done */
+export function rebuttalNext(text){
+ const p=parseRebuttal(text);if(p.summary)return {step:'done'};
+ const r=p.rounds;if(!r.length)return {step:'reject',n:1};
+ const last=r[r.length-1];if(!last.reply)return {step:'reply',n:last.n};
+ return last.n<3?{step:'reject',n:last.n+1}:{step:'summary'};
+}
+export function buildRebuttalTurn(d,next){
+ const key=d.choice.key||topChoice(d)||'A';const opp=d.opps[OPP_KEYS.indexOf(key)]||'〔機會一句話〕';
+ const ctx=`（這是大學創業課的作業：學生練習用證據回應反對意見。）你扮演一位在台灣做這一行撐了十年的老闆，生意還過得去、不想多花一毛錢、對學生的點子很懷疑。\n學生選的機會：${opp}\n學生的五問評分和證據：\n${evidenceLines(d,key)}\n\n到目前為止的對話：\n${d.rebuttal.text||'（還沒開始）'}\n\n`;
+ if(next.step==='summary')return ctx+'三回合結束了。請只輸出總結本身（不要加「總結：」等標題）：哪一回合學生有用證據說服你、哪一回合沒有，以及他最該去補的一個證據是什麼。兩到三句，繁體中文。';
+ return ctx+`請只輸出第 ${next.n} 個拒絕理由本身（不要加「拒絕 ${next.n}：」等標題、不要替學生回答）：像老闆真的會說的話，兩三句，${next.n===1?'針對學生證據最弱的那一格':'針對學生上一個回應沒說服你的地方，或還沒碰到的弱點'}。繁體中文。`;
+}
+export function appendRebuttal(text,next,out){
+ const t=String(text||'').trim(),o=String(out||'').replace(/\s+/g,' ').trim();
+ if(next.step==='summary')return `${t}\n總結：${o}`;
+ return `${t?t+'\n':''}拒絕 ${next.n}：${o}`;
+}
 export function parseRebuttal(text){
  const t=String(text||'');const rounds=[];
  for(let n=1;n<=3;n++){

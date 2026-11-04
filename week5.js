@@ -1,4 +1,4 @@
-import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5} from './week5-core.mjs?v=20261025-w5';
+import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5,rebuttalNext} from './week5-core.mjs?v=20261104-rb';
 import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261030-qai';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
@@ -122,7 +122,45 @@ const chStamp=el('div','',chSec,'w4-stamp');
 // AI 反方三回合
 const rbSec=el('section','',page,'w4-sec w4-askcard');
 const rbHead=el('div','',rbSec,'w4-sec-head');el('span','4',rbHead,'w4-n');el('h2','AI 反方：撐了十年的老闆拒絕三回合',rbHead);
-el('p','把你選的機會和五格證據帶給 AI，它扮演「做這一行十年、不想花錢的老闆」，每回合給一個拒絕理由、等你回應。你要用證據回，不是用形容詞。三回合後它會整理一份【反方紀錄】，複製整份貼回來。',rbSec,'w4-hint');
+el('p','把你選的機會和五格證據帶給 AI，它扮演「做這一行十年、不想花錢的老闆」，每回合給一個拒絕理由、等你回應。你要用證據回，不是用形容詞。三回合後它會給一段總結。',rbSec,'w4-hint');
+// 11/4：反方三回合直接在 app 裡跟 AI 老闆對話（手機也能用）；舊的「複製問題、開外部 AI、貼回紀錄」放在下面當備用。
+const rbApp=el('div','',rbSec,'w5-rb-app');
+el('p','',rbApp,'w5-rb-app-title').innerHTML='<b>在 app 裡跟 AI 老闆過三回合</b>（建議，手機也能用；每人最多 8 次）';
+const rbAppRow=el('div','',rbApp,'w4-row');const rbAppBtn=el('button','開始反方：請 AI 老闆給第 1 個拒絕',rbAppRow,'primary w5-rb-go');rbAppBtn.type='button';
+const rbReplyBox=el('div','',rbApp,'w5-rb-reply');rbReplyBox.hidden=true;
+const rbReplyLabel=el('p','',rbReplyBox,'w4-hint');
+const rbReplyTa=el('textarea','',rbReplyBox);rbReplyTa.rows=3;rbReplyTa.maxLength=800;rbReplyTa.placeholder='用證據回：數字、來源、你訪談到的事。回不出來就老實寫「這一題我沒證據」。';rbReplyTa.setAttribute('aria-label','我的回應');
+const rbReplyBtn=el('button','送出我的回應',rbReplyBox,'primary');rbReplyBtn.type='button';
+const rbAppNote=el('p','',rbApp,'w4-hint w4-near');rbAppNote.setAttribute('role','status');
+el('p','或者用外部 AI（舊方式）：',rbSec,'w4-hint');
+function rbRefresh(){
+ const n=rebuttalNext(data.rebuttal.text);rbReplyBox.hidden=n.step!=='reply';rbAppBtn.hidden=n.step==='reply'||n.step==='done';
+ if(n.step==='reject')rbAppBtn.textContent=n.n===1?'開始反方：請 AI 老闆給第 1 個拒絕':`請 AI 老闆給第 ${n.n} 個拒絕`;
+ if(n.step==='summary')rbAppBtn.textContent='三回合完成：請 AI 老闆總結';
+ if(n.step==='reply')rbReplyLabel.textContent=`我的回應 ${n.n}（回應上面老闆第 ${n.n} 回合的拒絕）`;
+ if(n.step==='done')rbAppNote.textContent='✅ 三回合與總結都完成了，紀錄已存。總結裡「最該補的證據」就是你期中前要做的事。';
+}
+async function rbAsk(){
+ if(locked)return;
+ if(!week5Progress(snapshot()).choice){rbAppNote.textContent='先在上面選一個機會，反方才知道要拒絕哪一個。';chSec.scrollIntoView({block:'center'});return;}
+ rbAppBtn.disabled=true;rbReplyBtn.disabled=true;rbAppNote.textContent='AI 老闆在想怎麼拒絕你…（約 5–15 秒）';
+ try{
+  for(let i=0;i<20&&saving;i++)await new Promise(r=>setTimeout(r,150));
+  if(dirty||!row){clearTimeout(timer);await save(true);}
+  if(dirty||!row)throw Error('內容還沒存好，請再按一次。');
+  let r;try{r=await api({action:'rebuttal_ai'});}catch(e){if(e.status===409&&e.body?.retry)r=await api({action:'rebuttal_ai'});else throw e;}
+  row=r.row;data.rebuttal=normalizeWeek5(row.data).rebuttal;rbTa.value=data.rebuttal.text;rbRadios.forEach(x=>x.checked=x.value===data.rebuttal.source);renderRounds();renderStamps();renderProgress();
+  rbAppNote.textContent=r.next?.step==='done'?'':(r.next?.step==='reply'?`老闆說話了（看上面「第 ${r.next.n} 回合」）。用證據回他。`:'');
+ }catch(e){if(e.status!==401)rbAppNote.textContent=e.message||'AI 老闆暫時沒有回應，請再按一次。';}
+ finally{rbAppBtn.disabled=false;rbReplyBtn.disabled=false;rbRefresh();}
+}
+rbAppBtn.addEventListener('click',rbAsk);
+rbReplyBtn.addEventListener('click',async()=>{
+ const n=rebuttalNext(data.rebuttal.text);const v=rbReplyTa.value.replace(/\s+/g,' ').trim();
+ if(n.step!=='reply')return;if(!v){rbAppNote.textContent='先寫你的回應（回不出來就寫「這一題我沒證據」）。';return;}
+ data.rebuttal.text=`${data.rebuttal.text.trim()}\n我的回應 ${n.n}：${v}`;rbTa.value=data.rebuttal.text;rbReplyTa.value='';dirty=true;renderRounds();
+ await rbAsk();
+});
 const rbRow=el('div','',rbSec,'w4-row');
 const rbBtn=el('button','複製問題、開 AI 反方',rbRow,'primary w4-go');rbBtn.type='button';
 const toolSel=el('select','',rbRow,'w4-tool');for(const [v,label] of TOOLS5){const o=el('option',label,toolSel);o.value=v;}toolSel.value=getTool();toolSel.setAttribute('aria-label','反方用哪個 AI');toolSel.title='建議 Claude：比較不會誤拒答，也比較會真的反駁。Gemini／Copilot 打開是空的，要按 ⌘V';toolSel.addEventListener('change',()=>setTool(toolSel.value));
@@ -131,9 +169,9 @@ for(const t of ['按上面的按鈕：問題已複製、AI 已打開（ChatGPT�
 const rbTa=el('textarea','',rbSec);rbTa.rows=6;rbTa.maxLength=6000;rbTa.placeholder='貼回整份【反方紀錄】（拒絕 1～3、我的回應 1～3、總結）';rbTa.setAttribute('aria-label','反方紀錄 貼回');
 const rbSrcRow=el('div','來源：',rbSec,'w4-src');
 const rbRadios=[['claude','Claude'],['gpt','GPT'],['gemini','Gemini'],['copilot','Copilot']].map(([v,label])=>{const l=el('label','',rbSrcRow);const r=el('input','',l);r.type='radio';r.name='w5-rb-src';r.value=v;l.append(label);r.addEventListener('change',()=>{if(r.checked){data.rebuttal.source=v;touch();}});return r;});
-const rbParsed=el('div','',rbSec,'w5-rounds');
+const rbParsed=el('div','',rbSec,'w5-rounds');rbApp.insertBefore(rbParsed,rbReplyBox);// 對話放在 app 內反方區（回應框正上方），手機不用往下捲過舊方式
 const rbStamp=el('div','',rbSec,'w4-stamp');
-rbTa.addEventListener('input',()=>{data.rebuttal.text=rbTa.value;if(!data.rebuttal.source){const d=getTool();data.rebuttal.source=d==='gemini'||d==='copilot'||d==='gpt'?d:'claude';rbRadios.forEach(r=>r.checked=r.value===data.rebuttal.source);}touch();renderRounds();});
+rbTa.addEventListener('input',()=>{data.rebuttal.text=rbTa.value;if(!data.rebuttal.source){const d=getTool();data.rebuttal.source=d==='gemini'||d==='copilot'||d==='gpt'?d:'claude';rbRadios.forEach(r=>r.checked=r.value===data.rebuttal.source);}touch();renderRounds();rbRefresh();});
 rbBtn.addEventListener('click',async()=>{const p=week5Progress(snapshot());if(!p.choice){msg.textContent='先在上面選一個機會，反方才知道要拒絕哪一個。';chSec.scrollIntoView({block:'center'});return;}await openTool(buildPrompt5('rebuttal',snapshot()),rbBtn,toolSel.value);});
 
 // 一頁六段
@@ -181,7 +219,7 @@ function fill(){
  oppInputs.forEach((i,n)=>i.value=data.opps[n]||'');
  for(const k of OPP_KEYS)for(const q of FIVE_QUESTIONS)cells[k+q.key].ev.value=data.scores[k][q.key].evidence;
  chRadios.forEach(r=>r.checked=r.value===data.choice.key);reason.value=data.choice.reason;
- rbTa.value=data.rebuttal.text;rbRadios.forEach(r=>r.checked=r.value===data.rebuttal.source);
+ rbTa.value=data.rebuttal.text;rbRadios.forEach(r=>r.checked=r.value===data.rebuttal.source);if(typeof rbRefresh==='function')rbRefresh();
  pgTas.forEach((t,i)=>t.value=data.page[i]||'');
  renderScores();renderChoice();renderRounds();renderStamps();renderProgress();
 }

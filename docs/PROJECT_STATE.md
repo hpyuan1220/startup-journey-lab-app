@@ -1891,3 +1891,16 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：單元 201/201（草稿五段＋跳脫、class_q_ai 次數／擋法／Week 5、模型失敗不扣次數）；bundled 版 week4.test 16/16；容器 Playwright Pixel 7：Week 4／5 空答案提示、填答後評語寫入、重整後還在、草稿五段、複製、下載 .doc；week4-student／week5-student 全綠。
 - 待：老師 push＋Dashboard 部署 week2-api。
 - 2026-10-31 22:47 上線後實測（測試帳號）：class_q_ai 回 502（模型呼叫失敗）。推論：正式環境的模型（WEEK2_OPENAI_MODEL／OPENAI_MODEL）不接受 `temperature`／`max_tokens`（Week 2 的呼叫本來就沒帶這兩個參數）。修：拿掉這兩個參數，與 Week 2 相同；失敗時 console.error 狀態碼與前 300 字，之後可在 Supabase Logs 查。
+- 上線（實證，2026-10-31 22:51）：origin/main＝1c7d283；Dashboard 部署 week2-api（SHA 9227b108581a7246）。正式站測試帳號 A1130309125：Week 4 Q1 按「讓 AI 評我的答案」→ 約 10 秒內評語寫入下方框（兩句、指出答對與漏掉的比例），按鈕旁「這題還能再問 2 次」；「把我的研究頁整理成研究筆記草稿」產出五段（4,686 字，帶入該帳號的產業線與痛）。測試帳號 Q1 留有「【測試】…」一句與一則 AI 評語（測試資料）。
+
+## 2026-11-04 班級名單移除 3 位（不在 TronClass 課程名單）
+- 老師對照 TronClass「Week 4 研究報告」作業名單（43 人）後，要求移除 app 名單上 3 位不在 TronClass 的學號（名字與學號見 docs/private/Week4_研究頁＋TronClass對照_20261104.tsv）。移除前查證三人在 Week 1–5、普查、老師備註皆無任何資料；用老師頁既有的 `teacher_roster op:'remove'`（伺服器端有作業資料就拒絕）逐一移除，皆 200；名單 47→44 列（含測試帳號），三人已不在名單。之後他們無法用學號＋邀請碼進入；要恢復時在老師頁名單「加人」即可。
+- 同日：Week 4 研究頁完成 34 人／TronClass 已繳 4 人（對照表見 docs/private）。
+
+## 2026-11-04 Week 5 反方三回合改在 app 內
+- 原因：反方原本＝複製問題→開外部 AI→三回合→複製【反方紀錄】貼回，手機上同樣會卡（10/30 課堂兩題已發生）。
+- `week5-core.mjs`：`rebuttalNext(text)`（reject n／reply n／summary／done）、`buildRebuttalTurn(d,next)`、`appendRebuttal`、`REBUTTAL_AI_LIMIT=8`；紀錄仍寫成 `拒絕 n：／我的回應 n：／總結：`，`parseRebuttal`、老師頁、一頁六段草稿都不用改。
+- `week2-api` 新 action `rebuttal_ai`：讀已存的 week5 列；沒選機會 409、該學生回應 409、已完成 409、個資 422、開放前 423、用完 429、模型失敗 502 不扣次數；老闆的話寫進 `data.rebuttal.text`（source 沒填時記 gpt）、`stamps.rebuttal`、`stamps.rbai.n`。
+- `week5.js`：反方區最上面「在 app 裡跟 AI 老闆過三回合」：按一次開始→對話顯示在回應框正上方→寫回應按「送出我的回應」自動存、自動要下一個拒絕→第三回合後自動要總結；舊的外部 AI＋貼回流程保留在下面（「或者用外部 AI」）。版本號 `week5-core.mjs?v=20261104-rb`、`week5.js?v=20261104-rb`、teacher-week4/5 同步。
+- 測試：單元 203/203（rebuttalNext／append 能被 parseRebuttal 讀回；Edge 輪流、總結、完成後擋、模型失敗不扣次數）；bundled week4.test 17/17；容器 Playwright Pixel 7：沒選機會提示→三回合→總結→完成、重整後三回合仍在；week4-student、week5-student 全綠。
+- 待：老師 push＋Dashboard 部署 week2-api，再用測試帳號走一次正式站。

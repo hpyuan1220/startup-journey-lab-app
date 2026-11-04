@@ -41,3 +41,21 @@ test('反方 prompt 帶機會與五格證據、三回合與【反方紀錄】；
  const pg=draftPage(d);assert.match(pg[0],/機會 B：b/);assert.match(pg[1],/外送抽成 30%/);assert.match(pg[5],/反方第 1 回合說：不花錢/);
  const e=filled();e.choice={key:'C',reason:''};assert.match(draftPage(e)[2],/估計/,'C 的證據是估計，草稿照抄讓學生看到');
 });
+
+import {rebuttalNext,appendRebuttal,buildRebuttalTurn,REBUTTAL_AI_LIMIT} from '../week5-core.mjs';
+test('反方 app 內：下一步判斷、追加格式能被 parseRebuttal 讀回、prompt 帶機會與紀錄',()=>{
+ assert.deepEqual(rebuttalNext(''),{step:'reject',n:1});
+ let t=appendRebuttal('',{step:'reject',n:1},'我用 LINE 就好。');assert.equal(t,'拒絕 1：我用 LINE 就好。');
+ assert.deepEqual(rebuttalNext(t),{step:'reply',n:1});
+ t+='\n我的回應 1：你上個月漏單 12 筆。';assert.deepEqual(rebuttalNext(t),{step:'reject',n:2});
+ t=appendRebuttal(t,{step:'reject',n:2},'學生做的我不信。')+'\n我的回應 2：免費試兩週。';
+ t=appendRebuttal(t,{step:'reject',n:3},'抽成我付過了。')+'\n我的回應 3：這一題我沒證據。';
+ assert.deepEqual(rebuttalNext(t),{step:'summary'});
+ t=appendRebuttal(t,{step:'summary'},'第一回合有說服我；最該補現在付給誰多少。');
+ assert.deepEqual(rebuttalNext(t),{step:'done'});
+ const p=parseRebuttal(t);assert.equal(p.rounds.length,3);assert.equal(p.rounds[1].reply,'免費試兩週。');assert.match(p.summary,/最該補/);
+ const d=normalizeWeek5({opps:['包租業者配對室友','b','c'],choice:{key:'A'},rebuttal:{text:'拒絕 1：x\n我的回應 1：y'}});
+ const u=buildRebuttalTurn(d,{step:'reject',n:2});assert.match(u,/包租業者配對室友/);assert.match(u,/我的回應 1：y/);assert.match(u,/第 2 個拒絕/);
+ assert.match(buildRebuttalTurn(d,{step:'summary'}),/總結/);
+ assert.equal(REBUTTAL_AI_LIMIT,8);
+});

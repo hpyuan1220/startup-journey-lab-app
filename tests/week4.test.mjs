@@ -184,3 +184,21 @@ test('Edge：class_q_ai 模型失敗回 502、不扣次數',async()=>{
  await h.call({action:'week4_save',token,version:null,data:{q1:'答'}});
  const r=await h.call({action:'class_q_ai',token,week:4,q:'q1'});assert.equal(r.status,502);assert.equal(h.tables.week4_research[0].stamps.qai,undefined);
 });
+test('Edge：rebuttal_ai 沒選機會擋、輪流（拒絕→等回應）、三回合後總結、完成後擋；模型失敗不扣次數',async()=>{
+ const h=await harness();const token=await h.student('A113270093');
+ await h.call({action:'week5_save',token,version:null,data:{opps:['機會甲','乙','丙']}});
+ assert.equal((await h.call({action:'rebuttal_ai',token})).status,409,'沒選機會');
+ let row=h.tables.week5_compare[0];
+ await h.call({action:'week5_save',token,version:row.version,data:{...row.data,choice:{key:'A',reason:''}}});
+ const r1=await h.call({action:'rebuttal_ai',token});assert.equal(r1.status,200);assert.deepEqual(r1.body.next,{step:'reply',n:1});
+ row=h.tables.week5_compare[0];assert.match(row.data.rebuttal.text,/^拒絕 1：/);assert.equal(row.stamps.rbai.n,1);
+ assert.equal((await h.call({action:'rebuttal_ai',token})).status,409,'要先回應');
+ for(let n=1;n<=3;n++){row=h.tables.week5_compare[0];
+  await h.call({action:'week5_save',token,version:row.version,data:{...row.data,rebuttal:{text:row.data.rebuttal.text+`\n我的回應 ${n}：證據 ${n}`,source:'gpt'}}});
+  const rr=await h.call({action:'rebuttal_ai',token});assert.equal(rr.status,200);}
+ row=h.tables.week5_compare[0];assert.match(row.data.rebuttal.text,/總結：/);assert.equal(row.stamps.rbai.n,4);
+ assert.equal((await h.call({action:'rebuttal_ai',token})).status,409,'完成後');
+ const h2=await harness({modelFails:true});const t2=await h2.student('A113270094');
+ await h2.call({action:'week5_save',token:t2,version:null,data:{opps:['甲','乙','丙'],choice:{key:'A',reason:''}}});
+ assert.equal((await h2.call({action:'rebuttal_ai',token:t2})).status,502);assert.equal(h2.tables.week5_compare[0].stamps.rbai,undefined);
+});

@@ -1,7 +1,7 @@
 import {resolveQuestions,attendance,stampLabel,industryName,normalizeWeek4,SOURCE_LABEL,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261030-qai';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,tagLabel,listenRemarks,suggestTag,suggestTagResearch,effectiveTag,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 import {doneCount} from './week3-core.mjs?v=20261013-preclass';
-import {normalizeWeek5,totals as totals5,topChoice,week5Progress,OPP_KEYS} from './week5-core.mjs?v=20261025-w5';
+import {normalizeWeek5,totals as totals5,topChoice,week5Progress,OPP_KEYS} from './week5-core.mjs?v=20261104-rb';
 // 教師洞察 · Week 4 第一輪研究
 // 老師不用按任何開關：出席＝課堂兩題在上課日 13:00–17:00 內存檔。這裡只有兩件事：改本週兩題（可留白用預設），
 // 和一人一列（出席、Q1／Q2、產業、三張卡的時間與來源；未答排最上；點代號展開看全文）。
