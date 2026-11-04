@@ -1903,4 +1903,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - `week2-api` 新 action `rebuttal_ai`：讀已存的 week5 列；沒選機會 409、該學生回應 409、已完成 409、個資 422、開放前 423、用完 429、模型失敗 502 不扣次數；老闆的話寫進 `data.rebuttal.text`（source 沒填時記 gpt）、`stamps.rebuttal`、`stamps.rbai.n`。
 - `week5.js`：反方區最上面「在 app 裡跟 AI 老闆過三回合」：按一次開始→對話顯示在回應框正上方→寫回應按「送出我的回應」自動存、自動要下一個拒絕→第三回合後自動要總結；舊的外部 AI＋貼回流程保留在下面（「或者用外部 AI」）。版本號 `week5-core.mjs?v=20261104-rb`、`week5.js?v=20261104-rb`、teacher-week4/5 同步。
 - 測試：單元 203/203（rebuttalNext／append 能被 parseRebuttal 讀回；Edge 輪流、總結、完成後擋、模型失敗不扣次數）；bundled week4.test 17/17；容器 Playwright Pixel 7：沒選機會提示→三回合→總結→完成、重整後三回合仍在；week4-student、week5-student 全綠。
-- 待：老師 push＋Dashboard 部署 week2-api，再用測試帳號走一次正式站。
+- 上線（實證，2026-11-04 16:21）：origin/main＝7f95c9e；Dashboard 部署 week2-api（SHA 1921f9d00b46850d，M 標記 0）。正式站測試帳號：已完成的反方回 409「三回合已經完成了」；暫時清空測試帳號反方紀錄→rebuttal_ai 3.3 秒回第 1 個拒絕（針對證據最弱處、老闆口吻、無標題），next＝reply 1；之後把測試帳號原本的反方紀錄存回（比對一致）。
