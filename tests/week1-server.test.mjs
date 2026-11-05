@@ -207,3 +207,12 @@ test('班上沒有名單：維持原本「先問一次」的流程',async()=>{
  const r=await h.call({action:'login',student_id:'A113270099',invite_code:'whatever'});
  assert.equal(r.status,409);assert.equal(r.body.unknown_student,true);
 });
+
+test('登入期限：老師測試帳號 A1130309125 維持 120 天，學生一樣 14 天',async()=>{
+ const h=await harness();const day=864e5;
+ const t=await h.call({action:'login',student_id:'A1130309125',invite_code:'whatever',confirm_new:true});assert.equal(t.status,200,t.body?.error);
+ const s=await h.call({action:'login',student_id:'A113270098',invite_code:'whatever',confirm_new:true});assert.equal(s.status,200,s.body?.error);
+ const left=id=>(Date.parse(h.tables.student_sessions.find(r=>r.student_id===id).expires_at)-Date.now())/day;
+ assert.ok(left('A1130309125')>119&&left('A1130309125')<=120,'測試帳號 120 天');
+ assert.ok(left('A113270098')>13.9&&left('A113270098')<=14,'學生 14 天');
+});

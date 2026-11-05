@@ -4,6 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type', 'Content-Type': 'application/json' };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
+// 老師的測試帳號（week4-core 的 TEST_STUDENT_IDS 同一個）：登入維持 120 天，整學期不用重登；學生一律 14 天。
+const TEST_SESSION_IDS = ['A1130309125'];
+const SESSION_MS = (id: string) => TEST_SESSION_IDS.includes(id) ? 120 * 864e5 : 1209600000;
 const hash = async (value: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)))).map((item) => item.toString(16).padStart(2, '0')).join('');
 
 Deno.serve(async (request) => {
@@ -45,7 +48,7 @@ Deno.serve(async (request) => {
       }, 409);
     }
     const token = crypto.randomUUID() + crypto.randomUUID();
-    const {error:sessionError}=await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + 1209600000).toISOString() }, { onConflict: 'class_id,student_id' });
+    const {error:sessionError}=await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + SESSION_MS(studentId)).toISOString() }, { onConflict: 'class_id,student_id' });
     if(sessionError)return reply({error:'登入暫時無法完成，請稍後重試。'},503);
     return reply({ token, class_id: classId, student_id: studentId });
   }
