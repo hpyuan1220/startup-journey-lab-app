@@ -51,6 +51,12 @@ export function challengeSentence(text,n=60){
  const hit=ss.find(x=>/困難|挑戰|不足|成本|流失|缺工|缺人|難以|風險|抽成|過重|過高/.test(x))||'';
  const c=hit.replace(/[。！？；，、\s]+$/,'');return c.length>n?c.slice(0,n)+'…':c;
 }
+// 痛落在這一行哪一段：卡 1 的「第一步」就是在回答這個（Week 1–3 的痛 → Week 4 的產業線），講稿第一段用它，不丟掉。
+export function fitSentence(text,n=80){
+ const ss=String(text||'').split(/(?<=[。！？])|\n/).map(x=>clean(x).replace(/^第[一二三]步[，,：:\s]*/,'').replace(/^(痛點(產業)?歸屬判斷|判斷|痛點判斷|產業判斷)[：:\s—-]*/,'')).filter(x=>x.length>=8&&!/[：:？?]$/.test(x)&&!/哪一段/.test(x));
+ const hit=ss.find(x=>/落在|關係不大|關係非常大|比較像|更偏向|屬於/.test(x))||'';
+ const c=hit.replace(/[。！？；，、\s]+$/,'');return c.length>n?c.slice(0,n)+'…':c;
+}
 const noSource=s=>String(s||'').replace(/[（(]\s*來源[：:][^）)]*[）)]/g,'').replace(/\*\*/g,'').trim();
 export function buildTalkScript(w4in,w5in,studentId=''){
  const a=normalizeWeek4(w4in||{}),b=normalizeWeek5(w5in||{}),blank='〔＿＿＿〕';
@@ -59,7 +65,7 @@ export function buildTalkScript(w4in,w5in,studentId=''){
  let best=null;if(key)for(const q of FIVE_QUESTIONS){const c=b.scores[key][q.key];if(c.score!==null&&(!best||c.score>best.c.score))best={q,c};}
  const rb=parseRebuttal(b.rebuttal.text),round=rb.rounds.length?rb.rounds[rb.rounds.length-1]:null;
  const parts=[
-  ['0:00–0:30　我的產業線和我的痛',`我研究的是「${ind}」。我的痛是：${firstBit(a.pain,60)||blank}。這個痛翻到業者那一面，落在這一行的${blank}。`],
+  ['0:00–0:30　我的產業線和我的痛',`我研究的是「${ind}」。我的痛是：${firstBit(a.pain,60)||blank}。${(f=>f?`Week 4 我發現：${f}。`:`這個痛翻到業者那一面，落在這一行的${blank}。`)(fitSentence(a.card1.text))}`],
   ['0:30–1:00　錢怎麼流、最大的一個挑戰',`錢是這樣流的：${paySentence(a.card1.text)||`${blank}（誰付錢給誰、付什麼錢、大約多少；不確定就說「估計」）`}。業者最大的挑戰是：${blank}（從卡 2 挑一個業者最常抱怨的困難，一句話）。`],
   ['1:00–1:40　我選的機會',key?`我選的是機會 ${key}：${firstBit(opp,70)||blank}。五問總分 ${t[key].sum}／${MAX_SCORE}${best?`，最強的是第 ${best.q.n} 問「${best.q.title}」：${firstBit(best.c.evidence,50)||blank}`:''}。${top&&key!==top?`我沒有選最高分的機會 ${top}，因為${firstBit(b.choice.reason,50)||blank}。`:''}${/付錢/.test(opp)?'':`第一個會付錢的人是${blank}。`}`:`我選的是機會${blank}：${blank}。（比較頁還沒選，先回 Week 5 打分、選一個。）`],
   ['1:40–2:00　老闆最狠的反對，我怎麼回',round?`老闆說：「${firstBit(round.reject,50)}」我的回應是：${firstBit(round.reply,60)||blank}。${rb.summary?`下一步我要補的證據是：${firstBit(rb.summary,40)}。`:''}`:`老闆說：「${blank}」我的回應是：${blank}。（比較頁的反方還沒做。）`],

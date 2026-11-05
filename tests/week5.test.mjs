@@ -96,3 +96,12 @@ test('錢流那一句：跳過「第一步」判斷段，抓有付錢＋數字�
  assert.equal(paySentence('這個痛點跟產業關係不大。比較像社群工具。'),'','找不到付錢的句子就留空');
  assert.equal(paySentence(''),'');
 });
+
+import {fitSentence} from '../note-v2.mjs';
+test('講稿第一段：用卡 1「第一步」那句說明痛落在這一行哪一段（Week 1–3 的痛接到 Week 4）',()=>{
+ assert.equal(fitSentence('## 第一步：痛點歸屬判斷\n這個痛點落在「餐飲小店」的**現場點餐與出餐環節**。關係很大。'),'這個痛點落在「餐飲小店」的現場點餐與出餐環節');
+ assert.match(fitSentence('第一步：判斷——關係不大。 你描述的是找組員的社交媒合，比較像教育科技。'),/關係不大|比較像/);
+ assert.equal(fitSentence('第一步：落在哪一段\n'),'','只有標題不算');
+ const t=buildTalkScript({pain:'午休排隊',industry:{card:1},card1:{text:'這個痛點落在「餐飲小店」的現場點餐與出餐環節。\n學生每餐付 80 元給小店。'}},{},'');
+ assert.match(t,/Week 4 我發現：這個痛點落在「餐飲小店」的現場點餐與出餐環節。/);assert.match(t,/錢是這樣流的：學生每餐付 80 元給小店。/);
+});
