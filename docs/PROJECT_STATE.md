@@ -1921,3 +1921,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 
 - 2026-11-05：講義 HTML 原始檔改存進 `docs/handouts/`（Week 6、Week 8 講義、給講師說明、Week 4 群組總結、Week 4 一頁），README 寫轉 PDF 的方法；含名單的版本在 docs/private。原因：Week 4／5 講義當初只存了 PDF，原始 HTML 留在當時的雲端暫存空間、已不存在，無法直接改。
 - 2026-11-05：Week 5 講義重做成 HTML（`docs/handouts/WEEK5_HANDOUT.html`，內容照原 PDF 四段），更新三處：第三段反方改成 app 內「開始反方」（每人最多 8 次，外部 AI 為備案）；期中步驟 1 加 Week 4「整理成研究筆記草稿」按鈕；步驟 3 改「存成 PDF，11/13 上課前交到 TronClass」（原本寫上傳到 app）。`materials/Week5_講義.pdf?v=20261105`；116/Week5 同步一份。
+- 2026-11-05：修「自己用 Gemini 問」（Week 4／5 課堂兩題）：原本呼叫 `openTool` 沒指定工具，會開「上次選的工具」（Week 5 預設是 Claude），不是 Gemini；現在固定開 Gemini，且不改掉反方的工具選擇（`openTool(…,'gemini',true)`）。答案空著時提示改成「先在上面的框寫下你的答案…」並把游標移到答案框。`week4.js／week5.js?v=20261105-gm`。單元 203/203。

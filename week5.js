@@ -22,8 +22,8 @@ const getTool=()=>{try{return localStorage.getItem(TOOL_KEY)||'claude';}catch{re
 const setTool=t=>{try{localStorage.setItem(TOOL_KEY,t);}catch{}};
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch{const ta=document.createElement('textarea');ta.value=t;document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}}
 function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看 app 幫你問了 AI 什麼（貼不出來時用）';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;pre.setAttribute('aria-label','這次複製給 AI 的問題');d.append(pre);const again=document.createElement('button');again.type='button';again.className='button-link w4-small';again.textContent='⌘V 貼出來是空的？按這裡再複製一次';const st=document.createElement('span');st.className='w4-copied';again.addEventListener('click',async()=>{const ok=await copyText(pre.value);st.textContent=ok?'已複製，到 AI 工具按 ⌘V':'這個瀏覽器不讓網頁複製：請在上面的框按 ⌘A 全選、⌘C';});d.append(again,st);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
-async function openTool(prompt,btn,tool){
- const t=tool||getTool();setTool(t);
+async function openTool(prompt,btn,tool,keep){
+ const t=tool||getTool();if(!keep)setTool(t);
  // 先同步開新分頁再等複製：手機 Safari 在 await 之後開分頁會被當成彈出視窗擋掉（10/30 課堂：按了沒反應）。
  const cp=copyText(prompt);
  window.open(toolUrl5(t,prompt),'_blank','noopener');
@@ -58,7 +58,7 @@ for(const k of ['q1','q2']){
  const stamp=el('div','',b,'w4-stamp');
  // 10/30 起：課堂兩題的 AI 評語直接在 app 裡回（伺服器用已存的答案問模型，評語寫進下面那格）；想自己問的人保留「自己用 Gemini 問」。
  const own=el('button','自己用 Gemini 問',row2,'button-link w4-small w4-own');own.type='button';
- own.addEventListener('click',async()=>{if(!ta.value.trim()){near(btn,'先寫下你的答案，再問 AI。');return;}await openTool(buildPrompt5(k,snapshot(),questions),btn);});
+ own.addEventListener('click',async()=>{if(!ta.value.trim()){near(own,'先在上面的框寫下你的答案，再按「自己用 Gemini 問」。');ta.focus();return;}await openTool(buildPrompt5(k,snapshot(),questions),btn,'gemini',true);});
  btn.addEventListener('click',async()=>{
   if(!ta.value.trim()){msg.textContent='先寫下你的答案，再讓 AI 評。';near(btn,msg.textContent);return;}
   if(locked||btn.disabled)return;
