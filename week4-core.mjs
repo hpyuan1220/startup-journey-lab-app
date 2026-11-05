@@ -98,7 +98,9 @@ export function noteDraftHtml(text){
  const body=parts.map((p,i)=>{const [h,...rest]=p.split('\n');return i===0?`<h1>${esc(h)}</h1><p>${rest.map(esc).join('<br>')}</p>`:`<h2>${esc(h)}</h2><p>${rest.map(esc).join('<br>')}</p>`;}).join('');
  return `<html><head><meta charset="utf-8"><title>Week 4 研究筆記 v1</title></head><body style="font-family:'PingFang TC','Microsoft JhengHei',sans-serif;line-height:1.6">${body}</body></html>`;
 }
-export const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||null;
+// 跟別週同一天上的週（只有課堂兩題、沒有自己的作答頁）：不放進 days，免得課程地圖的「本週」被換掉；出席另外算。
+export const SAME_DAY_WEEKS={6:'2026-11-06'};
+export const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||SAME_DAY_WEEKS[Number(week)]||null;
 export function classWindow(date){const s=CLASS_SCHEDULE;return [Date.parse(`${date}T${s.start}:00${s.tz}`),Date.parse(`${date}T${s.end}:00${s.tz}`)];}
 /** 回 {kind:'in',week} 或 {kind:'after'}；無效時間回 null */
 export function stampLabel(iso){
@@ -108,8 +110,10 @@ export function stampLabel(iso){
 }
 /** 出席：該週的 q1、q2 都在那一週的上課時段內存檔 */
 export function attendance(stamps,week){
- const l1=stampLabel(stamps?.q1),l2=stampLabel(stamps?.q2);
- return !!(l1&&l2&&l1.kind==='in'&&l2.kind==='in'&&l1.week===Number(week)&&l2.week===Number(week));
+ // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。
+ const date=classDate(week);if(!date)return false;const [a,b]=classWindow(date);
+ const t1=Date.parse(stamps?.q1||''),t2=Date.parse(stamps?.q2||'');
+ return t1>=a&&t1<=b&&t2>=a&&t2<=b;
 }
 export const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'課中':'課後'):'';};
 
@@ -117,6 +121,7 @@ export const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'�
 export const GENERIC_QUESTIONS={q1:'今天老師講的內容裡，哪一點最讓你意外？為什麼？',q2:'把今天講的任何一個例子套到你 Week 4 選的產業痛，一句話。',points:''};
 export const DEFAULT_QUESTIONS={
  4:{q1:'Bhidé 訪談 Inc. 500 創辦人發現大多數點子從哪來？一句話說這跟你 Week 1 的起點卡有什麼關係。',q2:'用六條路徑裡的任何一條，說出你的痛可能屬於的另一個產業，一句話。',points:'Bhidé 1994：約七成點子來自親身工作經驗、個位數來自系統性研究；新事業通常解創辦人自己身為顧客或員工碰到的問題。藍海六條路徑：替代產業、策略群、買方鏈、互補品、功能／情感、時間趨勢。'},
+ 6:{q1:'AI 新創地圖用「發電廠、引擎、零件、汽車」四層來比喻。為什麼錢先流到最底層，小團隊的機會卻在最上層？一句話。',q2:'你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。',points:'四層由下往上：發電廠＝算力（機房）、引擎＝基礎模型、零件與道路＝基礎設施（資料、agent 工具）、汽車＝應用。越底層單筆投資越大、家數越少（大模型、機房動輒數十億美元）；越往上單筆越小、家數越多。小團隊用現成的引擎和零件，把 AI 做成某一行的服務（島 6 垂直 Agent：Owner 餐廳、Gorgias 網店客服、EliseAI 租屋、Skello 排班）。10 座島：1 基礎模型、2 算力、3 資料平台、4 AI 寫程式、5 Agent 基礎設施、6 垂直 Agent、7 消費創意、8 實體 AI、9 世界模型、10 AI for Science。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
 export function resolveQuestions(week,row){
@@ -177,4 +182,15 @@ export function buildPrompt(kind,d,q){
   return `你是一門大學創業課的助教。下面是老師的問題${points?'、講義重點':''}、學生的回答。${task}\n【老師的問題】${question}\n${points?`【講義重點】${points}\n`:''}【學生的回答】${answer}`;
  }
  return '';
+}
+
+// ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
+export const CLASSQ_WEEKS=[6];
+const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
+export function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
+export function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
+export function applyStampsClassQ(prev,next,prevStamps,nowIso){
+ const stamps={...(prevStamps||{})};
+ for(const k of CLASSQ_FIELDS){if(!next[k])continue;const changed=!prev||prev[k]!==next[k];if(changed||!stamps[k])stamps[k]=nowIso;}
+ return stamps;
 }

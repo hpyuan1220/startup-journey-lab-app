@@ -330,7 +330,9 @@ function noteDraftHtml(text){
  const body=parts.map((p,i)=>{const [h,...rest]=p.split('\n');return i===0?`<h1>${esc(h)}</h1><p>${rest.map(esc).join('<br>')}</p>`:`<h2>${esc(h)}</h2><p>${rest.map(esc).join('<br>')}</p>`;}).join('');
  return `<html><head><meta charset="utf-8"><title>Week 4 研究筆記 v1</title></head><body style="font-family:'PingFang TC','Microsoft JhengHei',sans-serif;line-height:1.6">${body}</body></html>`;
 }
-const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||null;
+// 跟別週同一天上的週（只有課堂兩題、沒有自己的作答頁）：不放進 days，免得課程地圖的「本週」被換掉；出席另外算。
+const SAME_DAY_WEEKS={6:'2026-11-06'};
+const classDate=week=>(CLASS_SCHEDULE.days.find(([w])=>w===Number(week))||[])[1]||SAME_DAY_WEEKS[Number(week)]||null;
 function classWindow(date){const s=CLASS_SCHEDULE;return [Date.parse(`${date}T${s.start}:00${s.tz}`),Date.parse(`${date}T${s.end}:00${s.tz}`)];}
 /** 回 {kind:'in',week} 或 {kind:'after'}；無效時間回 null */
 function stampLabel(iso){
@@ -340,8 +342,10 @@ function stampLabel(iso){
 }
 /** 出席：該週的 q1、q2 都在那一週的上課時段內存檔 */
 function attendance(stamps,week){
- const l1=stampLabel(stamps?.q1),l2=stampLabel(stamps?.q2);
- return !!(l1&&l2&&l1.kind==='in'&&l2.kind==='in'&&l1.week===Number(week)&&l2.week===Number(week));
+ // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。
+ const date=classDate(week);if(!date)return false;const [a,b]=classWindow(date);
+ const t1=Date.parse(stamps?.q1||''),t2=Date.parse(stamps?.q2||'');
+ return t1>=a&&t1<=b&&t2>=a&&t2<=b;
 }
 const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'課中':'課後'):'';};
 
@@ -349,6 +353,7 @@ const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'課中':'
 const GENERIC_QUESTIONS={q1:'今天老師講的內容裡，哪一點最讓你意外？為什麼？',q2:'把今天講的任何一個例子套到你 Week 4 選的產業痛，一句話。',points:''};
 const DEFAULT_QUESTIONS={
  4:{q1:'Bhidé 訪談 Inc. 500 創辦人發現大多數點子從哪來？一句話說這跟你 Week 1 的起點卡有什麼關係。',q2:'用六條路徑裡的任何一條，說出你的痛可能屬於的另一個產業，一句話。',points:'Bhidé 1994：約七成點子來自親身工作經驗、個位數來自系統性研究；新事業通常解創辦人自己身為顧客或員工碰到的問題。藍海六條路徑：替代產業、策略群、買方鏈、互補品、功能／情感、時間趨勢。'},
+ 6:{q1:'AI 新創地圖用「發電廠、引擎、零件、汽車」四層來比喻。為什麼錢先流到最底層，小團隊的機會卻在最上層？一句話。',q2:'你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。',points:'四層由下往上：發電廠＝算力（機房）、引擎＝基礎模型、零件與道路＝基礎設施（資料、agent 工具）、汽車＝應用。越底層單筆投資越大、家數越少（大模型、機房動輒數十億美元）；越往上單筆越小、家數越多。小團隊用現成的引擎和零件，把 AI 做成某一行的服務（島 6 垂直 Agent：Owner 餐廳、Gorgias 網店客服、EliseAI 租屋、Skello 排班）。10 座島：1 基礎模型、2 算力、3 資料平台、4 AI 寫程式、5 Agent 基礎設施、6 垂直 Agent、7 消費創意、8 實體 AI、9 世界模型、10 AI for Science。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
 function resolveQuestions(week,row){
@@ -409,6 +414,17 @@ function buildPrompt(kind,d,q){
   return `你是一門大學創業課的助教。下面是老師的問題${points?'、講義重點':''}、學生的回答。${task}\n【老師的問題】${question}\n${points?`【講義重點】${points}\n`:''}【學生的回答】${answer}`;
  }
  return '';
+}
+
+// ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
+const CLASSQ_WEEKS=[6];
+const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
+function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
+function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
+function applyStampsClassQ(prev,next,prevStamps,nowIso){
+ const stamps={...(prevStamps||{})};
+ for(const k of CLASSQ_FIELDS){if(!next[k])continue;const changed=!prev||prev[k]!==next[k];if(changed||!stamps[k])stamps[k]=nowIso;}
+ return stamps;
 }
 
 // Week 5 三個機會比一比：純邏輯，瀏覽器與 Edge Function 共用（不碰 DOM、不碰網路）。
@@ -626,10 +642,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -757,13 +773,14 @@ Deno.serve(async req=>{
  // 用伺服器上「已存」的答案（不收前端送來的文字）；每題每人 CLASS_Q_AI_LIMIT 次，次數記在該列 stamps.qai；評語直接寫進 data.q1_ai／q2_ai。不計分。
  if(b.action==='class_q_ai'){
   const week=Number(b.week),k=String(b.q||'');
-  if(![4,5].includes(week)||!['q1','q2'].includes(k))return reply({error:'未知題目。'},400);
+  const generic=CLASSQ_WEEKS.includes(week);
+  if((![4,5].includes(week)&&!generic)||!['q1','q2'].includes(k))return reply({error:'未知題目。'},400);
   const envOpenQ=Deno.env.get('SJL_WRITE_OPEN_AT'),openAtQ=envOpenQ&&Number.isFinite(Date.parse(envOpenQ))?envOpenQ:WRITE_OPEN_AT;
   if(!writeOpen(s.student_id,Date.now(),openAtQ))return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再問。`},423);
-  const table=week===4?'week4_research':'week5_compare';
-  const r=must(await db.from(table).select('*').match(scope).maybeSingle());
+  const table=generic?'week_class_answers':week===4?'week4_research':'week5_compare',rowScope=generic?{...scope,week}:scope;
+  const r=must(await db.from(table).select('*').match(rowScope).maybeSingle());
   if(!r)return reply({error:'先把答案存起來，再讓 AI 評。'},409);
-  const d:any=week===4?normalizeWeek4(r.data):normalizeWeek5(r.data);
+  const d:any=generic?normalizeClassQ(r.data):week===4?normalizeWeek4(r.data):normalizeWeek5(r.data);
   if(!String(d[k]||'').trim())return reply({error:'先寫下你的答案並存檔，再讓 AI 評。'},422);
   if(privacyRisk(d[k]))return reply({error:'答案裡好像有姓名或聯絡方式，請拿掉再試。'},422);
   const qai=(r.stamps&&typeof r.stamps.qai==='object'&&r.stamps.qai)||{},used=Number(qai[k]?.n)||0;
@@ -781,7 +798,7 @@ Deno.serve(async req=>{
   }catch(e){console.error('class_q_ai',(e as Error)?.message);return reply({error:'AI 暫時沒有回應，請過一分鐘再按一次（這次不算次數）。答案已存，不影響出席。'},502);}
   const nextData={...d,[`${k}_ai`]:text};
   const nextStamps={...(r.stamps||{}),qai:{...qai,[k]:{n:used+1,at:new Date().toISOString()}}};
-  const saved=must(await db.from(table).update({data:nextData,stamps:nextStamps}).match({...scope,version:r.version}).select().maybeSingle());
+  const saved=must(await db.from(table).update({data:nextData,stamps:nextStamps}).match({...rowScope,version:r.version}).select().maybeSingle());
   if(!saved)return reply({error:'剛好有另一個存檔，請再按一次。',retry:true},409);
   return reply({row:saved,feedback:text,used:used+1,limit:CLASS_Q_AI_LIMIT});
  }
@@ -816,6 +833,22 @@ Deno.serve(async req=>{
  }
  // ---- Week 5 三個機會比一比：課堂兩題＋3×5 計分表＋選一個＋反方三回合＋一頁六段 ----
  // 三個機會從 Week 4 卡 3 帶出（學生沒存過本週就用它當種子；存過就用本週的，因為學生可能改字）。
+ // ---- 只有課堂兩題的週（Week 6 起；跟別週同一天上、沒有自己的作答頁）：一張通用表 week_class_answers，一人一週一列 ----
+ if(b.action==='classq_load'||b.action==='classq_save'){
+  const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);
+  const rowScope={...scope,week};
+  const qrow=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week}).maybeSingle());
+  let r=must(await db.from('week_class_answers').select('*').match(rowScope).maybeSingle());
+  const envOpen=Deno.env.get('SJL_WRITE_OPEN_AT'),openAt=envOpen&&Number.isFinite(Date.parse(envOpen))?envOpen:WRITE_OPEN_AT,canWrite=writeOpen(s.student_id,Date.now(),openAt);
+  if(b.action==='classq_save'){
+   if(!canWrite)return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再存。`,write_open:false,write_open_at:openAt},423);
+   const prev=r?normalizeClassQ(r.data):null,next=normalizeClassQ(b.data);
+   const stamps=applyStampsClassQ(prev,next,r?.stamps,new Date().toISOString());
+   if(r){if(r.version!==b.version)return reply({error:'另一個視窗已更新這一頁，請重新載入。'},409);r=must(await db.from('week_class_answers').update({data:next,stamps}).match({...rowScope,version:b.version}).select().maybeSingle());if(!r)return reply({error:'內容已更新，請重新載入。'},409);}
+   else r=must(await db.from('week_class_answers').insert({...rowScope,data:next,stamps}).select().single());
+  }
+  return reply({row:r,week,write_open:canWrite,write_open_at:openAt,questions:resolveQuestions(week,qrow)});
+ }
  if(b.action==='week5_load'||b.action==='week5_save'){
   const r4=must(await db.from('week4_research').select('data').match(scope).maybeSingle());
   const w4=normalizeWeek4(r4?.data||{});

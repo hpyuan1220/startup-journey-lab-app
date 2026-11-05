@@ -202,3 +202,36 @@ test('Edge：rebuttal_ai 沒選機會擋、輪流（拒絕→等回應）、三�
  await h2.call({action:'week5_save',token:t2,version:null,data:{opps:['甲','乙','丙'],choice:{key:'A',reason:''}}});
  assert.equal((await h2.call({action:'rebuttal_ai',token:t2})).status,502);assert.equal(h2.tables.week5_compare[0].stamps.rbai,undefined);
 });
+
+// ---- Week 6 起：只有課堂兩題的週（通用表 week_class_answers）----
+import {CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ,SAME_DAY_WEEKS,CLASS_SCHEDULE} from '../week4-core.mjs';
+test('課堂兩題週：Week 6 跟 Week 5 同一天，各算各的出席；課程地圖的上課日不含 Week 6',()=>{
+ assert.deepEqual(CLASSQ_WEEKS,[6]);assert.equal(classDate(6),'2026-11-06');assert.equal(SAME_DAY_WEEKS[6],'2026-11-06');
+ assert.ok(!CLASS_SCHEDULE.days.some(([w])=>w===6),'days 不放 Week 6（progress 的「本週」才不會變）');
+ const inClass={q1:'2026-11-06T05:10:00Z',q2:'2026-11-06T05:20:00Z'};
+ assert.equal(attendance(inClass,5),true);assert.equal(attendance(inClass,6),true);assert.equal(attendance(inClass,4),false);
+ assert.equal(attendance({q1:'2026-11-06T05:10:00Z',q2:'2026-11-06T09:30:00Z'},6),false,'Q2 課後不算');
+ assert.equal(attendance({q1:'2026-11-06T05:10:00Z'},6),false);
+ const q=resolveQuestions(6,null);assert.match(q.q1,/發電廠/);assert.match(q.q2,/群島地圖/);assert.ok(q.points.length>20);
+ assert.match(resolveQuestions(5,null).q2,/為什麼是現在/,'Week 5 預設 Q2 不再是群島題');
+ assert.deepEqual(normalizeClassQ({q1:' a ',q2:'x'.repeat(700),evil:1}),{q1:'a',q2:'x'.repeat(600),q1_ai:'',q2_ai:''});
+ const st=applyStampsClassQ(null,normalizeClassQ({q1:'a'}),{},'T1');assert.deepEqual(st,{q1:'T1'});
+ assert.deepEqual(applyStampsClassQ(normalizeClassQ({q1:'a'}),normalizeClassQ({q1:'a',q2:'b'}),st,'T2'),{q1:'T1',q2:'T2'},'沒改的不重蓋章');
+});
+test('Edge：classq_load／save（Week 6）一人一週一列、蓋章、版本、開放前 423；class_q_ai 用同一列；teacher_load 帶 week_class',async()=>{
+ const h=await harness();const token=await h.student('A113270093');
+ assert.equal((await h.call({action:'classq_load',token,week:5})).status,400,'Week 5 走自己的頁');
+ const l0=await h.call({action:'classq_load',token,week:6});assert.equal(l0.status,200);assert.equal(l0.body.row,null);assert.match(l0.body.questions.q1,/發電廠/);assert.equal(l0.body.write_open,true);
+ const s1=await h.call({action:'classq_save',token,week:6,version:null,data:{q1:'底層家數少、單筆大'}});assert.equal(s1.status,200);
+ assert.equal(h.tables.week_class_answers.length,1);const row=h.tables.week_class_answers[0];assert.equal(row.week,6);assert.equal(row.student_id,'A113270093');assert.ok(row.stamps.q1);assert.ok(!row.stamps.q2);
+ assert.equal((await h.call({action:'classq_save',token,week:6,version:99,data:{q1:'x'}})).status,409,'舊版本被擋');
+ const s2=await h.call({action:'classq_save',token,week:6,version:s1.body.row.version,data:{q1:'底層家數少、單筆大',q2:'島 6 Owner'}});assert.equal(s2.status,200);assert.ok(h.tables.week_class_answers[0].stamps.q2);assert.equal(h.tables.week_class_answers.length,1);
+ const ai=await h.call({action:'class_q_ai',token,week:6,q:'q2'});assert.equal(ai.status,200);assert.equal(h.tables.week_class_answers[0].data.q2_ai,ai.body.feedback.slice(0,400));assert.equal(h.tables.week_class_answers[0].stamps.qai.q2.n,1);
+ assert.match(JSON.stringify(h.inputs.at(-1)),/島 6 Owner/,'送給模型的是已存的 Week 6 答案');
+ const l1=await h.call({action:'classq_load',token,week:6});assert.equal(l1.body.row.data.q1,'底層家數少、單筆大');assert.equal(l1.body.row.data.q2_ai,ai.body.feedback.slice(0,400));
+ assert.equal((await h.call({action:'class_q_ai',token:await h.student('A113270094'),week:6,q:'q1'})).status,409,'別人沒存不能問');
+ globalThis.SJL_WRITE_OPEN_AT='2999-01-01T00:00:00Z';
+ try{const t2=await h.student('A113270095');assert.equal((await h.call({action:'classq_save',token:t2,week:6,version:null,data:{q1:'a'}})).status,423);assert.equal((await h.call({action:'classq_load',token:t2,week:6})).body.write_open,false);}
+ finally{delete globalThis.SJL_WRITE_OPEN_AT;}
+ const tl=await h.call({action:'teacher_load'},'teacher-token');assert.equal(tl.status,200);assert.equal(tl.body.week_class.length,1);
+});

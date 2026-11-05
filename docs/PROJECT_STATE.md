@@ -1922,3 +1922,14 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-05：講義 HTML 原始檔改存進 `docs/handouts/`（Week 6、Week 8 講義、給講師說明、Week 4 群組總結、Week 4 一頁），README 寫轉 PDF 的方法；含名單的版本在 docs/private。原因：Week 4／5 講義當初只存了 PDF，原始 HTML 留在當時的雲端暫存空間、已不存在，無法直接改。
 - 2026-11-05：Week 5 講義重做成 HTML（`docs/handouts/WEEK5_HANDOUT.html`，內容照原 PDF 四段），更新三處：第三段反方改成 app 內「開始反方」（每人最多 8 次，外部 AI 為備案）；期中步驟 1 加 Week 4「整理成研究筆記草稿」按鈕；步驟 3 改「存成 PDF，11/13 上課前交到 TronClass」（原本寫上傳到 app）。`materials/Week5_講義.pdf?v=20261105`；116/Week5 同步一份。
 - 2026-11-05：修「自己用 Gemini 問」（Week 4／5 課堂兩題）：原本呼叫 `openTool` 沒指定工具，會開「上次選的工具」（Week 5 預設是 Claude），不是 Gemini；現在固定開 Gemini，且不改掉反方的工具選擇（`openTool(…,'gemini',true)`）。答案空著時提示改成「先在上面的框寫下你的答案…」並把游標移到答案框。`week4.js／week5.js?v=20261105-gm`。單元 203/203。
+
+## 2026-11-05 Week 6 有自己的課堂兩題（跟 Week 5 分開算出席）
+- 決定（老師 11/5 晚）：Week 6 要有自己的兩題，明年 Week 6 可能單獨一堂；11/6 就拆成 4 題：Week 5 頁兩題＝Week 5 出席、Week 6 頁兩題＝Week 6 出席（每頁各算一次）。
+- 資料：通用表 `week_class_answers`（class_id, student_id, week 一人一週一列；data＝q1、q2、q1_ai、q2_ai；stamps＝存檔時間＋qai 次數；版本觸發器沿用 week4_bump_version；不掛 snapshot）。migration `20261105_week_class_answers.sql`，**要在正式庫 Run，Run 完才 Deploy**（teacher_load 會讀這張表）。
+- 核心 week4-core：`CLASSQ_WEEKS=[6]`、`normalizeClassQ`、`applyStampsClassQ`、`DEFAULT_QUESTIONS[6]`（Q1 四層比喻、Q2 群島最接近哪一座島）、`SAME_DAY_WEEKS={6:'2026-11-06'}`（不放進 CLASS_SCHEDULE.days，課程地圖「本週」不受影響）；`attendance(stamps,week)` 改用「那一週的上課日」判斷，同一天兩週各算各的。
+- Edge：`classq_load／classq_save`（week 必須在 CLASSQ_WEEKS；開放前 423）；`class_q_ai` 支援 week 6（讀寫 week_class_answers 那一列）；`teacher_load` 多回 `week_class`。
+- 前端：`classq.js`（`#week-six[data-classq=6]`；兩題、讓 AI 評、自己用 Gemini 問、自動存）；Week 6 頁加導覽列「學習藍圖與教材／Week 6 課堂兩題」（走 Week 2–5 同一套切換）；教師頁 `teacher-classq.js`（`#teacher-week6`：改兩題、出席、Q1／Q2 時間、備註、點開看全文）。relogin／app 的 return 加 week6。
+- Week 5 預設 Q2 回到「為什麼是現在」；老師頁 Week 5 那格目前存的是群島題，要按「回到預設」。
+- Week 6 講義第 9 段改成 Week 6 頁兩題（`Week6_講義.pdf?v=20261105b`）。
+- 以後要再加「只有兩題」的週（例如 Week 8）：把週數加進 `CLASSQ_WEEKS`、week.html 加 `<section id="week-eight" data-classq="8">` 與導覽列、DEFAULT_QUESTIONS 補題。
+- 測試：單元 205/205（含 bundled）；瀏覽器 week6-student 12 項全過（只有 YouTube iframe 在測試環境連不到的 localStorage 錯誤，不是本頁程式）；week4-student、week5-student 回歸全過。

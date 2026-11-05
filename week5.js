@@ -191,7 +191,7 @@ const prog=el('p','',foot,'w4-prog');
 const done=el('div','',foot,'w4-done');done.hidden=true;
 const doneTitle=el('p','',done,'w4-done-title');const doneBody=el('p','',done);
 const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載研究筆記 v2 範本（Word）',doneRow,'primary-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261025';tplLink.setAttribute('download','');
-const guideLink=el('a','看講義：五問出處與一頁怎麼寫',doneRow,'button-link');guideLink.href='materials/Week5_講義.pdf?v=20261025';guideLink.target='_blank';guideLink.rel='noreferrer';
+const guideLink=el('a','看講義：五問出處與一頁怎麼寫',doneRow,'button-link');guideLink.href='materials/Week5_講義.pdf?v=20261105';guideLink.target='_blank';guideLink.rel='noreferrer';
 
 function snapshot(){data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data.q1_ai=qBlocks.q1.ai.value;data.q2_ai=qBlocks.q2.ai.value;data.opps=oppInputs.map(i=>i.value);for(const k of OPP_KEYS)for(const q of FIVE_QUESTIONS)data.scores[k][q.key].evidence=cells[k+q.key].ev.value;data.choice.reason=reason.value;data.rebuttal.text=rbTa.value;data.page=pgTas.map(t=>t.value);return normalizeWeek5(data);}
 function touch(){dirty=true;saveBtn.textContent='存';clearTimeout(timer);timer=setTimeout(()=>save(true),1800);renderProgress();}
