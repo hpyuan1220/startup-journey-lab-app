@@ -1944,3 +1944,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - Week 7 頁（`#week-seven-materials`）：交兩件事、九段 PDF 格式表、2 分鐘四段表、老師看什麼、連回 Week 5／空白範本 v2／Week 5 講義。week.js 的 Week 7 文字同步更新。
 - 老師頁 `teacher-midterm.js`（`#teacher-week7`，排在 Week 5 與 Week 4 之間）：依學號＝上台順序；產業線（Week 4）、選定的機會＋那一句（Week 5）、總分、非最高分、反方回合、一頁段數；「上台分數」一欄存進 teacher_remarks week 7 的 note（學生看不到；離開欄位或 Enter 就存）；匯出上台順序表 CSV。純前端、不用 Deploy。
 - 測試：單元 207/207；week5-student 24 項全過（含講稿、Week 7 頁、老師名單排序、分數存檔）；week6-student 只剩 YouTube 測試環境雜訊。
+- 同日：講稿每段取字縮短（痛 60、錢流 60、挑戰 60、機會 70、證據 50、反方 50／60 字），實際資料原本約 586 字超過 2 分鐘。note-v2／week5 ?v=20261105-mt2。

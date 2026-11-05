@@ -1,6 +1,6 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5,rebuttalNext} from './week5-core.mjs?v=20261104-rb';
 import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
-import {buildNoteDraftV2,buildTalkScript,talkChars} from './note-v2.mjs?v=20261105-mt';
+import {buildNoteDraftV2,buildTalkScript,talkChars} from './note-v2.mjs?v=20261105-mt2';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
