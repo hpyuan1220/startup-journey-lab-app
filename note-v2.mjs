@@ -37,6 +37,21 @@ export function buildNoteDraftV2(w4in,w5in,studentId=''){
 
 // ---- 2 分鐘期中口頭報告講稿（11/13 上台）：四段、用學生自己的資料先填，學生再改成自己的話 ----
 const firstBit=(s,n=90)=>{const t=String(s||'').replace(/\s+/g,' ').trim();if(!t)return '';const cut=t.split(/(?<=[。！？])|\n/)[0]||t;const c2=cut.replace(/[。！？；，、\s]+$/,'');return (c2.length>n?c2.slice(0,n)+'…':c2);};
+// 錢流那一句：卡 1 常是 Gemini 的長段（「第一步：痛點歸屬判斷…」），第一句不是錢流。
+// 先找「有付錢動詞＋數字」的句子，再找只有付錢動詞的；都沒有就留空讓學生自己寫。去掉 markdown 和「1.」「第一行｜」「誰付錢給誰：」這類標頭。
+const PAY=/付|支付|繳|抽成|佣金|月費|訂閱|收費|租金|分潤|手續費/;
+const clean=s=>String(s||'').replace(/\*\*|##+|【貼回摘要】/g,'').replace(/^[\s*•\-–\d.、)）(（]+/,'').replace(/^(第[一二三四五]行|誰付錢給誰|錢流與頻次|金流與頻次)[｜|：:\s]*/,'').trim();
+export function paySentence(text,n=80){
+ const ss=String(text||'').split(/(?<=[。！？])|\n/).map(clean).filter(s=>s.length>=6&&!/^第[一二三]步/.test(s)&&!/[：:]$/.test(s)&&!/^補充/.test(s));
+ const hit=ss.find(s=>PAY.test(s)&&/\d/.test(s))||ss.find(s=>PAY.test(s))||'';
+ const c=hit.replace(/[。！？；，、\s]+$/,'');return c.length>n?c.slice(0,n)+'…':c;
+}
+export function challengeSentence(text,n=60){
+ const ss=String(text||'').split(/(?<=[。！？])|\n/).map(x=>clean(noSource(x))).filter(x=>x.length>=4&&!/^第[一二三]步/.test(x)&&!/[：:]$/.test(x)&&!/請只根據|筆記本|來源中|資料不足|找不到|無法確認|沒有找到|這一段有多大|^針對|^回答|^我研究的是|^家數|^營業額|^從業|^誰在|^市場規模/.test(x));
+ const hit=ss.find(x=>/困難|挑戰|不足|成本|流失|缺工|缺人|難以|風險|抽成|過重|過高/.test(x))||'';
+ const c=hit.replace(/[。！？；，、\s]+$/,'');return c.length>n?c.slice(0,n)+'…':c;
+}
+const noSource=s=>String(s||'').replace(/[（(]\s*來源[：:][^）)]*[）)]/g,'').replace(/\*\*/g,'').trim();
 export function buildTalkScript(w4in,w5in,studentId=''){
  const a=normalizeWeek4(w4in||{}),b=normalizeWeek5(w5in||{}),blank='〔＿＿＿〕';
  const ind=industryName(a)||blank,t=totals(b),top=topChoice(b),key=b.choice.key||top||'';
@@ -45,11 +60,11 @@ export function buildTalkScript(w4in,w5in,studentId=''){
  const rb=parseRebuttal(b.rebuttal.text),round=rb.rounds.length?rb.rounds[rb.rounds.length-1]:null;
  const parts=[
   ['0:00–0:30　我的產業線和我的痛',`我研究的是「${ind}」。我的痛是：${firstBit(a.pain,60)||blank}。這個痛翻到業者那一面，落在這一行的${blank}。`],
-  ['0:30–1:00　錢怎麼流、最大的一個挑戰',`錢是這樣流的：${firstBit(a.card1.text,60)||blank}。業者最大的挑戰是：${(c2=>c2?(/來源/.test(c2)?c2:`${c2}（來源：${blank}）`):`${blank}（來源：${blank}）`)(firstBit(a.card2.text,60))}。`],
+  ['0:30–1:00　錢怎麼流、最大的一個挑戰',`錢是這樣流的：${paySentence(a.card1.text)||`${blank}（誰付錢給誰、付什麼錢、大約多少；不確定就說「估計」）`}。業者最大的挑戰是：${blank}（從卡 2 挑一個業者最常抱怨的困難，一句話）。`],
   ['1:00–1:40　我選的機會',key?`我選的是機會 ${key}：${firstBit(opp,70)||blank}。五問總分 ${t[key].sum}／${MAX_SCORE}${best?`，最強的是第 ${best.q.n} 問「${best.q.title}」：${firstBit(best.c.evidence,50)||blank}`:''}。${top&&key!==top?`我沒有選最高分的機會 ${top}，因為${firstBit(b.choice.reason,50)||blank}。`:''}${/付錢/.test(opp)?'':`第一個會付錢的人是${blank}。`}`:`我選的是機會${blank}：${blank}。（比較頁還沒選，先回 Week 5 打分、選一個。）`],
   ['1:40–2:00　老闆最狠的反對，我怎麼回',round?`老闆說：「${firstBit(round.reject,50)}」我的回應是：${firstBit(round.reply,60)||blank}。${rb.summary?`下一步我要補的證據是：${firstBit(rb.summary,40)}。`:''}`:`老闆說：「${blank}」我的回應是：${blank}。（比較頁的反方還沒做。）`],
  ];
  const body=parts.map(([h,x])=>`【${h}】\n${x}`).join('\n\n');
- return `2 分鐘期中報告講稿（草稿）${studentId?'｜'+studentId:''}\n11/13 上台。唸一遍計時：中文 2 分鐘大約 450 字，超過就刪；每段只留一個數字、一個來源。〔＿＿＿〕是要你自己補的地方。\n\n${body}`;
+ return `2 分鐘期中報告講稿（草稿）${studentId?'｜'+studentId:''}\n11/13 上台。唸一遍計時：中文 2 分鐘大約 450 字，超過就刪；每段只留一個數字。〔＿＿＿〕是要你自己補的地方。\n\n${body}`;
 }
 export const talkChars=s=>String(s||'').split('\n\n').slice(1).join('').replace(/【[^】]*】|\s/g,'').length;

@@ -76,14 +76,23 @@ test('研究筆記 v2 草稿：Week 4＋Week 5 排進九段＋AI 使用紀錄；
 });
 import {buildTalkScript,talkChars} from '../note-v2.mjs';
 test('2 分鐘講稿：四段、帶產業線、選的機會與最強一問、反方最後一回合；空的也不會壞',()=>{
- const w4={pain:'開學前找室友碰運氣。後面還有很多',industry:{card:4},card1:{text:'房東付仲介費一個月租金。其他',source:'gemini'},card2:{text:'1. 空置率高（來源：經濟日報）\n2. 其他',source:'notebooklm'},card3:{opps:['甲','乙','丙']}};
+ const w4={pain:'開學前找室友碰運氣。後面還有很多',industry:{card:4},card1:{text:'房東付仲介費一個月租金。其他',source:'gemini'},card2:{text:'我研究的是台灣旅宿這一行裡、跟這個痛有關的那一段：\n1. 空置率高造成成本壓力（來源：經濟日報）\n2. 其他',source:'notebooklm'},card3:{opps:['甲','乙','丙']}};
  const sc=v=>({pay:{score:v,evidence:'房東已經付仲介'},freq:{score:1,evidence:'估計'},now:{score:0,evidence:''},unsolved:{score:1,evidence:'x'},entry:{score:1,evidence:'y'}});
  const w5={opps:['機會甲','機會乙',''],scores:{A:sc(2),B:sc(0)},choice:{key:'A',reason:''},rebuttal:{text:'拒絕 1：太貴\n我的回應 1：先免費\n拒絕 2：學生不可信\n我的回應 2：有兩家說要試\n總結：補訪談'},page:[]};
  const t=buildTalkScript(w4,w5,'A1');
  assert.equal((t.match(/【/g)||[]).length,4);assert.match(t,/旅宿與空間出租/);assert.match(t,/開學前找室友碰運氣。這個痛/,'只取第一句');
- assert.match(t,/房東付仲介費一個月租金。業者/);assert.match(t,/空置率高（來源：經濟日報）/);
+ assert.match(t,/房東付仲介費一個月租金。業者/);assert.match(t,/挑戰是：〔＿＿＿〕（從卡 2 挑一個/,'挑戰留給學生自己從卡 2 挑');assert.doesNotMatch(t.split('\n\n').slice(1).join(''),/來源/);
  assert.match(t,/機會 A：機會甲。五問總分 5／10，最強的是第 1 問「有人正在為它花錢嗎」：房東已經付仲介/);
  assert.match(t,/老闆說：「學生不可信」我的回應是：有兩家說要試/,'用最後一回合');assert.match(t,/補訪談/);
  assert.ok(talkChars(t)>50&&talkChars(t)<450);
  const e=buildTalkScript({},{},'');assert.equal((e.match(/【/g)||[]).length,4);assert.match(e,/比較頁還沒選/);
+});
+
+import {paySentence} from '../note-v2.mjs';
+test('錢流那一句：跳過「第一步」判斷段，抓有付錢＋數字的句子；去掉標頭與 markdown',()=>{
+ assert.equal(paySentence('## 第一步：痛點判斷 這個痛點落在餐飲小店。\n## 第二步：\n* (1) 金流與頻次：寵物主每次美容付錢 800–1500 元給美容店（估計）。'),'寵物主每次美容付錢 800–1500 元給美容店（估計）');
+ assert.equal(paySentence('1.誰付錢給誰：終端消費者以每單 NT$1,200～2,500（估計）付給電商賣家。2.業者最大的一個困難：廣告貴。'),'終端消費者以每單 NT$1,200～2,500（估計）付給電商賣家');
+ assert.equal(paySentence('第一行：消費者向業者購買商品，業者則向供應商進貨，並依平台規則支付交易相關費用。'),'消費者向業者購買商品，業者則向供應商進貨，並依平台規則支付交易相關費用');
+ assert.equal(paySentence('這個痛點跟產業關係不大。比較像社群工具。'),'','找不到付錢的句子就留空');
+ assert.equal(paySentence(''),'');
 });

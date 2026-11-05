@@ -1,6 +1,6 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5,rebuttalNext} from './week5-core.mjs?v=20261104-rb';
 import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
-import {buildNoteDraftV2,buildTalkScript,talkChars} from './note-v2.mjs?v=20261105-mt2';
+import {buildNoteDraftV2,buildTalkScript,talkChars} from './note-v2.mjs?v=20261105-mt4';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
@@ -228,7 +228,7 @@ const mtWord=el('button','下載成 Word',mtRow,'button-link');mtWord.type='butt
 const mtNote=el('p','',mtOut,'w4-hint');mtNote.setAttribute('role','status');
 // 拿到講稿之後怎麼做（同 Week 7 頁）：講稿框不存雲端，一定要先複製或下載出去再改。
 const mtSteps=el('ol','',mtOut,'w4-hint w5-talk-steps');
-for(const t of ['貼到自己的地方：Google 文件、Word、手機備忘錄都可以；或按「下載成 Word」。這個框不會存進雲端，重新整理就不見。','補空格：把〔＿＿＿〕換成自己的內容（例如我的痛落在這一行的哪一段、來源是哪一篇）。','改成自己的話：講稿是 app 從你的資料抓的句子，唸起來會卡，改成口語。','唸一遍、計時：超過 2 分鐘就刪；每段只留一個數字、一個來源。','11/13 上台：13:00–17:00 依學號順序，可以看手機或紙本講。講稿不用交；要交的是研究筆記 v2 的 PDF（TronClass）。'])el('li',t,mtSteps);
+for(const t of ['貼到自己的地方：Google 文件、Word、手機備忘錄都可以；或按「下載成 Word」。這個框不會存進雲端，重新整理就不見。','補空格：把〔＿＿＿〕換成自己的內容（例如我的痛落在這一行的哪一段、誰付錢給誰）。','改成自己的話：講稿是 app 從你的資料抓的句子，唸起來會卡，改成口語。','唸一遍、計時：超過 2 分鐘就刪；每段只留一個數字；錢流的數字不確定就說「估計」。','11/13 上台：13:00–17:00 依學號順序，可以看手機或紙本講。講稿不用交；要交的是研究筆記 v2 的 PDF（TronClass）。'])el('li',t,mtSteps);
 const mtCountNow=()=>{const n=talkChars(mtTa.value);mtCount.textContent=`講稿約 ${n} 字，照中文一分鐘約 220–250 字算，大約 ${Math.round(n/235*60)} 秒。${n>480?'超過 2 分鐘了，刪掉一些。':''}`;};
 mtTa.addEventListener('input',mtCountNow);
 mtBtn.addEventListener('click',async()=>{
