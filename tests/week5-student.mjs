@@ -48,6 +48,14 @@ const nv=await p.evaluate(()=>{const ta=document.querySelector('textarea[aria-la
 ok('研究筆記 v2 草稿：帶出 Week 4 卡 1、這頁計分與反方、九段齊全；有複製全文、下載 Word、空白範本',nv.shown&&/老闆付外送抽成三成/.test(nv.t)&&/6　五問計分表/.test(nv.t)&&/8　反方紀錄/.test(nv.t)&&/拒絕 1/.test(nv.t)&&/機會 B（總分 5／10/.test(nv.t)&&nv.btns.some(b=>/複製全文/.test(b))&&nv.btns.some(b=>/下載成 Word/.test(b))&&nv.tpl,{len:nv.t.length,btns:nv.btns,head:nv.t.slice(0,80)});
 const [dl]=await Promise.all([p.waitForEvent('download',{timeout:5000}).catch(()=>null),p.evaluate(()=>[...document.querySelectorAll('.w4-draft-out button')].find(b=>/下載成 Word/.test(b.textContent)).click())]);
 ok('下載 Word：檔名 Week5_research_note_v2_學號.doc',!!dl&&/^Week5_research_note_v2_A1132705\d\d\.doc$/.test(dl.suggestedFilename()),dl&&dl.suggestedFilename());
+// 期中：2 分鐘講稿＋Week 7 說明頁
+await p.evaluate(()=>[...document.querySelectorAll('#week-five button')].find(b=>/2 分鐘口頭報告講稿/.test(b.textContent)).click());await p.waitForTimeout(1200);
+const mt=await p.evaluate(()=>{const ta=document.querySelector('textarea[aria-label="2 分鐘講稿"]');return {t:ta?.value||'',count:ta?.closest('.w4-draft-out').querySelector('.w4-hint')?.textContent||'',w7:!!document.querySelector('#week-five a[href="week.html?week=7"]')};});
+ok('2 分鐘講稿：四段、帶 Week 4 產業線與這頁選的機會 B、反方最後一回合、有字數與秒數、連到 Week 7',(mt.t.match(/【/g)||[]).length===4&&/餐飲小店/.test(mt.t)&&/我選的是機會 B/.test(mt.t)&&/老闆說：「/.test(mt.t)&&/約 \d+ 字/.test(mt.count)&&/秒/.test(mt.count)&&mt.w7,{head:mt.t.slice(0,200),count:mt.count});
+await p.goto(`${BASE}/week.html?week=7`);await p.waitForTimeout(800);
+const w7=await p.evaluate(()=>{const s=document.querySelector('#week-seven-materials');return {shown:!!s&&!s.hidden,txt:s?.innerText.replace(/\s+/g,' ').slice(0,300)||'',rows:s?s.querySelectorAll('tbody tr').length:0,link:!!s?.querySelector('a[href="week.html?week=5#card"]'),title:document.querySelector('#week-title')?.textContent||''};});
+ok('Week 7 頁：期中說明（九段＋四段表、11/13 13:00–17:00、依學號、連到 Week 5）',w7.shown&&w7.rows===14&&/13:00–17:00/.test(w7.txt)&&/依學號/.test(w7.txt)&&w7.link&&/期中/.test(w7.title),w7);
+await p.goto(`${BASE}/week.html?week=5#card`);await p.waitForTimeout(1200);
 // 教師端
 const t=await post('week2-api',{action:'teacher_load'},'teacher-token');
 ok('teacher_load 有 week5 一列',Array.isArray(t.week5)&&t.week5.some(r=>r.student_id===SID));
@@ -65,5 +73,10 @@ const csv=await tp.evaluate(async()=>{let got='';const orig=URL.createObjectURL;
 const fold=await tp.evaluate(async()=>{const r={};for(const w of [5,4,2,1]){const sec=document.querySelector('#teacher-week'+w);const b=sec?.querySelector('h2 .tfold');if(!b){r[w]='no-btn';continue;}b.click();await new Promise(r=>setTimeout(r,50));const kids=[...sec.children].filter(c=>c.tagName!=='H2');const hid=kids.length>0&&kids.every(c=>c.hidden);const t1=b.textContent;b.click();await new Promise(r=>setTimeout(r,50));r[w]={hid,t1,t2:b.textContent,shown:kids.every(c=>!c.hidden)};}return r;});
 ok('教師端 Week 5／4／2／1 標題旁都有收合：收合後整區隱藏、再按展開',[5,4,2,1].every(w=>fold[w]&&fold[w].hid&&fold[w].t1==='展開'&&fold[w].t2==='收合'&&fold[w].shown),fold);
 ok('CSV 有 Week 5 欄位與這位學生的分數',/W5 A 分,W5 B 分,W5 C 分,W5 選,W5 非最高分/.test(csv)&&csv.split('\n').some(l=>l.includes(SID)&&/,10,5,0,B,是（有理由）,5,3,6,/.test(l)),csv.split('\n').find(l=>l.includes(SID))?.slice(0,200));
+const mtT=await tp.evaluate(async()=>{const s=document.querySelector('#teacher-week7');if(!s)return null;const row=[...s.querySelectorAll('tbody tr')].find(r=>r.innerText.includes(window.__SID||''));return {txt:s.querySelector('tbody').innerText.replace(/\s+/g,' ').slice(0,300),order:[...s.querySelectorAll('tbody tr td:nth-child(2)')].map(t=>t.textContent.split('　')[0])};});
+ok('教師端期中名單：依學號排序、有產業線（餐飲小店）、選定的機會 B',!!mtT&&/餐飲小店/.test(mtT.txt)&&/B 外送抽成高/.test(mtT.txt)&&JSON.stringify(mtT.order)===JSON.stringify([...mtT.order].sort()),mtT);
+await tp.evaluate(()=>{const i=document.querySelector('#teacher-week7 tbody input');i.value='85';i.dispatchEvent(new Event('change'));});await tp.waitForTimeout(800);
+const t7=await post('week2-api',{action:'teacher_load'},'teacher-token');
+ok('上台分數存進 Week 7 老師備註',t7.remarks.some(r=>r.week===7&&r.note==='85'));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);

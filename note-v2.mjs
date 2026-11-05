@@ -34,3 +34,22 @@ export function buildNoteDraftV2(w4in,w5in,studentId=''){
  const head=`產業研究筆記 v2（期中報告・草稿）${studentId?'｜'+studentId:''}\n產業線：${ind}　選定的機會：${key||'＿'}\n這份是 app 依你的 Week 4 研究頁＋Week 5 比較頁自動排的草稿：請改成自己的句子、每個主張補來源，存成 PDF，11/13 上課前交到 TronClass。`;
  return head+'\n\n'+sec.map(([h,x])=>`${h}\n${x}`).join('\n\n');
 }
+
+// ---- 2 分鐘期中口頭報告講稿（11/13 上台）：四段、用學生自己的資料先填，學生再改成自己的話 ----
+const firstBit=(s,n=90)=>{const t=String(s||'').replace(/\s+/g,' ').trim();if(!t)return '';const cut=t.split(/(?<=[。！？])|\n/)[0]||t;const c2=cut.replace(/[。！？；，、\s]+$/,'');return (c2.length>n?c2.slice(0,n)+'…':c2);};
+export function buildTalkScript(w4in,w5in,studentId=''){
+ const a=normalizeWeek4(w4in||{}),b=normalizeWeek5(w5in||{}),blank='〔＿＿＿〕';
+ const ind=industryName(a)||blank,t=totals(b),top=topChoice(b),key=b.choice.key||top||'';
+ const n=OPP_KEYS.indexOf(key),opp=key?(b.opps[n]||a.card3.opps[n]||blank):blank;
+ let best=null;if(key)for(const q of FIVE_QUESTIONS){const c=b.scores[key][q.key];if(c.score!==null&&(!best||c.score>best.c.score))best={q,c};}
+ const rb=parseRebuttal(b.rebuttal.text),round=rb.rounds.length?rb.rounds[rb.rounds.length-1]:null;
+ const parts=[
+  ['0:00–0:30　我的產業線和我的痛',`我研究的是「${ind}」。我的痛是：${firstBit(a.pain,120)||blank}。這個痛翻到業者那一面，落在這一行的${blank}（哪一段：誰在為它花錢、花時間）。`],
+  ['0:30–1:00　錢怎麼流、最大的一個挑戰',`錢是這樣流的：${firstBit(a.card1.text)||blank}。業者最大的挑戰是：${(c2=>c2?(/來源/.test(c2)?c2:`${c2}（來源：${blank}）`):`${blank}（來源：${blank}）`)(firstBit(a.card2.text))}。`],
+  ['1:00–1:40　我選的機會',key?`我選的是機會 ${key}：${opp}。五問總分 ${t[key].sum}／${MAX_SCORE}${best?`，最強的是第 ${best.q.n} 問「${best.q.title}」：${firstBit(best.c.evidence,80)||blank}`:''}。${top&&key!==top?`我沒有選最高分的機會 ${top}，因為${firstBit(b.choice.reason,80)||blank}。`:''}${/付錢/.test(opp)?'':`第一個會付錢的人是${blank}。`}`:`我選的是機會${blank}：${blank}。（比較頁還沒選，先回 Week 5 打分、選一個。）`],
+  ['1:40–2:00　老闆最狠的反對，我怎麼回',round?`老闆說：「${firstBit(round.reject,70)}」我的回應是：${firstBit(round.reply,80)||blank}。${rb.summary?`下一步我要補的證據是：${firstBit(rb.summary,60)}。`:''}`:`老闆說：「${blank}」我的回應是：${blank}。（比較頁的反方還沒做。）`],
+ ];
+ const body=parts.map(([h,x])=>`【${h}】\n${x}`).join('\n\n');
+ return `2 分鐘期中報告講稿（草稿）${studentId?'｜'+studentId:''}\n11/13 上台。唸一遍計時：中文 2 分鐘大約 450 字，超過就刪；每段只留一個數字、一個來源。〔＿＿＿〕是要你自己補的地方。\n\n${body}`;
+}
+export const talkChars=s=>String(s||'').split('\n\n').slice(1).join('').replace(/【[^】]*】|\s/g,'').length;

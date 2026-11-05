@@ -74,3 +74,16 @@ test('研究筆記 v2 草稿：Week 4＋Week 5 排進九段＋AI 使用紀錄；
  assert.equal(t.split('\n\n').length,11,'標頭＋十段，Word 會把每段第一行當小標');
  const e=buildNoteDraftV2({},{},'');assert.match(e,/還沒選產業線/);assert.match(e,/我選的是機會 ＿/);assert.equal(e.split('\n\n').length,11);
 });
+import {buildTalkScript,talkChars} from '../note-v2.mjs';
+test('2 分鐘講稿：四段、帶產業線、選的機會與最強一問、反方最後一回合；空的也不會壞',()=>{
+ const w4={pain:'開學前找室友碰運氣。後面還有很多',industry:{card:4},card1:{text:'房東付仲介費一個月租金。其他',source:'gemini'},card2:{text:'1. 空置率高（來源：經濟日報）\n2. 其他',source:'notebooklm'},card3:{opps:['甲','乙','丙']}};
+ const sc=v=>({pay:{score:v,evidence:'房東已經付仲介'},freq:{score:1,evidence:'估計'},now:{score:0,evidence:''},unsolved:{score:1,evidence:'x'},entry:{score:1,evidence:'y'}});
+ const w5={opps:['機會甲','機會乙',''],scores:{A:sc(2),B:sc(0)},choice:{key:'A',reason:''},rebuttal:{text:'拒絕 1：太貴\n我的回應 1：先免費\n拒絕 2：學生不可信\n我的回應 2：有兩家說要試\n總結：補訪談'},page:[]};
+ const t=buildTalkScript(w4,w5,'A1');
+ assert.equal((t.match(/【/g)||[]).length,4);assert.match(t,/旅宿與空間出租/);assert.match(t,/開學前找室友碰運氣。這個痛/,'只取第一句');
+ assert.match(t,/房東付仲介費一個月租金。業者/);assert.match(t,/空置率高（來源：經濟日報）/);
+ assert.match(t,/機會 A：機會甲。五問總分 5／10，最強的是第 1 問「有人正在為它花錢嗎」：房東已經付仲介/);
+ assert.match(t,/老闆說：「學生不可信」我的回應是：有兩家說要試/,'用最後一回合');assert.match(t,/補訪談/);
+ assert.ok(talkChars(t)>50&&talkChars(t)<450);
+ const e=buildTalkScript({},{},'');assert.equal((e.match(/【/g)||[]).length,4);assert.match(e,/比較頁還沒選/);
+});

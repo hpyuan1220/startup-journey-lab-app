@@ -1,6 +1,6 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5,rebuttalNext} from './week5-core.mjs?v=20261104-rb';
 import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
-import {buildNoteDraftV2} from './note-v2.mjs?v=20261105-n2';
+import {buildNoteDraftV2,buildTalkScript,talkChars} from './note-v2.mjs?v=20261105-mt';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
@@ -212,6 +212,31 @@ nvBtn.addEventListener('click',async()=>{
 });
 nvCopy.addEventListener('click',async()=>{const ok=await copyText(nvTa.value);if(!ok){nvTa.readOnly=false;nvTa.focus();nvTa.select();}nvNote.textContent=ok?'已複製。到 Google 文件或 Word 貼上（手機：長按→貼上）。':'自動複製失敗：文字已全選，請按「拷貝」。';});
 nvWord.addEventListener('click',()=>{const blob=new Blob(['\ufeff'+noteDraftHtml(nvTa.value).replace('<title>Week 4 研究筆記 v1</title>','<title>研究筆記 v2（期中報告）</title>')],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Week5_research_note_v2${session?.student_id?'_'+session.student_id:''}.doc`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);nvNote.textContent='已下載。iPhone：在預覽畫面按「分享」→ 選 Word／Pages／Google 文件；Android：在「下載」資料夾。';});
+// 期中（11/13）：交什麼＋2 分鐘講稿。講稿跟 v2 草稿一樣用 Week 4＋這一頁的資料先排好四段，學生再改成自己的話。
+const mtBox=el('div','',done,'w4-draft w5-midterm');
+el('p','期中（11/13）要交兩件事',mtBox,'w4-done-title');
+el('p','① PDF：按上面的「研究筆記 v2 草稿」，改成自己的句子、補來源，存成 PDF，11/13 13:00 前交到 TronClass。② 上台 2 分鐘：11/13 13:00–17:00 課堂上依學號順序上台，用下面的講稿練習。完整說明在 Week 7 頁。',mtBox,'w4-hint');
+const mtRow0=el('div','',mtBox,'w4-row');
+const mtBtn=el('button','幫我排 2 分鐘口頭報告講稿',mtRow0,'primary-link w4-draft-btn');mtBtn.type='button';
+const w7Link=el('a','看 Week 7 期中說明',mtRow0,'button-link');w7Link.href='week.html?week=7';
+const mtOut=el('div','',mtBox,'w4-draft-out');mtOut.hidden=true;
+const mtTa=el('textarea','',mtOut);mtTa.rows=14;mtTa.setAttribute('aria-label','2 分鐘講稿');
+const mtCount=el('p','',mtOut,'w4-hint');
+const mtRow=el('div','',mtOut,'w4-row');
+const mtCopy=el('button','複製講稿',mtRow,'button-link');mtCopy.type='button';
+const mtWord=el('button','下載成 Word',mtRow,'button-link');mtWord.type='button';
+const mtNote=el('p','',mtOut,'w4-hint');mtNote.setAttribute('role','status');
+const mtCountNow=()=>{const n=talkChars(mtTa.value);mtCount.textContent=`講稿約 ${n} 字，照中文一分鐘約 220–250 字算，大約 ${Math.round(n/235*60)} 秒。${n>480?'超過 2 分鐘了，刪掉一些。':''}`;};
+mtTa.addEventListener('input',mtCountNow);
+mtBtn.addEventListener('click',async()=>{
+ mtBtn.disabled=true;mtNote.textContent='';
+ let w4={};try{const r4=await api({action:'week4_load'});w4=r4.row?.data||{};}catch(e){if(e.status===401){mtBtn.disabled=false;return;}mtNote.textContent='Week 4 研究頁讀不到（'+(e.message||'連線失敗')+'），講稿先只放這一頁的內容。';}
+ mtTa.value=buildTalkScript(w4,snapshot(),session?.student_id||'');mtOut.hidden=false;mtBtn.disabled=false;mtCountNow();
+ if(!mtNote.textContent)mtNote.textContent='講稿好了：〔＿＿＿〕是要你自己補的地方。可以直接在框裡改；這個框不會存進雲端，改好請複製或下載。';
+ mtOut.scrollIntoView({block:'nearest'});
+});
+mtCopy.addEventListener('click',async()=>{const ok=await copyText(mtTa.value);if(!ok){mtTa.focus();mtTa.select();}mtNote.textContent=ok?'已複製。':'自動複製失敗：文字已全選，請按「拷貝」。';});
+mtWord.addEventListener('click',()=>{const blob=new Blob(['\ufeff'+noteDraftHtml(mtTa.value).replace('<title>Week 4 研究筆記 v1</title>','<title>期中 2 分鐘講稿</title>')],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Week7_talk_2min${session?.student_id?'_'+session.student_id:''}.doc`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);mtNote.textContent='已下載。';});
 const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載空白範本 v2（Word）',doneRow,'button-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261025';tplLink.setAttribute('download','');
 const guideLink=el('a','看講義：五問出處與一頁怎麼寫',doneRow,'button-link');guideLink.href='materials/Week5_講義.pdf?v=20261105';guideLink.target='_blank';guideLink.rel='noreferrer';
 
