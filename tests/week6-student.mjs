@@ -7,7 +7,7 @@ const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d)
 const b=await chromium.launch();
 const ctx=await b.newContext({viewport:{width:390,height:844},permissions:['clipboard-read','clipboard-write']});
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(String(e).slice(0,200)));
-await p.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));window.__opened=[];window.open=u=>{window.__opened.push(u);return null;};},[token,SID]);
+await p.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));window.__opened=[];window.open=u=>{window.__opened.push(u);return null;};const oc=document.execCommand.bind(document);document.execCommand=c=>{if(c==='copy'){const a=document.activeElement;window.__clip=a&&a.value;}return oc(c);};},[token,SID]);
 await p.goto(`${BASE}/week.html?week=6`);await p.waitForTimeout(1200);
 const v0=await p.evaluate(()=>({nav:!document.querySelector('#week-six-navigation').hidden,card:document.querySelector('#week-six').hidden,blue:document.querySelector('#week-blueprint').hidden,vid:!!document.querySelector('#week-blueprint .preclass iframe[src*="ZGPb1bSGqUE"]'),link:!!document.querySelector('#week-six-materials a[href="#card"]')}));
 ok('Week 6 學習藍圖：有導覽列、影片在標題下且載入、作答頁先藏起來、教材區有「答 Week 6 課堂兩題」',v0.nav&&v0.card&&!v0.blue&&v0.vid&&v0.link,v0);
@@ -21,7 +21,7 @@ await p.fill('textarea[aria-label="第一題答案"]','底層單筆大、家數�
 const st1=await p.evaluate(()=>document.querySelectorAll('#week-six .w4-stamp')[0].textContent);
 ok('打字自動存、Q1 出現「已存」',/已存/.test(st1),st1);
 await p.click('#week-six .w4-own');await p.waitForTimeout(300);
-ok('有答案按「自己用 Gemini 問」：開 Gemini、複製題目',await p.evaluate(()=>window.__opened[0]==='https://gemini.google.com/app'&&/已開 Gemini/.test(document.querySelector('#week-six .w4-near').textContent)));
+ok('有答案按「自己用 Gemini 問」：開 Gemini、同步複製題目＋答案、題目下面出現可再複製的問題框',await p.evaluate(()=>window.__opened[0]==='https://gemini.google.com/app'&&/已開 Gemini/.test(document.querySelector('#week-six .w4-near').textContent)&&(()=>{const d=document.querySelector('#week-six .w4-q .w4-prompt');return !!d&&d.open&&/發電廠/.test(d.querySelector('textarea').value)&&/底層單筆大/.test(d.querySelector('textarea').value);})()&&/底層單筆大/.test(window.__clip||'')));
 await p.fill('textarea[aria-label="第二題答案"]','島 6，Owner 幫餐廳做點餐');
 await p.click('#week-six .w4-q:nth-of-type(2) .w4-row button:first-child').catch(()=>{});
 await p.evaluate(()=>document.querySelectorAll('#week-six .w4-q')[1].querySelector('.w4-row button').click());await p.waitForTimeout(1500);

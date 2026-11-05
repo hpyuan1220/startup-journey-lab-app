@@ -13,7 +13,12 @@ const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(tex
 const msg=el('p','正在載入課堂兩題…');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');msg.className='w4-msg';
 async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,week,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;e.body=b;if(r.status===401)onExpired();throw e;}return b;}
 function onExpired(){if(expired)return;expired=true;showRelogin(root,'week'+week,msg);msg.textContent=dirty?'你剛打的內容還沒存進雲端：重新進入前請先複製起來。':'';}
-async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch{const ta=document.createElement('textarea');ta.value=t;document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}}
+// 先用同步的 execCommand（還在按鈕的點擊裡、頁面還有焦點時）複製，再用 clipboard API 補一次：
+// 先開新分頁再非同步複製，有些瀏覽器（例如 app 內嵌瀏覽器）會因為焦點已經跑到新分頁而沒複製到，貼出來是舊的剪貼簿內容。
+function copySync(t){const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}
+async function copyText(t){const ok=copySync(t);try{await navigator.clipboard.writeText(t);return true;}catch{return ok;}}
+// 貼不出來時的備案：把這次的問題放在題目下面，學生可以自己全選複製、或再按一次複製。
+function showPrompt(box,prompt){let d=box.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看 app 幫你問了 Gemini 什麼（貼出來不對時用）';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;pre.setAttribute('aria-label','這次複製給 AI 的問題');d.append(pre);const again=document.createElement('button');again.type='button';again.className='button-link w4-small';again.textContent='貼出來是空的或不對？按這裡再複製一次';const st=document.createElement('span');st.className='w4-copied';again.addEventListener('click',async()=>{const ok=await copyText(pre.value);st.textContent=ok?'已複製，到 Gemini 按 ⌘V（Windows：Ctrl+V）':'這個瀏覽器不讓網頁複製：請在上面的框全選（⌘A）再複製（⌘C）';});d.append(again,st);box.append(d);}d.querySelector('textarea').value=prompt;d.open=true;}
 // 狀態訊息也顯示在按鈕旁邊：頁面頂端那行在手機上看不到。
 function near(btn,text){let p=btn.parentElement.querySelector(':scope > .w4-near');if(!p){p=document.createElement('p');p.className='w4-hint w4-near';p.setAttribute('role','status');btn.parentElement.append(p);}p.textContent=text;}
 
@@ -37,7 +42,7 @@ for(const k of ['q1','q2']){
   if(!ta.value.trim()){near(own,'先在上面的框寫下你的答案，再按「自己用 Gemini 問」。');ta.focus();return;}
   const prompt=buildPrompt5(k,snapshot(),questions);const cp=copyText(prompt);
   window.open('https://gemini.google.com/app','_blank','noopener');
-  const ok=await cp;near(own,ok?'已開 Gemini。Gemini 打開會是空的，這是正常的：問題已經複製好了，到輸入框按 ⌘V（Windows：Ctrl+V）再送出。':'已開 Gemini；複製失敗，請自己把題目和答案貼過去。');
+  const ok=await cp;showPrompt(b,prompt);near(own,ok?'已開 Gemini。Gemini 打開會是空的，這是正常的：問題已經複製好了，到輸入框按 ⌘V（Windows：Ctrl+V）再送出。貼出來不對的話，用下面「看 app 幫你問了 Gemini 什麼」那格。':'已開 Gemini；這個瀏覽器沒讓網頁複製：請用下面那格全選複製，再貼到 Gemini。');
  });
  btn.addEventListener('click',async()=>{
   if(!ta.value.trim()){near(btn,'先寫下你的答案，再讓 AI 評。');ta.focus();return;}

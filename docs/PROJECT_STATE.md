@@ -1933,3 +1933,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - Week 6 講義第 9 段改成 Week 6 頁兩題（`Week6_講義.pdf?v=20261105b`）。
 - 以後要再加「只有兩題」的週（例如 Week 8）：把週數加進 `CLASSQ_WEEKS`、week.html 加 `<section id="week-eight" data-classq="8">` 與導覽列、DEFAULT_QUESTIONS 補題。
 - 測試：單元 205/205（含 bundled）；瀏覽器 week6-student 12 項全過（只有 YouTube iframe 在測試環境連不到的 localStorage 錯誤，不是本頁程式）；week4-student、week5-student 回歸全過。
+- 同日：老師在 app 內嵌瀏覽器按 Week 6「自己用 Gemini 問」，Gemini 貼出來的是舊的剪貼簿內容（Terminal 的文字）＝複製沒成功。classq.js 改成：先在按鈕點擊當下用同步 execCommand 複製，再用 clipboard API 補一次；題目下面一定打開「看 app 幫你問了 Gemini 什麼」框（可全選、可再複製）。`classq.js?v=20261105-cq2`。Week 4／5 原本就有這個框（Gemini 會自動打開），沒改。
