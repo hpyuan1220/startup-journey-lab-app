@@ -1918,3 +1918,5 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 老師已告知學生作業交 TronClass；app 從未做 PDF 上傳。改字：week.js（Week 5 交付、Week 7「11/13 13:00 前把 PDF 交到 TronClass」、Week 12「由組長把 PDF 交到 TronClass」）、week5.js 完成提示、week.html Week 5 課堂流程。`week.js／week5.js?v=20261105-tc`。注意：`materials/Week5_講義.pdf` 第 4 頁仍寫「上傳到 app（上傳功能 11/6 上線）」，原始檔不在 repo，未改。
 - `materials/Week6_講義.pdf`（3 頁）：三個數字、錢流到底層、四層比喻、4 大區 10 座島表（標方向一／二／三）、世界模型、島 6 對照組（含班上人數）、台灣在哪一層、接下來四週、Q2 填寫欄。Week 6 頁與 Week 5 教材區加連結；Week 6 status 加「講義 PDF」。
 - 測試：單元 203/203。
+
+- 2026-11-05：講義 HTML 原始檔改存進 `docs/handouts/`（Week 6、Week 8 講義、給講師說明、Week 4 群組總結、Week 4 一頁），README 寫轉 PDF 的方法；含名單的版本在 docs/private。原因：Week 4／5 講義當初只存了 PDF，原始 HTML 留在當時的雲端暫存空間、已不存在，無法直接改。

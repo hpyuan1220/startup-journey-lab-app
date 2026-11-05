@@ -1,0 +1,119 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Week 6 講義</title>
+<style>
+@page{size:A4;margin:12mm 13mm}
+*{box-sizing:border-box}
+body{font-family:"Noto Sans CJK TC",sans-serif;color:#1c2427;font-size:10pt;line-height:1.5;margin:0}
+h1{font-size:18pt;margin:0 0 2px;color:#1f4e63}
+.sub{color:#5d6b6f;margin:0 0 8px;font-size:9.3pt}
+h2{font-size:12pt;color:#1f4e63;margin:12px 0 5px;border-bottom:2px solid #1f4e63;padding-bottom:2px}
+h3{font-size:10.5pt;margin:0 0 3px;color:#1f4e63}
+table{width:100%;border-collapse:collapse;margin:4px 0}
+th,td{border:1px solid #cfc6b2;padding:4px 6px;text-align:left;vertical-align:top;font-size:9.2pt}
+th{background:#1f4e63;color:#fff}
+td.k{font-weight:700;background:#fbf8f1;white-space:nowrap}
+.key{border:2px solid #d9583b;border-radius:10px;padding:7px 11px;background:#fdf1ec;margin:7px 0}
+.key b{color:#d9583b}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{border:1px solid #cfc6b2;border-radius:8px;padding:7px 9px;background:#fff}
+.card p{margin:2px 0;font-size:9.2pt}
+.num{font-size:17pt;font-weight:700;color:#1f4e63;line-height:1.2}
+.foot{font-size:8.3pt;color:#5d6b6f;margin-top:6px}
+.pb{break-before:page}
+.dir{display:inline-block;font-size:8.3pt;padding:0 6px;border-radius:4px;background:#e4eef1;color:#1f4e63;margin-left:4px}
+.fill{background:#f4efe3;border-radius:6px;padding:5px 8px;margin:3px 0}
+</style></head><body>
+
+<h1>Week 6 講義｜AI 新創地圖 2026</h1>
+<p class="sub">11/6 後半場（約 60 分鐘）・ 錢往哪流、誰在做什麼、你的產業線會落在哪一層 ・ 今天只看地圖，11/27 才玩群島遊戲</p>
+
+<div class="key"><b>今天只要記住一句話：</b>錢先流到最底層的引擎和發電廠；小團隊的機會在最上層——<b>把現成的 AI，做成某一行的服務。</b></div>
+
+<h2>1. 三個數字：AI 拿走了多少錢</h2>
+<div class="g3">
+<div class="card"><div class="num">約 80%</div><p>2026 Q1 全球創投約 3,000 億美元，AI 新創拿到約 2,420 億。</p></div>
+<div class="card"><div class="num">64%</div><p>Q3 全球創投 1,590 億美元，AI 拿 1,020 億；單輪 10 億美元以上的公司有 27 家，創紀錄。</p></div>
+<div class="card"><div class="num">24%</div><p>Q3 全世界的創投資金，有 24% 投進舊金山灣區；美國合計約 57%。</p></div>
+</div>
+<p class="foot">資料：Crunchbase 2026 Q1、Q3 全球創投報告。這是「投資人投了多少」，不是「這些公司賺了多少」——燒錢和賺錢是兩件事。</p>
+
+<h2>2. 錢最先流到哪裡：最底層</h2>
+<ul>
+<li><b>模型：</b>Q1 最大的幾輪都給了大模型公司，單輪動輒數百億美元；2026 上半年，前兩大模型公司合計募了約 2,170 億美元。</li>
+<li><b>資料與新實驗室：</b>Q3 最大的兩輪是 Databricks（資料平台）、Safe Superintelligence（新模型實驗室），各 50 億美元。</li>
+<li><b>機房與算力：</b>Q3 單輪 30 億美元以上的還有 Crusoe、Nscale 這類蓋 AI 機房的公司。</li>
+</ul>
+<p><b>觀察：</b>越底層，單筆越大、家數越少；越往上（應用），單筆越小、家數越多——<b>你們的機會在上層</b>。</p>
+
+<h2>3. 一個比喻：發電廠、引擎、零件、汽車（由下往上，上面的都要用到下面的）</h2>
+<div class="g4">
+<div class="card"><h3>發電廠＝算力</h3><p>AI 要用的電腦和機房。沒有它，什麼 AI 都跑不動。</p></div>
+<div class="card"><h3>引擎＝基礎模型</h3><p>聊天機器人背後的大模型。全世界只有少數幾家做得起。</p></div>
+<div class="card"><h3>零件與道路＝基礎設施</h3><p>放資料的地方、打造和管理 agent 的工具，讓別人能在引擎上做產品。</p></div>
+<div class="card"><h3>汽車＝應用</h3><p>真正交到使用者手上的服務：寫程式、客服、法律、音樂、機器人。</p></div>
+</div>
+<p class="foot">例：我們課程 app 就是一台小汽車——資料放在 Supabase（零件），AI 評語用現成的大模型（引擎），大模型跑在機房裡（發電廠）。</p>
+
+<div class="pb"></div>
+<h2>4. 4 大區、10 座島：全學期共用的地圖</h2>
+<p>後三區就是期末分組研究的三個方向（11/20 會再講一次），每組三個人各負責一區。今天不用記公司細節，只要知道每座島<b>做什麼</b>。</p>
+<table>
+<tr><th style="width:21%">區</th><th style="width:17%">島</th><th>代表公司（做什麼）</th></tr>
+<tr><td class="k" rowspan="1">底層<br><span style="font-weight:400">大家共用的引擎</span></td><td>島 1 基礎模型</td><td>Anthropic（Claude）、Safe Superintelligence（新模型實驗室）、Reflection AI（開源模型）；美國以外：Mistral AI（法國）、Cohere＋Aleph Alpha（加拿大＋德國，合併中）、DeepSeek（中國）。重點：各國想要自己的引擎＝「主權 AI」。</td></tr>
+<tr><td class="k" rowspan="3">方向一<br>Agent 經濟基礎設施</td><td>島 2 算力</td><td>Crusoe（美）、Nscale（英）：訓練和執行 AI 的電腦與機房。</td></tr>
+<tr><td>島 3 資料平台</td><td>Supabase（課程 app 的資料庫）、Databricks：讓 App 和 AI 有地方放資料。</td></tr>
+<tr><td>島 5 Agent 基礎設施</td><td>LangChain（美）、n8n（德）、Daytona（美）：打造、串接、管住 agent 的工具。</td></tr>
+<tr><td class="k" rowspan="3">方向二<br>AI 原生服務</td><td>島 4 AI 寫程式</td><td>Lovable（瑞典）、Cognition（Devin，美）、Replit：AI 幫你寫程式、做 App。</td></tr>
+<tr><td>島 6 垂直 Agent</td><td>專做一行的 AI 員工：Owner（餐廳）、Gorgias（網店客服）、EliseAI（租屋管理）、Sierra（大企業客服）。</td></tr>
+<tr><td>島 7 消費創意</td><td>一般人直接用的 AI：ElevenLabs（聲音，英）、Suno（音樂，美）、Runway（影片）。</td></tr>
+<tr><td class="k" rowspan="3">方向三<br>AI 進入實體世界</td><td>島 8 實體 AI</td><td>機器人的大腦和身體：Figure AI、Skild AI、Physical Intelligence。</td></tr>
+<tr><td>島 9 世界模型</td><td>讓 AI 看懂、模擬真實世界：World Labs、Odyssey、AMI Labs。</td></tr>
+<tr><td>島 10 AI for Science</td><td>用 AI 找新材料、做實驗：CuspAI（英）、Periodic Labs。</td></tr>
+</table>
+<p class="foot">利益揭露：Anthropic 是開發 Claude 的公司；這份講義由 Claude 協助整理，數字都附來源。</p>
+
+<h2>5. 2026 最新：世界模型是什麼？</h2>
+<div class="g4">
+<div class="card"><h3>一句話</h3><p>讓 AI 看懂並模擬真實世界：空間、物體、會怎麼移動和碰撞。</p></div>
+<div class="card"><h3>跟聊天機器人差在哪</h3><p>聊天機器人讀文字、回文字；世界模型「看」影像、「想像」接下來會發生什麼。</p></div>
+<div class="card"><h3>用在哪裡</h3><p>做 3D 場景和遊戲；讓機器人和自駕車先在模擬世界裡練習。</p></div>
+<div class="card"><h3>2026 的錢</h3><p>9/28 AMD 宣布以約 82 億美元收購 World Labs（待主管機關核准）；AMI Labs（LeCun）種子輪 10.3 億美元，還沒有產品。</p></div>
+</div>
+<p><b>新創的結局不只上市</b>，也可能被大公司買走。世界模型是最新、最燒錢、離賺錢最遠的一區：看它時特別要分清楚「募到錢」和「有人付錢」。</p>
+
+<div class="pb"></div>
+<h2>6. 你的產業線，在島 6 找對照組</h2>
+<table>
+<tr><th style="width:27%">班上的產業線（選的人數）</th><th>島 6 的對照公司</th></tr>
+<tr><td>餐飲小店（10）</td><td>Owner（幫餐廳做網站、點餐和行銷）、Slang AI（幫餐廳接訂位電話）</td></tr>
+<tr><td>網拍與小品牌電商（7）</td><td>Gorgias（網店的 AI 客服）；台灣：漸強實驗室</td></tr>
+<tr><td>零工與臨時人力（6）</td><td>Skello（法國，排班）</td></tr>
+<tr><td>旅宿與空間出租（4）</td><td>EliseAI（租屋管理的 AI）、Besty AI（短租房東）</td></tr>
+<tr><td>在地小型服務業</td><td>Avoca、Fresha</td></tr>
+<tr><td>二手與租借（3）、寵物服務</td><td><b>還找不到對照</b>＝美國歐洲也還沒做好＝你們的機會</td></tr>
+</table>
+<p>第二輪研究（11/20 起）：每個方向都要拿一家群島公司當對照，用同樣的七格寫「我們這一行」。</p>
+
+<h2>7. 台灣在哪一層？</h2>
+<div class="g2">
+<div class="card"><h3>現況：台灣強在底層硬體</h3><p>晶片代工：先進 AI 晶片大多在台灣製造；伺服器和電子零件的供應鏈——也就是「發電廠」和「引擎」背後的工廠。但這一層新創門檻極高。</p></div>
+<div class="card"><h3>本課的推論：機會在上層應用</h3><p>中文、在地化的垂直 Agent；中小企業和小店非常多，是第一批客戶；餐飲、零售、旅宿、製造的產業 know-how；小團隊用現成的引擎和零件進得去。</p></div>
+</div>
+<p class="foot">右邊是推論，不是結論：你的期末研究要用證據證明或推翻它。</p>
+
+<h2>8. 接下來：這張地圖怎麼用</h2>
+<table>
+<tr><th style="width:12%">日期</th><th style="width:28%">課程</th><th>跟地圖的關係</th></tr>
+<tr><td>11/13</td><td>期中個人報告</td><td>照原計畫，用自己 Week 4–5 的產業與機會；PDF 交到 TronClass。</td></tr>
+<tr><td>11/20</td><td>AI Agent 專題講座＋建組</td><td>講師講三個方向；三人一組、一組一個產業，每人認領一個方向（＝地圖的一區）。</td></tr>
+<tr><td>11/27</td><td>群島遊戲：作答</td><td>15 家公司各 3 句是非題（誰付錢、怎麼收費、搶誰的預算）＋估值題，下課前鎖住 → 方向卡 v1。</td></tr>
+<tr><td>12/4</td><td>群島遊戲：揭曉</td><td>AI 老師帶你用 Gemini 查證錯題，打開全圖卡七格 → 方向卡 v2。</td></tr>
+</table>
+
+<h2>9. 今天的課堂第 2 題（Week 5 頁作答，11/6 13:00–17:00 內存檔＝出席）</h2>
+<p><b>Q2</b>　你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。</p>
+<div class="fill">我的產業線：＿＿＿＿＿＿　最接近：島 ＿＿　對照公司：＿＿＿＿＿＿<br>它跟我這一行的關係：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</div>
+
+<p class="foot">資料來源：Crunchbase 2026 Q1／Q3 全球創投報告；各公司官網與募資新聞（查核日 2026/10/25、10/29）。完整簡報與課前影片在 app 的 Week 6 頁。Startup Journey Lab ・ 世新大學 企管三甲</p>
+</body></html>

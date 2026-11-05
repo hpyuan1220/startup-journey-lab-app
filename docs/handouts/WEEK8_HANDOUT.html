@@ -1,0 +1,164 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>Week 8 講義</title>
+<style>
+@page{size:A4;margin:12mm 13mm}
+*{box-sizing:border-box}
+body{font-family:"Noto Sans CJK TC",sans-serif;color:#1c2427;font-size:10pt;line-height:1.5;margin:0}
+h1{font-size:18pt;margin:0 0 2px;color:#1f4e63}
+.sub{color:#5d6b6f;margin:0 0 8px;font-size:9.3pt}
+h2{font-size:12pt;color:#1f4e63;margin:12px 0 5px;border-bottom:2px solid #1f4e63;padding-bottom:2px}
+h3{font-size:10.5pt;margin:0 0 3px;color:#1f4e63}
+table{width:100%;border-collapse:collapse;margin:4px 0}
+th,td{border:1px solid #cfc6b2;padding:4px 6px;text-align:left;vertical-align:top;font-size:9.2pt}
+th{background:#1f4e63;color:#fff}
+td.k{font-weight:700;background:#fbf8f1;width:14%}
+.key{border:2px solid #d9583b;border-radius:10px;padding:7px 11px;background:#fdf1ec;margin:7px 0}
+.key b{color:#d9583b}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.card{border:1px solid #cfc6b2;border-radius:8px;padding:7px 9px;background:#fff}
+.card p{margin:2px 0;font-size:9.2pt}
+ol,ul{margin:3px 0;padding-left:1.25em}li{margin:1px 0}
+.n{display:inline-block;background:#1f4e63;color:#fff;border-radius:4px;padding:0 6px;margin-right:4px;font-size:9pt}
+.foot{font-size:8.3pt;color:#5d6b6f;margin-top:8px}
+.pb{break-before:page}
+.fill{background:#f4efe3;border-radius:6px;padding:5px 8px;margin:3px 0}
+</style></head><body>
+
+<h1>Week 8 講義｜AI Agent 最新功能與三大商業趨勢</h1>
+<p class="sub">11/20 專題講座 ・ 從「買鍋子自己炒」到「全自動中央廚房」・ 講座內容由講師提供，本講義整理重點並接上本課的建組與 11/27 群島遊戲</p>
+
+<div class="key"><b>一句話：</b>以前的 AI 是<b>軍師</b>（給建議、你去做）；現在的 AI Agent 是<b>實習生／外包商</b>（你給目標、它自己找工具把事做完）。管理實習生靠的是：<b>拆流程、給工具、設關卡</b>——這就是組織設計。</div>
+
+<h2>1. 鍋具比喻：誰出嘴、誰出手？</h2>
+<div class="g3">
+<div class="card"><h3>傳統軟體＝鐵鍋＋瓦斯爐</h3><p>Excel、ERP、SaaS 很好用，但買菜、切菜、開火、翻炒都要你自己來。</p></div>
+<div class="card"><h3>第一代 AI＝語音食譜機</h3><p>你問紅燒肉怎麼做，它唸出完美步驟。菜還是你切——<b>只出嘴、不出手</b>。</p></div>
+<div class="card"><h3>AI Agent＝全自動料理機＋買菜車</h3><p>你說「今晚八點吃低脂紅燒肉」，它自己查冰箱、下單、燉煮、端上桌。</p></div>
+</div>
+<p><b>Agent 的四個動作：</b><span class="n">①</span>感知（冰箱有什麼）<span class="n">②</span>推理拆解（缺肉先下單、6:30 開火）<span class="n">③</span>呼叫工具（購物 App、電鍋、行事曆）<span class="n">④</span>自主完成與修正（太鹹加水、缺貨換一家）。Chatbot 只有②。</p>
+
+<h2>2. 三個方向怎麼分（＝群島地圖的三大區）</h2>
+<table>
+<tr><th></th><th>方向一｜Agent 經濟基礎設施</th><th>方向二｜AI 原生服務</th><th>方向三｜走進實體世界</th></tr>
+<tr><td class="k">一句話</td><td>淘金熱裡賣鏟子</td><td>搶人力預算，不是軟體預算</td><td>一定有硬體或現場人員在迴路裡</td></tr>
+<tr><td class="k">客戶是誰</td><td>做 Agent 的公司</td><td>一般企業的老闆</td><td>有現場的企業：工廠、物流、零售、照護</td></tr>
+<tr><td class="k">賣什麼</td><td>協定（MCP）、資料管線、授權、監控、結算</td><td>做完的結果：帳記完、客服接完、文件審完</td><td>派工、檢測、調度</td></tr>
+<tr><td class="k">怎麼收錢</td><td>隨 Agent 數量成長（用量、授權）</td><td>按件、按結果，不按席位</td><td>設備＋服務，或按派工件數</td></tr>
+<tr><td class="k">資料從哪來</td><td>別人的 Agent 透過你的插座</td><td>客戶的文件、對話、帳務</td><td>感測器與鏡頭</td></tr>
+<tr><td class="k">群島的島</td><td>島 2 算力、島 3 資料平台、島 5 Agent 基礎設施</td><td>島 4 AI 寫程式、島 6 垂直 Agent、島 7 消費創意</td><td>島 8 實體 AI、島 9 世界模型、島 10 AI for Science</td></tr>
+</table>
+<p class="foot">島 1 基礎模型（Mistral 等）是大家共用的「引擎」，在最底層。「三個方向」是目前創投圈常用的分類方式，不是單一出處。</p>
+
+<h2>3. 方向一的五大底層功能（你聘了一位偶爾會「喝醉」的實習生）</h2>
+<ol>
+<li><b>工具串接協定（萬用插座，如 MCP）</b>：插上就能連進公司的 LINE、ERP、資料庫。</li>
+<li><b>記憶與資料管線</b>：記得客人上次嫌太鹹、對花生過敏；把亂七八糟的歷史資料洗乾淨。</li>
+<li><b>身分與授權（門禁卡）</b>：「只能看不能改」「超過 1,000 元要主管按確認」（Human-in-the-loop）。</li>
+<li><b>評測與監控（食安探針）</b>：24 小時盯著 AI 有沒有亂講話、偷工減料。</li>
+<li><b>Agent 之間的付款與結算（限額信用卡）</b>：Visa、Mastercard、Google、Stripe 的標準陸續到位。</li>
+</ol>
+
+<div class="pb"></div>
+<h2>4. 企管系可以做的生意（講師列的 12 個題目）</h2>
+<table>
+<tr><th style="width:16%">方向</th><th>題目：做什麼 → 賣給誰 → 怎麼收錢</th></tr>
+<tr><td class="k">方向一</td><td>
+① <b>產業專用插座</b>：幫你熟的產業（診所、會計事務所、餐飲 POS、補習班）做 MCP 連接器 → 做 Agent 的公司 → 每月授權或按呼叫次數<br>
+② <b>Agent 門禁與簽核</b>：設定每隻 Agent 能看、能改、多少錢要誰簽 → 不敢放權的中大型企業 → 導入費＋月維運費<br>
+③ <b>Agent 稽核與簽證</b>：像會計師查帳，抽測 Agent 會不會做錯 → 董事會、保險、法遵 → 按季／按年<br>
+④ <b>Agent 結算與爭議處理</b>：兩家公司的 Agent 交易後誰對帳、誰退款 → 供應鏈夥伴 → 每筆抽手續費</td></tr>
+<tr><td class="k">方向二</td><td>
+⑤ <b>中小企業記帳報稅做完</b> → 沒有專職會計的小店 → 每月固定費，比外包便宜一半<br>
+⑥ <b>電商客服與退換貨接完</b> → 中小型電商品牌 → 每處理完一件收固定費<br>
+⑦ <b>政府補助與標案文件寫完</b> → 沒人力寫件的中小企業 → 基本費＋核准後抽成<br>
+⑧ <b>招募初篩與排面試做完</b> → 常態缺工的餐飲、物流、製造業 → 按職缺或到職人數</td></tr>
+<tr><td class="k">方向三</td><td>
+⑨ <b>水電冷氣維修派工</b>：拍照錄音判斷故障、派最近有料有空的師傅 → 維修行、物業 → 每趟抽成<br>
+⑩ <b>長照與安養機構的跌倒與異常監測</b>：第一時間呼叫最近的照護員、自動留紀錄 → 安養中心、醫院病房 → 按床位月費<br>
+⑪ <b>餐飲後場視覺</b>：看冰箱與備料區剩多少、放多久、溫度，自動叫貨與食安紀錄 → 連鎖餐飲 → 每店月費＋硬體租賃<br>
+⑫ <b>農業巡田與精準噴灑</b>：無人機找缺水、病蟲害區塊 → 果園、茶園、合作社 → 按公頃按次</td></tr>
+</table>
+<p class="foot">本課研究照護類題目時，只做提醒、排班、派工這一層，不做診斷或醫療建議。</p>
+
+<h2>5. 算術題：為什麼創投瘋狂投資方向二（小公司記帳，每月）</h2>
+<div class="g3">
+<div class="card"><h3>買會計軟體：3,000 元</h3><p>這是「軟體預算」。</p></div>
+<div class="card"><h3>請記帳或外包：35,000 元</h3><p>這是「人力預算」。</p></div>
+<div class="card"><h3>AI 公司把帳做完：15,000 元</h3><p>老闆省一半以上；AI 公司營收是賣軟體的 5 倍。</p></div>
+</div>
+<p><b>挑題訣竅：</b>找<b>重複、規則明確、錯了可以補救</b>的工作，先算出「老闆現在每月付多少人力、你收多少、還剩多少毛利」。</p>
+
+<h2>6. 導入前，老闆一定會問的四個問題</h2>
+<div class="g2">
+<div class="card"><h3>它會不會做錯？</h3><p>會：幻覺、誤判、多步驟錯誤累積。所以要監控，高風險步驟留人按確認。</p></div>
+<div class="card"><h3>它真的比較便宜嗎？</h3><p>每呼叫一次工具都要錢，跑 200 步的 Agent 可能比工讀生貴：先算單件成本。</p></div>
+<div class="card"><h3>出事誰負責？</h3><p>AI 刷錯卡、派錯工，法律上還是公司負責。授權範圍要寫清楚。</p></div>
+<div class="card"><h3>資料準備好了嗎？</h3><p>多數公司卡在這：資料散在 LINE、紙本、Excel。</p></div>
+</div>
+
+<div class="pb"></div>
+<h2>7. 分析任何情境的三個企管問題（＝三個方向）</h2>
+<div class="g3">
+<div class="card"><h3>① AI 的手腳是什麼？</h3><p>它接收什麼資料（文字、照片、感測器）？會自己呼叫什麼工具、調度誰？</p></div>
+<div class="card"><h3>② 人類退居哪裡？</h3><p>原本的人不用做什麼了？哪個高風險環節還要「人類按確認」？</p></div>
+<div class="card"><h3>③ 怎麼收錢／省錢？</h3><p>賣插座（方向一）？按件包結果（方向二）？軟硬整合派工（方向三）？</p></div>
+</div>
+<table>
+<tr><th>情境</th><th>用哪個方向</th><th>AI 的手腳</th><th>人留在哪裡</th><th>怎麼收錢</th></tr>
+<tr><td>A 連鎖火鍋店</td><td>方向一＋二</td><td>接 POS、進貨單、發票照片；預測用量、自動叫貨、自動對帳</td><td>超過門檻的進貨單、異常發票由店長確認</td><td>總部：資料插座每店月費；單店：把帳做完按月按件</td></tr>
+<tr><td>B 搬家配送</td><td>方向三</td><td>照片估體積件數、選車型、報價、依位置路況派車</td><td>鋼琴、保險箱、特殊路況由調度員確認</td><td>每趟抽成，或依車隊規模月費</td></tr>
+<tr><td>C 電商服飾</td><td>方向二</td><td>回私訊、查尺寸；退貨拍照檢查、呼叫金流退款</td><td>超過金額門檻、疑似惡意退貨轉真人</td><td>每件退貨 15 元（原本約 10 萬／月人力）</td></tr>
+</table>
+<p><b>挑第一個題目的四道篩選：</b>痛點夠痛嗎（老闆每月付多少）？資料拿得到嗎？錯了可以補救嗎？客戶願意按件付嗎？——講師的結論：電商退貨資料最齊、錯了最好補救，最適合當第一個題目。</p>
+
+<h2>8. 你的產業線 × 三個方向（範例）</h2>
+<table>
+<tr><th>產業線（班上人數）</th><th>方向一：基礎設施</th><th>方向二：原生服務</th><th>方向三：實體世界</th></tr>
+<tr><td>餐飲小店（10）</td><td>餐飲 POS 專用插座</td><td>叫貨、對帳整本做完</td><td>後場鏡頭看食材與溫度、自動叫貨</td></tr>
+<tr><td>網拍與小品牌電商（7）</td><td>退款金額的門禁與簽核</td><td>客服＋退換貨按件包辦</td><td>倉庫退貨拍照檢查、出貨</td></tr>
+<tr><td>零工與臨時人力（6）</td><td>排班權限與簽核</td><td>招募初篩、自動約面試</td><td>現場派工（最近、有空的人）</td></tr>
+<tr><td>旅宿與空間出租（4）</td><td>〔推論〕訂房與清潔系統的插座</td><td>〔推論〕詢問、入住、帳務做完</td><td>〔推論〕房況拍照、派清潔與維修</td></tr>
+<tr><td>二手與租借（3）</td><td>〔推論〕交易結算與爭議處理</td><td>〔推論〕上架描述、客服做完</td><td>〔推論〕拍照估價、派車取件</td></tr>
+<tr><td>在地小型服務業</td><td>產業專用插座</td><td>補助文件代寫</td><td>水電冷氣拍照判斷、派師傅</td></tr>
+</table>
+<p class="foot">沒有標〔推論〕的格子是講師簡報裡的例子；標〔推論〕的是本課補的方向，請用證據驗證。</p>
+
+<div class="pb"></div>
+<h2>9. 下課前：建組與認領方向</h2>
+<div class="g2">
+<div class="card"><h3>規則</h3><ol>
+<li><b>三人一組</b>（最少 2 人），自己找組員，在 app 的 Week 8 頁登記。</li>
+<li><b>一組一個產業線</b>：組員 Week 4 選的產業不同沒關係，挑一條大家最清楚、最做得下去的。</li>
+<li><b>三個方向各認領一人</b>：在同一個產業裡，每人從自己的方向找一個題目。</li>
+<li><b>期中不受影響</b>：11/13 期中是個人報告，用自己 Week 4 的產業寫。</li>
+</ol></div>
+<div class="card"><h3>怎麼挑「組的產業線」（符合越多越好做）</h3><ol>
+<li><b>誰的 Week 4 證據最完整</b>：三張卡做完、卡 2 有 NotebookLM 來源。</li>
+<li><b>找得到對照公司嗎</b>：島 6 有餐飲（Owner）、網拍（Gorgias）、旅宿（EliseAI）、零工（Skello）。找不到＝美國歐洲也還沒做好＝機會。</li>
+<li><b>接觸得到真人嗎</b>：組裡有人在那一行打工，或認識老闆、店員。</li>
+</ol><p>挑組裡沒人做過 Week 4 的產業也可以，但要從零開始研究，比較辛苦。</p></div>
+</div>
+<div class="fill">我們這組：＿＿＿＿＿＿＿＿＿　產業線：＿＿＿＿＿＿＿＿<br>方向一（基礎設施）：＿＿＿＿　方向二（原生服務）：＿＿＿＿　方向三（實體世界）：＿＿＿＿</div>
+
+<h2>10. 接下來四週</h2>
+<table>
+<tr><th style="width:12%">日期</th><th style="width:26%">課程</th><th>要做的事</th></tr>
+<tr><td>11/27</td><td>群島遊戲：作答</td><td>15 家公司各 3 句是非題：<b>誰付錢、怎麼收費、搶誰的預算</b>＋估值題，下課前鎖住 → 方向卡 v1：從你認領的方向的島上，挑一家群島公司當對照組</td></tr>
+<tr><td>12/4</td><td>群島遊戲：揭曉</td><td>AI 老師帶你用 Gemini 查證錯題、打開全圖卡七格 → NotebookLM 研究、方向卡 v2</td></tr>
+<tr><td>12/11</td><td>三題比較、選一個</td><td>六準則計分、AI 反方、寫組的結論、預演</td></tr>
+<tr><td>12/18</td><td>期末小組報告</td><td>三個方向各一段＋比較與結論，每組 6 分鐘</td></tr>
+</table>
+
+<h2>11. 今天的課堂兩題（Week 8 頁，11/20 13:00–17:00 內存檔＝出席）</h2>
+<p><b>Q1</b>　用一句話說，「語音食譜機」和「全自動料理機」差在哪？舉一個你自己生活裡的例子。</p>
+<p><b>Q2</b>　你的產業線最接近哪一個方向（基礎設施、原生服務、實體世界）？它搶的是老闆哪一筆預算？</p>
+<p class="foot">答完可以按「讓 AI 評我的答案」（每題 3 次、不計分）。</p>
+
+<h2>12. 回家三件事</h2>
+<ol>
+<li><b>讓 AI 真的幫你做一件事</b>：接上行事曆或信箱，交辦一個多步驟任務，看它呼叫工具。</li>
+<li><b>把打工的流程畫出來</b>：標出哪一步交給 Agent、哪一步要人簽核——這是面試最好的作品。</li>
+<li><b>算一筆帳</b>：那個流程一個月花多少人力？改成按件收費，你會收多少？</li>
+</ol>
+<p class="foot">資料來源：講師簡報（Gartner 2025-06-25 新聞稿、McKinsey 2026 調查、Linux Foundation／Agentic AI Foundation、Bank of America Institute 2026-03 等，詳見簡報講者備註）。Startup Journey Lab ・ 世新大學 企管三甲</p>
+</body></html>
