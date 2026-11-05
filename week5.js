@@ -255,7 +255,7 @@ function renderProgress(){
  const p=week5Progress(data);
  prog.textContent=`兩題 ${[p.q1,p.q2].filter(Boolean).length}/2 · 機會 ${p.oppsN}/3 · 計分 ${p.scoredAll?'完成':'未完成'} · 選 ${p.choice||'—'} · 反方 ${p.rounds}/3 · 一頁 ${p.pageN}/6`;
  done.hidden=false;
- if(p.done){done.dataset.state='done';doneTitle.textContent=dirty?'✅ 都填好了，正在存…':'✅ Week 5 比較頁完成，已存雲端。';doneBody.textContent=(p.q1&&p.q2?'':'課堂兩題還沒答（不影響完成，但上課時段內答完才算出席）。')+`你選的是機會 ${p.choice}。下一步：用研究筆記 v2 範本，把 Week 4 的五段＋這一頁六段合成一份 PDF，11/13 上課前上傳；上課要上台講。`;}
+ if(p.done){done.dataset.state='done';doneTitle.textContent=dirty?'✅ 都填好了，正在存…':'✅ Week 5 比較頁完成，已存雲端。';doneBody.textContent=(p.q1&&p.q2?'':'課堂兩題還沒答（不影響完成，但上課時段內答完才算出席）。')+`你選的是機會 ${p.choice}。下一步：用研究筆記 v2 範本，把 Week 4 的五段＋這一頁六段合成一份 PDF，11/13 上課前交到 TronClass；上課要上台講。`;}
  else{done.dataset.state='todo';doneTitle.textContent=`還沒完成：差 ${p.missing.join('、')}。`;doneBody.textContent='每一格存了就在（離開會自動存草稿）。做完這裡會變成綠色。';}
 }
 function renderQuestions(){qBlocks.q1.title.textContent='Q1 '+(questions?.q1||'');qBlocks.q2.title.textContent='Q2 '+(questions?.q2||'');}
