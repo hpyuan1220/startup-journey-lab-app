@@ -42,6 +42,12 @@ ok('全部填完：完成狀態變綠、已存',st.done==='done'&&/已存雲端/
 await p.reload();await p.waitForTimeout(1500);
 const after=await p.evaluate(()=>({choice:document.querySelector('input[name="w5-choice"]:checked')?.value,reason:document.querySelector('textarea[aria-label="選非最高分的理由"]').value.length,rounds:document.querySelectorAll('.w5-round').length,scoreA:document.querySelector('.w5-total b').textContent,paras:[...document.querySelectorAll('.w5-para textarea')].filter(t=>t.value.length>=20).length,done:document.querySelector('#week-five .w4-done').dataset.state}));
 ok('重開頁：選擇、理由、反方、分數、一頁都在',after.choice==='B'&&after.reason>20&&after.rounds===3&&after.paras===6&&after.done==='done',after);
+// 研究筆記 v2 草稿（跟 Week 4 一樣）
+await p.evaluate(()=>[...document.querySelectorAll('#week-five button')].find(b=>/研究筆記 v2 草稿/.test(b.textContent)).click());await p.waitForTimeout(1200);
+const nv=await p.evaluate(()=>{const ta=document.querySelector('textarea[aria-label="研究筆記 v2 草稿"]');return {shown:!!ta&&!ta.closest('.w4-draft-out').hidden,t:ta?.value||'',btns:[...ta.closest('.w4-draft-out').querySelectorAll('button')].map(b=>b.textContent),tpl:!!document.querySelector('#week-five a[href*="研究筆記v2範本"]')};});
+ok('研究筆記 v2 草稿：帶出 Week 4 卡 1、這頁計分與反方、九段齊全；有複製全文、下載 Word、空白範本',nv.shown&&/老闆付外送抽成三成/.test(nv.t)&&/6　五問計分表/.test(nv.t)&&/8　反方紀錄/.test(nv.t)&&/拒絕 1/.test(nv.t)&&/機會 B（總分 5／10/.test(nv.t)&&nv.btns.some(b=>/複製全文/.test(b))&&nv.btns.some(b=>/下載成 Word/.test(b))&&nv.tpl,{len:nv.t.length,btns:nv.btns,head:nv.t.slice(0,80)});
+const [dl]=await Promise.all([p.waitForEvent('download',{timeout:5000}).catch(()=>null),p.evaluate(()=>[...document.querySelectorAll('.w4-draft-out button')].find(b=>/下載成 Word/.test(b.textContent)).click())]);
+ok('下載 Word：檔名 Week5_research_note_v2_學號.doc',!!dl&&/^Week5_research_note_v2_A1132705\d\d\.doc$/.test(dl.suggestedFilename()),dl&&dl.suggestedFilename());
 // 教師端
 const t=await post('week2-api',{action:'teacher_load'},'teacher-token');
 ok('teacher_load 有 week5 一列',Array.isArray(t.week5)&&t.week5.some(r=>r.student_id===SID));

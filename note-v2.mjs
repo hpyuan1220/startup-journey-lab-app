@@ -1,0 +1,36 @@
+// 研究筆記 v2（期中報告）草稿：把 Week 4 研究頁＋Week 5 比較頁排進 v2 範本的九段（0–8）＋AI 使用紀錄。
+// 純邏輯、只在瀏覽器用（Edge Function 不載入這個檔）。Word 下載沿用 week4-core 的 noteDraftHtml（第一段當標題、其他段當小標）。
+import {normalizeWeek4,industryName,SOURCE_LABEL} from './week4-core.mjs?v=20261105-cq';
+import {normalizeWeek5,totals,topChoice,parseRebuttal,FIVE_QUESTIONS,PAGE_TITLES,OPP_KEYS,MAX_SCORE} from './week5-core.mjs?v=20261104-rb';
+
+const RB_LABEL={claude:'Claude',gpt:'ChatGPT',gemini:'Gemini',copilot:'Copilot',app:'app 內 AI 老闆'};
+export function buildNoteDraftV2(w4in,w5in,studentId=''){
+ const a=normalizeWeek4(w4in||{}),b=normalizeWeek5(w5in||{}),dash='（還沒填）';
+ const ind=industryName(a)||'（還沒選產業線）';
+ const t=totals(b),top=topChoice(b),key=b.choice.key||'';
+ const rb=parseRebuttal(b.rebuttal.text);
+ const oppLine=(k,n)=>`機會 ${k}：${b.opps[n]||a.card3.opps[n]||dash}`;
+ const scoreBlock=OPP_KEYS.map((k,n)=>{
+  if(!b.opps[n])return `機會 ${k}：（沒有這個機會）`;
+  const rows=FIVE_QUESTIONS.map(q=>{const c=b.scores[k][q.key];return `　${q.n}. ${q.title}：${c.score===null?'—':c.score} 分｜${c.evidence||'（沒寫證據）'}`;});
+  return `機會 ${k}（總分 ${t[k].sum}／${MAX_SCORE}${t[k].estimated?`，${t[k].estimated} 格是估計`:''}）\n${rows.join('\n')}`;
+ }).join('\n');
+ const choiceLine=key?`我選的是機會 ${key}${top&&key!==top?`（最高分是機會 ${top}）；理由：${b.choice.reason||'（還沒寫理由）'}`:'。'}`:'我選的是機會 ＿（還沒選）';
+ const page=PAGE_TITLES.map((h,i)=>`${i+1}. ${h}\n${b.page[i]||dash}`).join('\n');
+ const rbText=rb.rounds.length?rb.rounds.map(r=>`拒絕 ${r.n}：${r.reject}\n我的回應 ${r.n}：${r.reply||'（這一回合沒回）'}`).join('\n')+(rb.summary?`\n總結：${rb.summary}`:''):(b.rebuttal.text||dash);
+ const tools=[...new Set([a.card1.source,a.card2.source,a.card3.source].filter(Boolean).map(s=>SOURCE_LABEL[s]||s))];
+ const sec=[
+  ['0　我的痛（Week 3 訪談後的一句話）',`${a.pain||dash}\n（改成：〔誰〕在〔什麼時候〕因為〔什麼〕而〔付出什麼代價〕。）`],
+  ['1　產業一句話',`產業線：${ind}\n（自己寫一句：這一行是誰在賣什麼給誰；我的痛翻到業者那一面落在哪一段。）`],
+  ['2　錢流（卡 1）',`${a.card1.text||dash}\n（來源：${SOURCE_LABEL[a.card1.source]||'未標'}。整理成「誰 → 付給誰 → 付什麼錢、大約多少」，數字寫（來源：XX）或「估計」。）`],
+  ['3　三個挑戰（卡 2，每點附來源）',`${a.card2.text||dash}\n（來源：${SOURCE_LABEL[a.card2.source]||'未標'}。每個挑戰後面寫來源標題；AI 說的不算來源。下面列至少 5 個來源，標層級：1 政府統計／2 產業報告／3 近一年新聞／4 業者訪談／5 論壇。）`],
+  ['4　三個機會（卡 3）',OPP_KEYS.map(oppLine).join('\n')],
+  ['5　我還不確定的事',`${rb.summary?`反方總結：${rb.summary}\n`:''}（自己寫：哪一個主張還沒有來源？下一步要問誰、查什麼？反方說「最該補的一個證據」也寫在這裡。）`],
+  ['6　五問計分表（Week 5）',`${scoreBlock}\n${choiceLine}`],
+  ['7　為什麼這是好的商業痛點（一頁六段）',`${page}\n（每段一句主張、一個證據（來源：XX）、一個理論名；改成完整句子。）`],
+  ['8　反方紀錄（Week 5）',`${b.rebuttal.source?`（反方：${RB_LABEL[b.rebuttal.source]||b.rebuttal.source}）\n`:''}${rbText}`],
+  ['AI 使用紀錄',`研究頁用過：${tools.join('、')||'（沒標來源）'}${b.rebuttal.source?`；反方：${RB_LABEL[b.rebuttal.source]||b.rebuttal.source}`:''}\n（自己補：問了幾輪、哪一段是 AI 說的、哪一段是你查到的。AI 的回答不算來源；AI 幫你找到的來源才算。）`],
+ ];
+ const head=`產業研究筆記 v2（期中報告・草稿）${studentId?'｜'+studentId:''}\n產業線：${ind}　選定的機會：${key||'＿'}\n這份是 app 依你的 Week 4 研究頁＋Week 5 比較頁自動排的草稿：請改成自己的句子、每個主張補來源，存成 PDF，11/13 上課前交到 TronClass。`;
+ return head+'\n\n'+sec.map(([h,x])=>`${h}\n${x}`).join('\n\n');
+}

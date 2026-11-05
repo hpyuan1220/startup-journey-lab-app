@@ -1,5 +1,6 @@
 import {FIVE_QUESTIONS,OPP_KEYS,MAX_SCORE,PAGE_TITLES,emptyWeek5,normalizeWeek5,totals,topChoice,choiceNeedsReason,week5Progress,buildPrompt5,parseRebuttal,draftPage,TOOLS5,toolUrl5,rebuttalNext} from './week5-core.mjs?v=20261104-rb';
-import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL} from './week4-core.mjs?v=20261030-qai';
+import {labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
+import {buildNoteDraftV2} from './note-v2.mjs?v=20261105-n2';
 import {showRelogin} from './relogin.mjs?v=20261025-w5';
 import {mountPreclass} from './preclass-ui.mjs?v=20261025-w5';
 // 課前預習三題：沒登入也能做，不存。
@@ -192,7 +193,26 @@ el('p','離開會自動存草稿。期中（11/13）要交的 PDF＝Week 4 研�
 const prog=el('p','',foot,'w4-prog');
 const done=el('div','',foot,'w4-done');done.hidden=true;
 const doneTitle=el('p','',done,'w4-done-title');const doneBody=el('p','',done);
-const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載研究筆記 v2 範本（Word）',doneRow,'primary-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261025';tplLink.setAttribute('download','');
+// 研究筆記 v2 草稿（跟 Week 4 一樣）：按一下把 Week 4 研究頁＋這一頁排進 v2 範本的九段，可以複製全文或下載成 Word；空白範本保留。
+const nvBox=el('div','',done,'w4-draft');
+const nvBtn=el('button','把我的研究頁＋比較頁整理成研究筆記 v2 草稿（期中用）',nvBox,'primary-link w4-draft-btn');nvBtn.type='button';
+el('p','會把 Week 4 的痛、產業線、卡 1（錢流）、卡 2（挑戰與來源）和這一頁的三個機會、五問計分、選擇、一頁六段、反方紀錄，排進 v2 範本的九段。內容一樣存在雲端；草稿是給你改寫成期中報告用的。',nvBox,'w4-hint');
+const nvOut=el('div','',nvBox,'w4-draft-out');nvOut.hidden=true;
+const nvTa=el('textarea','',nvOut);nvTa.rows=14;nvTa.readOnly=true;nvTa.setAttribute('aria-label','研究筆記 v2 草稿');
+const nvRow=el('div','',nvOut,'w4-row');
+const nvCopy=el('button','複製全文',nvRow,'button-link');nvCopy.type='button';
+const nvWord=el('button','下載成 Word（可用 Word／Pages／Google 文件開）',nvRow,'button-link');nvWord.type='button';
+const nvNote=el('p','',nvOut,'w4-hint');nvNote.setAttribute('role','status');
+nvBtn.addEventListener('click',async()=>{
+ nvBtn.disabled=true;nvNote.textContent='';
+ let w4={};try{const r4=await api({action:'week4_load'});w4=r4.row?.data||{};}catch(e){if(e.status===401){nvBtn.disabled=false;return;}nvNote.textContent='Week 4 研究頁讀不到（'+(e.message||'連線失敗')+'），草稿先只放這一頁的內容。';}
+ nvTa.value=buildNoteDraftV2(w4,snapshot(),session?.student_id||'');nvOut.hidden=false;nvBtn.disabled=false;
+ if(!nvNote.textContent)nvNote.textContent='草稿好了：可以複製貼到 Google 文件／Word，或直接下載。改成自己的句子、補來源，存成 PDF 交到 TronClass。';
+ nvOut.scrollIntoView({block:'nearest'});
+});
+nvCopy.addEventListener('click',async()=>{const ok=await copyText(nvTa.value);if(!ok){nvTa.readOnly=false;nvTa.focus();nvTa.select();}nvNote.textContent=ok?'已複製。到 Google 文件或 Word 貼上（手機：長按→貼上）。':'自動複製失敗：文字已全選，請按「拷貝」。';});
+nvWord.addEventListener('click',()=>{const blob=new Blob(['\ufeff'+noteDraftHtml(nvTa.value).replace('<title>Week 4 研究筆記 v1</title>','<title>研究筆記 v2（期中報告）</title>')],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Week5_research_note_v2${session?.student_id?'_'+session.student_id:''}.doc`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);nvNote.textContent='已下載。iPhone：在預覽畫面按「分享」→ 選 Word／Pages／Google 文件；Android：在「下載」資料夾。';});
+const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載空白範本 v2（Word）',doneRow,'button-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261025';tplLink.setAttribute('download','');
 const guideLink=el('a','看講義：五問出處與一頁怎麼寫',doneRow,'button-link');guideLink.href='materials/Week5_講義.pdf?v=20261105';guideLink.target='_blank';guideLink.rel='noreferrer';
 
 function snapshot(){data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data.q1_ai=qBlocks.q1.ai.value;data.q2_ai=qBlocks.q2.ai.value;data.opps=oppInputs.map(i=>i.value);for(const k of OPP_KEYS)for(const q of FIVE_QUESTIONS)data.scores[k][q.key].evidence=cells[k+q.key].ev.value;data.choice.reason=reason.value;data.rebuttal.text=rbTa.value;data.page=pgTas.map(t=>t.value);return normalizeWeek5(data);}

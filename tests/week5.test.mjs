@@ -59,3 +59,18 @@ test('反方 app 內：下一步判斷、追加格式能被 parseRebuttal 讀回
  assert.match(buildRebuttalTurn(d,{step:'summary'}),/總結/);
  assert.equal(REBUTTAL_AI_LIMIT,8);
 });
+
+import {buildNoteDraftV2} from '../note-v2.mjs';
+test('研究筆記 v2 草稿：Week 4＋Week 5 排進九段＋AI 使用紀錄；空的也不會壞',()=>{
+ const w4={pain:'開學前找室友碰運氣',industry:{card:4},card1:{text:'房東付仲介費一個月租金',source:'gemini'},card2:{text:'空置率高（來源：經濟日報）',source:'notebooklm'},card3:{text:'',opps:['甲','乙','丙']}};
+ const sc=v=>({pay:{score:v,evidence:'有人付錢（來源：卡 2）'},freq:{score:v,evidence:'估計'},now:{score:v,evidence:'法規'},unsolved:{score:v,evidence:'沒人做'},entry:{score:v,evidence:'認識房東'}});
+ const w5={opps:['機會甲','機會乙',''],scores:{A:sc(2),B:sc(1)},choice:{key:'B',reason:'接觸得到第一個付錢的人'},rebuttal:{text:'拒絕 1：太貴\n我的回應 1：先免費\n總結：要補房東訪談',source:'claude'},page:['一','二','三','四','五','六']};
+ const t=buildNoteDraftV2(w4,w5,'A1130309125');
+ for(const h of ['0　我的痛','1　產業一句話','2　錢流','3　三個挑戰','4　三個機會','5　我還不確定的事','6　五問計分表','7　為什麼這是好的商業痛點','8　反方紀錄','AI 使用紀錄'])assert.ok(t.includes(h),h);
+ assert.match(t,/A1130309125/);assert.match(t,/開學前找室友碰運氣/);assert.match(t,/房東付仲介費/);assert.match(t,/NotebookLM 查到/);
+ assert.match(t,/機會 A：機會甲/);assert.match(t,/機會 C：丙/,'Week 5 沒填就用 Week 4 卡 3');
+ assert.match(t,/機會 A（總分 10／10/);assert.match(t,/機會 B（總分 5／10/);assert.match(t,/最高分是機會 A）；理由：接觸得到/);
+ assert.match(t,/拒絕 1：太貴\n我的回應 1：先免費\n總結：要補房東訪談/);assert.match(t,/反方總結：要補房東訪談/);assert.match(t,/反方：Claude/);
+ assert.equal(t.split('\n\n').length,11,'標頭＋十段，Word 會把每段第一行當小標');
+ const e=buildNoteDraftV2({},{},'');assert.match(e,/還沒選產業線/);assert.match(e,/我選的是機會 ＿/);assert.equal(e.split('\n\n').length,11);
+});
