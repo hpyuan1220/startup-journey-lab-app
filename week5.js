@@ -20,7 +20,9 @@ function onExpired(){if(expired)return;expired=true;showRelogin(root,'week5',msg
 const TOOL_KEY='sjl-ai-tool-w5';
 const getTool=()=>{try{return localStorage.getItem(TOOL_KEY)||'claude';}catch{return 'claude';}};
 const setTool=t=>{try{localStorage.setItem(TOOL_KEY,t);}catch{}};
-async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch{const ta=document.createElement('textarea');ta.value=t;document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}}
+// 先在點擊當下用同步 execCommand 複製，再用 clipboard API 補一次（11/5：app 內嵌瀏覽器先開分頁再非同步複製會失敗，貼出來是舊的剪貼簿）。
+function copySync(t){const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}
+async function copyText(t){const ok=copySync(t);try{await navigator.clipboard.writeText(t);return true;}catch{return ok;}}
 function showPrompt(sec,prompt,open=false){let d=sec.querySelector('.w4-prompt');if(!d){d=document.createElement('details');d.className='w4-prompt';const s=document.createElement('summary');s.textContent='看 app 幫你問了 AI 什麼（貼不出來時用）';d.append(s);const pre=document.createElement('textarea');pre.rows=6;pre.readOnly=true;pre.setAttribute('aria-label','這次複製給 AI 的問題');d.append(pre);const again=document.createElement('button');again.type='button';again.className='button-link w4-small';again.textContent='⌘V 貼出來是空的？按這裡再複製一次';const st=document.createElement('span');st.className='w4-copied';again.addEventListener('click',async()=>{const ok=await copyText(pre.value);st.textContent=ok?'已複製，到 AI 工具按 ⌘V':'這個瀏覽器不讓網頁複製：請在上面的框按 ⌘A 全選、⌘C';});d.append(again,st);sec.append(d);}d.querySelector('textarea').value=prompt;if(open)d.open=true;}
 async function openTool(prompt,btn,tool,keep){
  const t=tool||getTool();if(!keep)setTool(t);

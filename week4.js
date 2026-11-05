@@ -19,7 +19,9 @@ function onExpired(){if(expired)return;expired=true;showRelogin(root,'week4',msg
 const TOOL_KEY='sjl-ai-tool';
 const getTool=()=>{try{return localStorage.getItem(TOOL_KEY)||'gemini';}catch{return 'gemini';}};
 const setTool=t=>{try{localStorage.setItem(TOOL_KEY,t);}catch{}};
-async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch{const ta=document.createElement('textarea');ta.value=t;document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}}
+// 先在點擊當下用同步 execCommand 複製，再用 clipboard API 補一次（11/5：app 內嵌瀏覽器先開分頁再非同步複製會失敗，貼出來是舊的剪貼簿）。
+function copySync(t){const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';document.body.append(ta);ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy');}catch{}ta.remove();return ok;}
+async function copyText(t){const ok=copySync(t);try{await navigator.clipboard.writeText(t);return true;}catch{return ok;}}
 
 // ---- 畫面 ----
 const page=el('div','',root,'w4');
