@@ -70,7 +70,7 @@ test('Edge：week4_load 帶 Week 3 一句話與推薦；save 蓋章、版本衝�
  assert.equal(s2.status,200);assert.equal(s2.body.row.stamps.q1,s1.body.row.stamps.q1,'Q1 沒改章不動');assert.ok(s2.body.row.stamps.q2);assert.ok(s2.body.row.stamps.card1);
  const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week4.length,1);assert.deepEqual(t.body.week_questions,[]);
  const q=await h.call({action:'teacher_week_questions',class_id:'class-a',week:4,questions:{q1:'新題一',q2:'',points:''}},'teacher-token');
- assert.equal(q.status,200);assert.equal(q.body.resolved.q1,'新題一');assert.match(q.body.resolved.q2,/六條路徑/,'留白的那題用預設');
+ assert.equal(q.status,200);assert.equal(q.body.resolved.q1,'新題一');assert.match(q.body.resolved.q2,/哪一條產業線/,'留白的那題用預設');
  const l2=await h.call({action:'week4_load',token});assert.equal(l2.body.questions.q1,'新題一');
  const clear=await h.call({action:'teacher_week_questions',class_id:'class-a',week:4,questions:{}},'teacher-token');assert.equal(clear.body.week_questions.length,0);
  assert.equal((await h.call({action:'teacher_week_questions',class_id:'class-b',week:4,questions:{q1:'x'}},'teacher-token')).status,403);
