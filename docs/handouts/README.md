@@ -9,6 +9,7 @@ node -e "const {chromium}=require('playwright');(async()=>{const b=await chromiu
 
 | HTML | 產出的 PDF |
 |---|---|
+| WEEK5_HANDOUT.html | materials/Week5_講義.pdf（4 頁，2026/11/5 依原 PDF 重做） |
 | WEEK6_HANDOUT.html | materials/Week6_講義.pdf |
 | WEEK8_HANDOUT.html | materials/Week8_講義.pdf |
 | WEEK8_SPEAKER_BRIEF.html | 116/Week8/Week8_給講師的課程說明.pdf |
