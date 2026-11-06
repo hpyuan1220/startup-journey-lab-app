@@ -18,9 +18,10 @@ export async function harness(){
  const db={from(name){let filter=()=>true,op='select',values,one=false;const chain={
   select(){return chain},eq(k,v){const old=filter;filter=r=>old(r)&&r[k]===v;return chain},
   maybeSingle(){one=true;return chain},single(){one=true;return chain},
-  upsert(v){op='upsert';values=v;return chain},
+  upsert(v){op='upsert';values=v;return chain},insert(v){op='insert';values=v;return chain},
   then(res,rej){try{const t=tables[name];if(!t)throw Error('unknown table '+name);
    let rows=t.filter(filter);
+   if(op==='insert'){const r={created_at:new Date().toISOString(),...structuredClone(values)};t.push(r);rows=[r];}
    if(op==='upsert'){
     const found=t.find(r=>r.class_id===values.class_id&&r.student_id===values.student_id);
     if(found){const before=JSON.stringify(found);Object.assign(found,structuredClone(values));

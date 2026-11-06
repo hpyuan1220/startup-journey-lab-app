@@ -1,5 +1,5 @@
 import {extractOpps,INDUSTRY_CARDS,cardById,emptyWeek4,normalizeWeek4,buildPrompt,toolUrl,TOOLS,NOTEBOOKLM_URL,SOURCE_LABEL,labelText,classDate,CLASS_SCHEDULE,week4Progress,rankCards,painPattern,PATTERN_HINTS,WRITE_OPEN_LABEL,buildNoteDraft,noteDraftHtml} from './week4-core.mjs?v=20261030-qai';
-import {showRelogin} from './relogin.mjs?v=20261016-prior';
+import {showRelogin} from './relogin.mjs?v=20261106-ms';
 import {mountPreclass} from './preclass-ui.mjs?v=20261020-w4quiz';
 // 課前預習三題：沒登入也能做，不存（Week 4 沒有「第一個問題」要存）。
 mountPreclass(document.querySelector('#week-four-materials .preclass'),4,{});

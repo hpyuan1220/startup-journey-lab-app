@@ -216,3 +216,12 @@ test('登入期限：老師測試帳號 A1130309125 維持 120 天，學生一�
  assert.ok(left('A1130309125')>119&&left('A1130309125')<=120,'測試帳號 120 天');
  assert.ok(left('A113270098')>13.9&&left('A113270098')<=14,'學生 14 天');
 });
+
+test('多裝置登入：同一學號第二次登入不會讓第一個 token 失效（11/6 課堂：手機登入後電腦存檔被擋）',async()=>{
+ const h=await harness();
+ const a=await h.call({action:'login',student_id:'A113270097',invite_code:'x',confirm_new:true});assert.equal(a.status,200);
+ const b=await h.call({action:'login',student_id:'A113270097',invite_code:'x',confirm_new:true});assert.equal(b.status,200);
+ assert.notEqual(a.body.token,b.body.token);
+ assert.equal(h.tables.student_sessions.filter(r=>r.student_id==='A113270097').length,2,'兩筆 session 並存');
+ for(const t of [a.body.token,b.body.token]){const r=await h.call({action:'load',token:t});assert.notEqual(r.status,401,'兩個 token 都還有效');}
+});

@@ -1,7 +1,7 @@
 import {emptyRecord,normalizeRecord,checkRecord,week3Completion,interviewFields,fitsOptions,judgmentOptions,doneCount,INTERVIEW_COUNT,normalizeSurvey,checkSurvey} from './week3-core.mjs?v=20261013-preclass';
 import {mountPreclass} from './preclass-ui.mjs?v=20261013-preclass';
 import {selectedIndex} from './week2-core.mjs?v=20260930-lean';
-import {showRelogin} from './relogin.mjs?v=20261016-prior';
+import {showRelogin} from './relogin.mjs?v=20261106-ms';
 import {renderWeek3Summary,priorDetails} from './prior-view.mjs?v=20261018-review';
 // Week 3 訪談準備單與紀錄卡
 // 上半：準備單（從 Week 2 的卡帶過來：暫定痛點、受訪者、兩題問題），可以列印或存成 PDF 帶去訪談。

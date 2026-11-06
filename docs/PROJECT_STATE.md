@@ -1958,3 +1958,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-06：Week 5 教學簡報更新 4 頁（11 反方改 app 內「開始反方」、外部 AI 貼回為備案；14／15 研究筆記 v2 用比較頁「v2 草稿」→ PDF 交 TronClass、期中上台 2 分鐘四段；16 Week 6 有自己的兩題、期中交 TronClass）。原本寫「上課前上傳」「上台 3 分鐘」「PDF 上傳功能上線」都改掉。docs/WEEK5_SLIDES_SOURCE.json → build-slides.py → soffice 轉 PDF；week.html 連結 ?v=20261106。116/Week5 同步。
 - 2026-11-06：Week5_研究筆記v2範本.docx 頁首改成「Week 4–5（10/30、11/6）· 個人 · 11/13 13:00 前把 PDF 交到 TronClass」（原本是颱風前的日期與「上課前上傳」）；連結 ?v=20261106（week.html、week5.js）。
 - 2026-11-06 課中：A113270021 說 Week 4 存了 6 次都沒完成。查到 learning_versions 有她 10/19 的 week 4 v1 快照，但 week4_research 沒有她的列 → 每次存檔撞快照唯一鍵、整筆退回（10/25 記過的坑）。根治：migration 20261106_snapshot_on_conflict.sql（snapshot_learning 加 on conflict do nothing），老師在 SQL Editor Run；不刪資料。
+
+## 2026-11-06 課中「Week 5 全部打完卻存不了」：一個學號只能一個登入
+- 診斷（老師在 SQL Editor 跑只讀查詢）：今天 12:00 後重新登入 22 人；Week 5 有資料列 37 人且都是今天存的；孤兒快照 0；登入已過期 2 人。結論〔推論〕：student_sessions 以 (class_id,student_id) upsert，手機登入答兩題後，電腦上原本的 token 立刻失效（401）→ 比較頁 expired=true、save() 直接 return；請重新進入的卡片在頁面上方。
+- 修：migration 20261106_multi_session.sql 拿掉 student_sessions 含 student_id 的唯一限制（改一般索引，token_hash 唯一），Student-api 登入改 insert（多裝置並存，舊的到期自然失效）。relogin 文字拿掉「另一台裝置登入」。**要 Run migration 再 Deploy Student-api**。單元 213/213（含多裝置登入測試）；week4／5 瀏覽器回歸全過。

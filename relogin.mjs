@@ -17,7 +17,7 @@ export function showRelogin(container,week,before=null){
  const box=document.createElement('section');box.className='video-learning-card relogin-card';box.setAttribute('role','alert');
  const h=document.createElement('h2');h.textContent='請重新進入一次（你的資料都在）';box.append(h);
  const p=document.createElement('p');
- p.textContent='你的登入已經失效：可能是在另一台手機或電腦登入過，或是太久沒有進來。作業都存在雲端，沒有不見。按下面的按鈕，用學號和班級邀請碼再進入一次，就會自動回到這一頁。';
+ p.textContent='你的登入已經失效（太久沒有進來，登入 14 天有效）。作業都存在雲端，沒有不見。按下面的按鈕，用學號和班級邀請碼再進入一次，就會自動回到這一頁。';
  box.append(p);
  const a=document.createElement('a');a.className='primary-link relogin-go';a.textContent='重新進入 →';
  a.href=`index.html?return=${encodeURIComponent(week)}#student`;

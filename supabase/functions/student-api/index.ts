@@ -48,7 +48,8 @@ Deno.serve(async (request) => {
       }, 409);
     }
     const token = crypto.randomUUID() + crypto.randomUUID();
-    const {error:sessionError}=await db.from('student_sessions').upsert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + SESSION_MS(studentId)).toISOString() }, { onConflict: 'class_id,student_id' });
+    // 2026-11-06 起一個學號可以同時在多台裝置登入：每次登入新增一筆 session，不再覆蓋舊的（之前手機登入會讓電腦那邊立刻失效、存檔被擋）。舊的到期自然失效。
+    const {error:sessionError}=await db.from('student_sessions').insert({ class_id: classId, student_id: studentId, token_hash: await hash(token), expires_at: new Date(Date.now() + SESSION_MS(studentId)).toISOString() });
     if(sessionError)return reply({error:'登入暫時無法完成，請稍後重試。'},503);
     return reply({ token, class_id: classId, student_id: studentId });
   }
