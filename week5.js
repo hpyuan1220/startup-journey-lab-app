@@ -240,7 +240,7 @@ mtBtn.addEventListener('click',async()=>{
 });
 mtCopy.addEventListener('click',async()=>{const ok=await copyText(mtTa.value);if(!ok){mtTa.focus();mtTa.select();}mtNote.textContent=ok?'已複製。':'自動複製失敗：文字已全選，請按「拷貝」。';});
 mtWord.addEventListener('click',()=>{const blob=new Blob(['\ufeff'+noteDraftHtml(mtTa.value).replace('<title>Week 4 研究筆記 v1</title>','<title>期中 2 分鐘講稿</title>')],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Week7_talk_2min${session?.student_id?'_'+session.student_id:''}.doc`;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);mtNote.textContent='已下載。';});
-const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載空白範本 v2（Word）',doneRow,'button-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261025';tplLink.setAttribute('download','');
+const doneRow=el('div','',done,'w4-row');const tplLink=el('a','下載空白範本 v2（Word）',doneRow,'button-link');tplLink.href='materials/Week5_研究筆記v2範本.docx?v=20261106';tplLink.setAttribute('download','');
 const guideLink=el('a','看講義：五問出處與一頁怎麼寫',doneRow,'button-link');guideLink.href='materials/Week5_講義.pdf?v=20261105';guideLink.target='_blank';guideLink.rel='noreferrer';
 
 function snapshot(){data.q1=qBlocks.q1.ta.value;data.q2=qBlocks.q2.ta.value;data.q1_ai=qBlocks.q1.ai.value;data.q2_ai=qBlocks.q2.ai.value;data.opps=oppInputs.map(i=>i.value);for(const k of OPP_KEYS)for(const q of FIVE_QUESTIONS)data.scores[k][q.key].evidence=cells[k+q.key].ev.value;data.choice.reason=reason.value;data.rebuttal.text=rbTa.value;data.page=pgTas.map(t=>t.value);return normalizeWeek5(data);}
