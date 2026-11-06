@@ -44,5 +44,6 @@ const tv=await tp.evaluate(()=>{const s6=document.querySelector('#teacher-week6'
 ok('教師端：Week 6 區在 Week 5 上面、有兩題編輯與一人一列（這次測試不在上課時段＝缺席、課後）',tv.first&&tv.rows>=1&&/學生目前看到/.test(tv.txt)&&/課後/.test(tv.txt),tv);
 await tp.evaluate(()=>document.querySelector('#teacher-week6 tbody tr td button').click());await tp.waitForTimeout(300);
 ok('點開：看得到 Q1、Q2、AI 評語',await tp.evaluate(()=>{const d=document.querySelector('#teacher-week6 .tw4-detail')?.innerText||'';return /Q1：/.test(d)&&/Q2 AI 評語/.test(d);}));
+ok('教師端 Week 6：有「把本週推算存成標記」、規則同 Week 4／5、每列有推算',await tp.evaluate(()=>{const s=document.querySelector('#teacher-week6');const b=[...s.querySelectorAll('button')].find(b=>/推算存成標記/.test(b.textContent));return !!b&&/兩題都在課中答完＝積極/.test(s.querySelector('.tw4-freeze-msg').textContent)&&/推算/.test(s.querySelector('.tw4-remark').innerText);}));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);

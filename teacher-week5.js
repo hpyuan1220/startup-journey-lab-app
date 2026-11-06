@@ -1,4 +1,4 @@
-import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261105-cq';
+import {resolveQuestions,attendance,stampLabel,classDate,classWindow,CLASS_SCHEDULE,DEFAULT_QUESTIONS} from './week4-core.mjs?v=20261105-cq';
 import {normalizeWeek5,totals,topChoice,choiceNeedsReason,parseRebuttal,week5Progress,OPP_KEYS,FIVE_QUESTIONS,MAX_SCORE} from './week5-core.mjs?v=20261104-rb';
 import {remarkEditor,findRemark,mergeRemarks,remarkText,listenRemarks,suggestTagResearch,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · Week 5 三個機會比一比
@@ -55,12 +55,14 @@ function render(){
   stat(rows.filter(x=>x.p&&x.p.rounds>=3).length,'反方三回合');
   stat(rows.filter(x=>x.p&&x.p.pageN>=6).length,'一頁六段寫完');
   // 把本週推算存成標記（只填還沒點的）
+  // 上課日 17:00 前還在作答時段，推算不完整：按鈕先鎖住，免得把還在答的人存成缺席。
+  const endAt=classDate(week)?classWindow(classDate(week))[1]:0,tooEarly=Date.now()<endAt;
   const fz=el('div','',sec);fz.className='tw4-freeze';
   const fzBtn=el('button','把本週推算存成標記（只填還沒點的）',fz,'quiet');fzBtn.type='button';
   const fzMsg=el('span','',fz);fzMsg.className='tw4-freeze-msg';
   const pending=rows.filter(x=>!findRemark(data.remarks,c.id,x.id,week)?.tag&&x.suggested);
-  fzMsg.textContent=`推算：出席＋四段都做完（計分、選、反方、一頁）＝積極、出席＝普通、沒出席但有做＝沒參與、沒紀錄＝缺席。還沒點的 ${pending.length} 人。`;
-  fzBtn.disabled=!pending.length;
+  fzMsg.textContent=`推算：出席＋四段都做完（計分、選、反方、一頁）＝積極、出席＝普通、沒出席但有做＝沒參與、沒紀錄＝缺席。還沒點的 ${pending.length} 人。${tooEarly?`上課日 ${CLASS_SCHEDULE.end} 後才能存（現在還在作答時段）。`:''}`;
+  fzBtn.disabled=!pending.length||tooEarly;
   fzBtn.addEventListener('click',async()=>{fzBtn.disabled=true;const items=pending.map(x=>({classId:c.id,studentId:x.id,week,tag:x.suggested.tag,note:findRemark(data.remarks,c.id,x.id,week)?.note||''}));
    const r=await freezeSuggestions(items,call,(d,f,t)=>{fzMsg.textContent=`存檔中 ${d+f}/${t}…`;});
    fzMsg.textContent=`已存 ${r.done} 人${r.failed?`，失敗 ${r.failed} 人`:''}。`;await load();});

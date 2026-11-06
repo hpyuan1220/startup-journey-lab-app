@@ -1,5 +1,5 @@
-import {resolveQuestions,attendance,stampLabel,classDate,CLASS_SCHEDULE,DEFAULT_QUESTIONS,CLASSQ_WEEKS,normalizeClassQ} from './week4-core.mjs?v=20261105-cq';
-import {remarkEditor,findRemark,mergeRemarks,listenRemarks} from './teacher-remarks.mjs?v=20261025-w5';
+import {resolveQuestions,attendance,stampLabel,classDate,classWindow,CLASS_SCHEDULE,DEFAULT_QUESTIONS,CLASSQ_WEEKS,normalizeClassQ} from './week4-core.mjs?v=20261105-cq';
+import {remarkEditor,findRemark,mergeRemarks,listenRemarks,suggestTagResearch,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · 只有課堂兩題的週（Week 6 起；例如 11/6 跟 Week 5 同一天上）
 // 每週一塊：改兩題（留白用預設）＋一人一列（出席、Q1／Q2 存檔時間、備註；點代號看全文與 AI 評語）。出席跟 Week 5 分開算。
 const dashboard=document.getElementById('teacher-dashboard');
@@ -39,11 +39,24 @@ function renderWeek({week,status,body}){
   const nowQ=el('p',`學生目前看到：Q1「${q.q1}」　Q2「${q.q2}」`,qbox);nowQ.style.gridColumn='1 / -1';nowQ.style.fontSize='.85rem';nowQ.style.color='#6e4a08';
   saveQ.addEventListener('click',async()=>{try{await call({action:'teacher_week_questions',class_id:c.id,week,questions:{q1:q1.value,q2:q2.value,points:pts.value}});status.textContent='兩題已更新。';await load();}catch(e){status.textContent=e.message;}});
   resetQ.addEventListener('click',async()=>{try{await call({action:'teacher_week_questions',class_id:c.id,week,questions:{}});status.textContent='已回到預設題。';await load();}catch(e){status.textContent=e.message;}});
-  const rows=ids.map(id=>{const r=wq.find(x=>x.student_id===id);const st=r?.stamps||{};return {id,name:nameOf(id),r,d:r?normalizeClassQ(r.data):null,st,present:attendance(st,week)};});
+  const rows=ids.map(id=>{const r=wq.find(x=>x.student_id===id);const st=r?.stamps||{};const present=attendance(st,week);
+   // 跟 Week 4／5 同一套推算：只有兩題的週，兩題課中答完＝積極、有答但不在課中＝沒參與、沒答＝缺席（沒有「普通」）。
+   return {id,name:nameOf(id),r,d:r?normalizeClassQ(r.data):null,st,present,suggested:suggestTagResearch(week,{present,cards:present?3:0,answered:!!(st.q1||st.q2),what:'兩題都在課中答完',unit:'題'})};});
   const live=el('div','',sec,'tw4-live');const stat=(n,label)=>{const b=el('div','',live);el('b',String(n),b);el('span',label,b);};
   stat(`${rows.filter(x=>x.present).length} / ${rows.length}`,'出席（兩題課中答完）');
   stat(rows.filter(x=>x.st.q1&&x.st.q2).length,'兩題都答（含課後）');
   stat(rows.filter(x=>!x.r).length,'還沒打開');
+  // 上課日 17:00 前還在作答時段，推算不完整：按鈕先鎖住，免得把還在答的人存成缺席。
+  const endAt=classDate(week)?classWindow(classDate(week))[1]:0,tooEarly=Date.now()<endAt;
+  const fz=el('div','',sec);fz.className='tw4-freeze';
+  const fzBtn=el('button','把本週推算存成標記（只填還沒點的）',fz,'quiet');fzBtn.type='button';
+  const fzMsg=el('span','',fz);fzMsg.className='tw4-freeze-msg';
+  const pending=rows.filter(x=>!findRemark(data.remarks,c.id,x.id,week)?.tag&&x.suggested);
+  fzMsg.textContent=`推算（同 Week 4／5）：兩題都在課中答完＝積極、有答但不在課中＝沒參與、沒答＝缺席。還沒點的 ${pending.length} 人。${tooEarly?`上課日 ${CLASS_SCHEDULE.end} 後才能存（現在還在作答時段）。`:''}`;
+  fzBtn.disabled=!pending.length||tooEarly;
+  fzBtn.addEventListener('click',async()=>{fzBtn.disabled=true;const items=pending.map(x=>({classId:c.id,studentId:x.id,week,tag:x.suggested.tag,note:findRemark(data.remarks,c.id,x.id,week)?.note||''}));
+   const res=await freezeSuggestions(items,call,(d,f,t)=>{fzMsg.textContent=`存檔中 ${d+f}/${t}…`;});
+   fzMsg.textContent=`已存 ${res.done} 人${res.failed?`，失敗 ${res.failed} 人`:''}。`;await load();});
   const wrap=el('div','',sec,'tw4-wrap');const table=el('table','',wrap);const tr=el('tr','',el('thead','',table));
   for(const h of ['學生','出席','老師備註（學生看不到）','Q1','Q2'])el('th',h,tr);
   const tbody=el('tbody','',table);
@@ -52,7 +65,7 @@ function renderWeek({week,status,body}){
    const r=el('tr','',tbody);
    const idTd=el('td','',r);const btn=el('button',x.id+(x.name?`　${x.name}`:''),idTd,'quiet');btn.type='button';btn.style.padding='2px 6px';
    const att=el('td','',r);el('span',x.present?'出席':'缺席',att,x.present?'tw4-in':'tw4-out');
-   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,onSaved:rs=>mergeRemarks(data,c.id,x.id,rs)});
+   const rk=el('td','',r);rk.className='tw4-remark';remarkEditor(rk,{classId:c.id,studentId:x.id,week,current:findRemark(data.remarks,c.id,x.id,week),call,compact:true,suggested:x.suggested,onSaved:rs=>mergeRemarks(data,c.id,x.id,rs)});
    for(const k of ['q1','q2'])stampCell(el('td','',r),x.st[k]);
    btn.addEventListener('click',()=>{if(open.has(x.id))open.delete(x.id);else open.add(x.id);render();});
    if(open.has(x.id)&&x.d){
