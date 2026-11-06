@@ -1962,3 +1962,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 ## 2026-11-06 課中「Week 5 全部打完卻存不了」：一個學號只能一個登入
 - 診斷（老師在 SQL Editor 跑只讀查詢）：今天 12:00 後重新登入 22 人；Week 5 有資料列 37 人且都是今天存的；孤兒快照 0；登入已過期 2 人。結論〔推論〕：student_sessions 以 (class_id,student_id) upsert，手機登入答兩題後，電腦上原本的 token 立刻失效（401）→ 比較頁 expired=true、save() 直接 return；請重新進入的卡片在頁面上方。
 - 修：migration 20261106_multi_session.sql 拿掉 student_sessions 含 student_id 的唯一限制（改一般索引，token_hash 唯一），Student-api 登入改 insert（多裝置並存，舊的到期自然失效）。relogin 文字拿掉「另一台裝置登入」。**要 Run migration 再 Deploy Student-api**。單元 213/213（含多裝置登入測試）；week4／5 瀏覽器回歸全過。
+- 2026-11-06 18:30 上線後學生模擬（測試帳號）：Week 4 改兩欄→自動存→重整都在；Week 5 兩題、15 格計分＋證據、選 B＋理由、一頁六段→「完成，已存雲端」→重整全在（v41）；老師手機另外登入後，電腦端再存 Q1 仍 200、版本 43、沒跳重新進入。多裝置修正驗證通過。
