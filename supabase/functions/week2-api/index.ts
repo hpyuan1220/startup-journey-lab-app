@@ -3,6 +3,7 @@ import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '.
 import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
 import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommendCards,writeOpen,WRITE_OPEN_AT,WRITE_OPEN_LABEL,buildPrompt,CLASS_Q_AI_LIMIT,CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ} from '../../../week4-core.mjs';
 import {normalizeWeek5,applyStamps5,OPP_KEYS,buildPrompt5,rebuttalNext,buildRebuttalTurn,appendRebuttal,REBUTTAL_AI_LIMIT} from '../../../week5-core.mjs';
+import {TEAM_MAX,TEAM_MIN,TEAM_LOCK_AT,makeCode,normalizeCode,normalizeTeamName,normalizeIndustry,normalizeDirections,teamLocked,directionName} from '../../../team-core.mjs';
 import {studentProgress} from '../../../progress-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
@@ -21,10 +22,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[],teams:[],team_members:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class,teams,team_members]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed),db.from('teams').select('*').in('class_id',allowed),db.from('team_members').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class),teams:must(teams),team_members:must(team_members)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -78,7 +79,24 @@ Deno.serve(async req=>{
    else must(await db.from('week_questions').upsert({class_id:b.class_id,week,...q,updated_at:new Date().toISOString()},{onConflict:'class_id,week'}));
    const rows=must(await db.from('week_questions').select('*').eq('class_id',b.class_id));
    return reply({week_questions:rows,resolved:resolveQuestions(week,rows.find((r:any)=>r.week===week))});
-  }  if(b.action==='teacher_remark'){
+  }
+  if(b.action==='teacher_team'){
+   // 老師管理建組：不受鎖定時間限制。op: create／rename／industry／lock／assign／remove／claim／delete。
+   const cid=b.class_id,op=String(b.op||'');const teamsOut=async()=>reply({teams:must(await db.from('teams').select('*').eq('class_id',cid)),team_members:must(await db.from('team_members').select('*').eq('class_id',cid))});
+   if(op==='create'){const name=normalizeTeamName(b.name);if(!name)return reply({error:'組名不能空白。'},422);let code='';for(let i=0;i<20;i++){const c=makeCode();if(!must(await db.from('teams').select('id').match({class_id:cid,code:c}).maybeSingle())){code=c;break;}}if(!code)return reply({error:'產生組碼失敗，請再試一次。'},503);
+    must(await db.from('teams').insert({class_id:cid,code,name,industry:{card:null,custom:''},locked:false,created_by:'teacher'}).select().single());return teamsOut();}
+   if(op==='lock'){const locked=!!b.locked;if(b.team_id==='all')must(await db.from('teams').update({locked}).eq('class_id',cid));else must(await db.from('teams').update({locked}).match({class_id:cid,id:b.team_id}));return teamsOut();}
+   const team=b.team_id&&b.team_id!=='all'?must(await db.from('teams').select('*').match({class_id:cid,id:b.team_id}).maybeSingle()):null;
+   if(op==='rename'){if(!team)return reply({error:'找不到這一組。'},404);const name=normalizeTeamName(b.name);if(!name)return reply({error:'組名不能空白。'},422);must(await db.from('teams').update({name}).match({class_id:cid,id:team.id}));return teamsOut();}
+   if(op==='industry'){if(!team)return reply({error:'找不到這一組。'},404);must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:cid,id:team.id}));return teamsOut();}
+   if(op==='delete'){if(!team)return reply({error:'找不到這一組。'},404);const ms=must(await db.from('team_members').select('student_id').match({class_id:cid,team_id:team.id}));if(ms.length)return reply({error:'這一組還有人，先把組員移出。'},409);must(await db.from('teams').delete().match({class_id:cid,id:team.id}));return teamsOut();}
+   const sid=String(b.student_id||'').trim().toUpperCase();if(!sid)return reply({error:'缺少學號。'},422);
+   if(op==='assign'){if(!team)return reply({error:'找不到這一組。'},404);must(await db.from('team_members').upsert({class_id:cid,student_id:sid,team_id:team.id,directions:[],wants_assignment:false,updated_at:new Date().toISOString()},{onConflict:'class_id,student_id'}));return teamsOut();}
+   if(op==='remove'){must(await db.from('team_members').update({team_id:null,directions:[],updated_at:new Date().toISOString()}).match({class_id:cid,student_id:sid}));return teamsOut();}
+   if(op==='claim'){must(await db.from('team_members').update({directions:normalizeDirections(b.directions),updated_at:new Date().toISOString()}).match({class_id:cid,student_id:sid}));return teamsOut();}
+   return reply({error:'未知建組操作。'},400);
+  }
+  if(b.action==='teacher_remark'){
    // 老師備註（學生看不到）：每人每週一格，標記＋一句話。兩者都空＝刪掉這列。
    const week=Number(b.week);if(!Number.isInteger(week)||week<1||week>12)return reply({error:'週數不正確。'},422);
    const sid=String(b.student_id||'').trim();if(!/^[A-Za-z0-9]{5,20}$/.test(sid))return reply({error:'學號不正確。'},422);
@@ -213,6 +231,67 @@ Deno.serve(async req=>{
  // ---- Week 5 三個機會比一比：課堂兩題＋3×5 計分表＋選一個＋反方三回合＋一頁六段 ----
  // 三個機會從 Week 4 卡 3 帶出（學生沒存過本週就用它當種子；存過就用本週的，因為學生可能改字）。
  // ---- 只有課堂兩題的週（Week 6 起；跟別週同一天上、沒有自己的作答頁）：一張通用表 week_class_answers，一人一週一列 ----
+ // ---- Week 8 建組（學生端）：team_load／create／join／leave／industry／claim／want ----
+ if(String(b.action||'').startsWith('team_')){
+  const nowT=Date.now();
+  const loadTeam=async()=>{
+   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
+   let team=null,members:any[]=[];
+   if(me?.team_id){team=must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle());members=must(await db.from('team_members').select('*').match({class_id:s.class_id,team_id:me.team_id}));}
+   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={};
+   if(ids.length){
+    for(const r of must(await db.from('week4_research').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids)))week4[r.student_id]=normalizeWeek4(r.data).industry;
+    for(const r of must(await db.from('class_roster').select('student_id,student_name').eq('class_id',s.class_id).in('student_id',ids)))names[r.student_id]=r.student_name;
+   }
+   return {me,team,members,week4,names,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+  };
+  const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
+  const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
+  const touch={updated_at:new Date().toISOString()};
+  if(b.action==='team_load')return reply(await loadTeam());
+  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':'11/27 13:00 後'}），要改請找老師。`},423);
+  if(b.action==='team_create'){
+   if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
+   const name=normalizeTeamName(b.name);if(!name)return reply({error:'先取一個組名。'},422);
+   let code='';for(let i=0;i<20;i++){const c=makeCode();if(!must(await db.from('teams').select('id').match({class_id:s.class_id,code:c}).maybeSingle())){code=c;break;}}
+   if(!code)return reply({error:'產生組碼失敗，請再按一次。'},503);
+   const team=must(await db.from('teams').insert({class_id:s.class_id,code,name,industry:{card:null,custom:''},locked:false,created_by:s.student_id}).select().single());
+   must(await db.from('team_members').upsert({...scope,team_id:team.id,directions:[],wants_assignment:false,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_join'){
+   if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
+   const code=normalizeCode(b.code);if(code.length!==4)return reply({error:'組碼是 4 個字，請再看一次。'},422);
+   const team=must(await db.from('teams').select('*').match({class_id:s.class_id,code}).maybeSingle());
+   if(!team)return reply({error:'找不到這個組碼，跟組長確認一下。'},404);
+   if(team.locked)return reply({error:'這一組已經被老師鎖住了。'},423);
+   const ms=must(await db.from('team_members').select('student_id').match({class_id:s.class_id,team_id:team.id}));
+   if(ms.length>=TEAM_MAX)return reply({error:`這一組已經滿 ${TEAM_MAX} 人了。`},409);
+   must(await db.from('team_members').upsert({...scope,team_id:team.id,directions:[],wants_assignment:false,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_want'){
+   if(myTeam)return reply({error:'你已經有組了。'},409);
+   must(await db.from('team_members').upsert({...scope,team_id:null,directions:[],wants_assignment:!!b.want,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(!myTeam)return reply({error:'你還沒有組。'},409);
+  if(b.action==='team_leave'){
+   must(await db.from('team_members').update({team_id:null,directions:[],...touch}).match(scope));
+   const left=must(await db.from('team_members').select('student_id').match({class_id:s.class_id,team_id:myTeam.id}));
+   if(!left.length)must(await db.from('teams').delete().match({class_id:s.class_id,id:myTeam.id}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_industry'){must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());}
+  if(b.action==='team_claim'){
+   const dirs=normalizeDirections(b.directions);if(dirs.length>2)return reply({error:'一個人最多認兩個方向。'},422);
+   const others=must(await db.from('team_members').select('student_id,directions').match({class_id:s.class_id,team_id:myTeam.id}));
+   const taken=dirs.filter(d=>others.some((m:any)=>m.student_id!==s.student_id&&normalizeDirections(m.directions).includes(d)));
+   if(taken.length)return reply({error:`${taken.map(directionName).join('、')} 已經有組員認領了，跟組員講好再認。`},409);
+   must(await db.from('team_members').update({directions:dirs,...touch}).match(scope));return reply(await loadTeam());
+  }
+  return reply({error:'未知建組操作。'},400);
+ }
  if(b.action==='classq_load'||b.action==='classq_save'){
   const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);
   const rowScope={...scope,week};

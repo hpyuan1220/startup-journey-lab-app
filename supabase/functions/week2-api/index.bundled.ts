@@ -354,6 +354,7 @@ const GENERIC_QUESTIONS={q1:'今天老師講的內容裡，哪一點最讓你意
 const DEFAULT_QUESTIONS={
  4:{q1:'Bhidé 訪談 Inc. 500 創辦人發現大多數點子從哪來？一句話說這跟你 Week 1 的起點卡有什麼關係。',q2:'你今天選了哪一條產業線？為什麼你的痛屬於這一行？一句話。',points:'Bhidé 1994：約七成點子來自親身工作經驗、個位數來自系統性研究；新事業通常解創辦人自己身為顧客或員工碰到的問題。Q2 看兩件事：說出一條產業線（九張產業卡之一或自填）；用一句話說這個痛翻到業者那一面是什麼（誰為它花錢、花時間、受損失）。'},
  6:{q1:'AI 新創地圖用「發電廠、引擎、零件、汽車」四層來比喻。為什麼錢先流到最底層，小團隊的機會卻在最上層？一句話。',q2:'你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。',points:'四層由下往上：發電廠＝算力（機房）、引擎＝基礎模型、零件與道路＝基礎設施（資料、agent 工具）、汽車＝應用。越底層單筆投資越大、家數越少（大模型、機房動輒數十億美元）；越往上單筆越小、家數越多。小團隊用現成的引擎和零件，把 AI 做成某一行的服務（島 6 垂直 Agent：Owner 餐廳、Gorgias 網店客服、EliseAI 租屋、Skello 排班）。10 座島：1 基礎模型、2 算力、3 資料平台、4 AI 寫程式、5 Agent 基礎設施、6 垂直 Agent、7 消費創意、8 實體 AI、9 世界模型、10 AI for Science。'},
+ 8:{q1:'課堂用「廚房裡的鍋具演進史」比喻三代工具。「第一代 AI（早期的聊天機器人）」對應的是哪一種？(A) 傳統鐵鍋加瓦斯爐 (B) 語音食譜機 (C) 全自動智慧料理機加自動買菜車 (D) 中央廚房的水電錶。寫選項＋一句為什麼。',q2:'講「人在迴路裡的現場調度」時，舉了半夜車子拋錨的例子。AI 聽完引擎聲、看完儀表板照片後，做了什麼判斷與調度？(A) 判斷引擎故障，派拖吊車 (B) 判斷電瓶沒電，派最近、有跨接電源、現在有空的技師 (C) 無法判斷，轉真人客服 (D) 判斷爆胎，請車主自己換。寫選項＋一句為什麼。',points:'Q1 答案 B：語音食譜機只出嘴不出手；A 是傳統軟體（Excel、ERP），C 是 AI Agent（自己查冰箱、下單、控溫）。Q2 答案 B：感測輸入（聲音、照片）→ AI 判斷（電瓶沒電，不用拖吊）→ 實體調度（派最近、有設備、有空的技師）；只有判斷錯誤成本高（疑似事故）才轉真人，C 是干擾項。評語請說學生選對或選錯、理由有沒有講到「只出嘴不出手」或「感測→判斷→調度」。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
 function resolveQuestions(week,row){
@@ -417,7 +418,7 @@ function buildPrompt(kind,d,q){
 }
 
 // ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
-const CLASSQ_WEEKS=[6];
+const CLASSQ_WEEKS=[6,8];
 const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
 function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
 function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
@@ -578,6 +579,41 @@ function draftPage(d){
  return d.page.map((p,i)=>p||w5cut(drafts[i],800));
 }
 
+// Week 8 建組：共用規則（瀏覽器與 Edge Function 都用）。
+// 組：3 人為主、最少 2 人、最多 3 人；一組一個產業線；三個方向各由一人認領（兩人組一人認兩個）。
+// 11/27 13:00 前學生可自己建組／加入／離開／改產業／認方向；之後只有老師能改。老師也可以提前鎖住某一組或全部。
+const TEAM_MAX=3,TEAM_MIN=2;
+const TEAM_LOCK_AT='2026-11-27T13:00:00+08:00';
+const TEAM_LOCK_LABEL='11/27 13:00';
+const DIRECTIONS=[[1,'方向一｜Agent 經濟基礎設施','賣鏟子：協定、授權、監控、結算，賣給做 Agent 的公司'],[2,'方向二｜AI 原生服務','賣做完的結果：按件收費，搶的是老闆的人力預算'],[3,'方向三｜AI 進入實體世界','感測器進、派工出：讓現場的人與機器動起來']];
+const directionName=n=>(DIRECTIONS.find(d=>d[0]===Number(n))||[])[1]||'';
+const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉 I／O／0／1
+function makeCode(rand=Math.random){let s='';for(let i=0;i<4;i++)s+=CODE_ALPHABET[Math.floor(rand()*CODE_ALPHABET.length)];return s;}
+const normalizeCode=s=>String(s||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+const normalizeTeamName=s=>String(s||'').replace(/\s+/g,' ').trim().slice(0,30);
+function normalizeIndustry(input){const i=input&&typeof input==='object'?input:{};if(i.card==='custom')return {card:'custom',custom:String(i.custom||'').trim().slice(0,40)};const c=cardById(i.card);return c?{card:c.id,custom:''}:{card:null,custom:''};}
+const industryLabel=ind=>ind?.card==='custom'?(ind.custom||'（自填）'):(cardById(ind?.card)?.name||'');
+function normalizeDirections(arr){const out=[...new Set((Array.isArray(arr)?arr:[]).map(Number).filter(n=>[1,2,3].includes(n)))].sort();return out;}
+/** 學生還能不能改：過了鎖定時間、或老師鎖了這一組，就不能 */
+function teamLocked(team,now=Date.now(),lockAt=TEAM_LOCK_AT){if(team?.locked)return true;const t=Date.parse(lockAt);return Number.isFinite(t)&&now>=t;}
+/** 一組的狀態摘要：人數、產業、三個方向各由誰認、缺什麼 */
+function teamSummary(team,members){
+ const ms=(members||[]).filter(m=>m.team_id===team.id);
+ const claimed={1:[],2:[],3:[]};for(const m of ms)for(const d of normalizeDirections(m.directions))claimed[d].push(m.student_id);
+ const missing=[];
+ if(ms.length<TEAM_MIN)missing.push(`還差 ${TEAM_MIN-ms.length} 人（最少 ${TEAM_MIN} 人）`);
+ if(!industryLabel(team.industry))missing.push('還沒選組的產業線');
+ const unclaimed=[1,2,3].filter(d=>!claimed[d].length);if(unclaimed.length)missing.push(`還沒人認領：${unclaimed.map(directionName).join('、')}`);
+ const noDir=ms.filter(m=>!normalizeDirections(m.directions).length).map(m=>m.student_id);if(noDir.length)missing.push(`還沒認方向：${noDir.join('、')}`);
+ return {members:ms,count:ms.length,full:ms.length>=TEAM_MAX,claimed,missing,complete:!missing.length};
+}
+/** 組員 Week 4 選的產業線 → 這一組可以選的產業清單（去重；沒有就全部九張卡） */
+function industryOptions(members,week4ByStudent){
+ const seen=new Map();
+ for(const m of members||[]){const ind=week4ByStudent?.[m.student_id];if(!ind)continue;const key=ind.card==='custom'?'custom:'+(ind.custom||''):String(ind.card);const label=industryLabel(ind);if(!label)continue;if(!seen.has(key))seen.set(key,{...normalizeIndustry(ind),label,who:[]});seen.get(key).who.push(m.student_id);}
+ return [...seen.values()];
+}
+
 // 「我的進度」：學生端（課程地圖最上面一條）和老師端（之後的全班總表）共用同一套判定。
 // 輸入是各週那一列（可為 null）；輸出每週 {week, state, label, detail, next, href}。
 // state：done（做完）／partial（做了一部分）／revise（老師退回）／none（沒開始）。
@@ -642,10 +678,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[],teams:[],team_members:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class,teams,team_members]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed),db.from('teams').select('*').in('class_id',allowed),db.from('team_members').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class),teams:must(teams),team_members:must(team_members)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -699,7 +735,24 @@ Deno.serve(async req=>{
    else must(await db.from('week_questions').upsert({class_id:b.class_id,week,...q,updated_at:new Date().toISOString()},{onConflict:'class_id,week'}));
    const rows=must(await db.from('week_questions').select('*').eq('class_id',b.class_id));
    return reply({week_questions:rows,resolved:resolveQuestions(week,rows.find((r:any)=>r.week===week))});
-  }  if(b.action==='teacher_remark'){
+  }
+  if(b.action==='teacher_team'){
+   // 老師管理建組：不受鎖定時間限制。op: create／rename／industry／lock／assign／remove／claim／delete。
+   const cid=b.class_id,op=String(b.op||'');const teamsOut=async()=>reply({teams:must(await db.from('teams').select('*').eq('class_id',cid)),team_members:must(await db.from('team_members').select('*').eq('class_id',cid))});
+   if(op==='create'){const name=normalizeTeamName(b.name);if(!name)return reply({error:'組名不能空白。'},422);let code='';for(let i=0;i<20;i++){const c=makeCode();if(!must(await db.from('teams').select('id').match({class_id:cid,code:c}).maybeSingle())){code=c;break;}}if(!code)return reply({error:'產生組碼失敗，請再試一次。'},503);
+    must(await db.from('teams').insert({class_id:cid,code,name,industry:{card:null,custom:''},locked:false,created_by:'teacher'}).select().single());return teamsOut();}
+   if(op==='lock'){const locked=!!b.locked;if(b.team_id==='all')must(await db.from('teams').update({locked}).eq('class_id',cid));else must(await db.from('teams').update({locked}).match({class_id:cid,id:b.team_id}));return teamsOut();}
+   const team=b.team_id&&b.team_id!=='all'?must(await db.from('teams').select('*').match({class_id:cid,id:b.team_id}).maybeSingle()):null;
+   if(op==='rename'){if(!team)return reply({error:'找不到這一組。'},404);const name=normalizeTeamName(b.name);if(!name)return reply({error:'組名不能空白。'},422);must(await db.from('teams').update({name}).match({class_id:cid,id:team.id}));return teamsOut();}
+   if(op==='industry'){if(!team)return reply({error:'找不到這一組。'},404);must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:cid,id:team.id}));return teamsOut();}
+   if(op==='delete'){if(!team)return reply({error:'找不到這一組。'},404);const ms=must(await db.from('team_members').select('student_id').match({class_id:cid,team_id:team.id}));if(ms.length)return reply({error:'這一組還有人，先把組員移出。'},409);must(await db.from('teams').delete().match({class_id:cid,id:team.id}));return teamsOut();}
+   const sid=String(b.student_id||'').trim().toUpperCase();if(!sid)return reply({error:'缺少學號。'},422);
+   if(op==='assign'){if(!team)return reply({error:'找不到這一組。'},404);must(await db.from('team_members').upsert({class_id:cid,student_id:sid,team_id:team.id,directions:[],wants_assignment:false,updated_at:new Date().toISOString()},{onConflict:'class_id,student_id'}));return teamsOut();}
+   if(op==='remove'){must(await db.from('team_members').update({team_id:null,directions:[],updated_at:new Date().toISOString()}).match({class_id:cid,student_id:sid}));return teamsOut();}
+   if(op==='claim'){must(await db.from('team_members').update({directions:normalizeDirections(b.directions),updated_at:new Date().toISOString()}).match({class_id:cid,student_id:sid}));return teamsOut();}
+   return reply({error:'未知建組操作。'},400);
+  }
+  if(b.action==='teacher_remark'){
    // 老師備註（學生看不到）：每人每週一格，標記＋一句話。兩者都空＝刪掉這列。
    const week=Number(b.week);if(!Number.isInteger(week)||week<1||week>12)return reply({error:'週數不正確。'},422);
    const sid=String(b.student_id||'').trim();if(!/^[A-Za-z0-9]{5,20}$/.test(sid))return reply({error:'學號不正確。'},422);
@@ -834,6 +887,67 @@ Deno.serve(async req=>{
  // ---- Week 5 三個機會比一比：課堂兩題＋3×5 計分表＋選一個＋反方三回合＋一頁六段 ----
  // 三個機會從 Week 4 卡 3 帶出（學生沒存過本週就用它當種子；存過就用本週的，因為學生可能改字）。
  // ---- 只有課堂兩題的週（Week 6 起；跟別週同一天上、沒有自己的作答頁）：一張通用表 week_class_answers，一人一週一列 ----
+ // ---- Week 8 建組（學生端）：team_load／create／join／leave／industry／claim／want ----
+ if(String(b.action||'').startsWith('team_')){
+  const nowT=Date.now();
+  const loadTeam=async()=>{
+   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
+   let team=null,members:any[]=[];
+   if(me?.team_id){team=must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle());members=must(await db.from('team_members').select('*').match({class_id:s.class_id,team_id:me.team_id}));}
+   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={};
+   if(ids.length){
+    for(const r of must(await db.from('week4_research').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids)))week4[r.student_id]=normalizeWeek4(r.data).industry;
+    for(const r of must(await db.from('class_roster').select('student_id,student_name').eq('class_id',s.class_id).in('student_id',ids)))names[r.student_id]=r.student_name;
+   }
+   return {me,team,members,week4,names,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+  };
+  const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
+  const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
+  const touch={updated_at:new Date().toISOString()};
+  if(b.action==='team_load')return reply(await loadTeam());
+  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':'11/27 13:00 後'}），要改請找老師。`},423);
+  if(b.action==='team_create'){
+   if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
+   const name=normalizeTeamName(b.name);if(!name)return reply({error:'先取一個組名。'},422);
+   let code='';for(let i=0;i<20;i++){const c=makeCode();if(!must(await db.from('teams').select('id').match({class_id:s.class_id,code:c}).maybeSingle())){code=c;break;}}
+   if(!code)return reply({error:'產生組碼失敗，請再按一次。'},503);
+   const team=must(await db.from('teams').insert({class_id:s.class_id,code,name,industry:{card:null,custom:''},locked:false,created_by:s.student_id}).select().single());
+   must(await db.from('team_members').upsert({...scope,team_id:team.id,directions:[],wants_assignment:false,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_join'){
+   if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
+   const code=normalizeCode(b.code);if(code.length!==4)return reply({error:'組碼是 4 個字，請再看一次。'},422);
+   const team=must(await db.from('teams').select('*').match({class_id:s.class_id,code}).maybeSingle());
+   if(!team)return reply({error:'找不到這個組碼，跟組長確認一下。'},404);
+   if(team.locked)return reply({error:'這一組已經被老師鎖住了。'},423);
+   const ms=must(await db.from('team_members').select('student_id').match({class_id:s.class_id,team_id:team.id}));
+   if(ms.length>=TEAM_MAX)return reply({error:`這一組已經滿 ${TEAM_MAX} 人了。`},409);
+   must(await db.from('team_members').upsert({...scope,team_id:team.id,directions:[],wants_assignment:false,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_want'){
+   if(myTeam)return reply({error:'你已經有組了。'},409);
+   must(await db.from('team_members').upsert({...scope,team_id:null,directions:[],wants_assignment:!!b.want,...touch},{onConflict:'class_id,student_id'}));
+   return reply(await loadTeam());
+  }
+  if(!myTeam)return reply({error:'你還沒有組。'},409);
+  if(b.action==='team_leave'){
+   must(await db.from('team_members').update({team_id:null,directions:[],...touch}).match(scope));
+   const left=must(await db.from('team_members').select('student_id').match({class_id:s.class_id,team_id:myTeam.id}));
+   if(!left.length)must(await db.from('teams').delete().match({class_id:s.class_id,id:myTeam.id}));
+   return reply(await loadTeam());
+  }
+  if(b.action==='team_industry'){must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());}
+  if(b.action==='team_claim'){
+   const dirs=normalizeDirections(b.directions);if(dirs.length>2)return reply({error:'一個人最多認兩個方向。'},422);
+   const others=must(await db.from('team_members').select('student_id,directions').match({class_id:s.class_id,team_id:myTeam.id}));
+   const taken=dirs.filter(d=>others.some((m:any)=>m.student_id!==s.student_id&&normalizeDirections(m.directions).includes(d)));
+   if(taken.length)return reply({error:`${taken.map(directionName).join('、')} 已經有組員認領了，跟組員講好再認。`},409);
+   must(await db.from('team_members').update({directions:dirs,...touch}).match(scope));return reply(await loadTeam());
+  }
+  return reply({error:'未知建組操作。'},400);
+ }
  if(b.action==='classq_load'||b.action==='classq_save'){
   const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);
   const rowScope={...scope,week};

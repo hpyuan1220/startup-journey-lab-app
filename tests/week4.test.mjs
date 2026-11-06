@@ -206,7 +206,7 @@ test('Edge：rebuttal_ai 沒選機會擋、輪流（拒絕→等回應）、三�
 // ---- Week 6 起：只有課堂兩題的週（通用表 week_class_answers）----
 import {CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ,SAME_DAY_WEEKS,CLASS_SCHEDULE} from '../week4-core.mjs';
 test('課堂兩題週：Week 6 跟 Week 5 同一天，各算各的出席；課程地圖的上課日不含 Week 6',()=>{
- assert.deepEqual(CLASSQ_WEEKS,[6]);assert.equal(classDate(6),'2026-11-06');assert.equal(SAME_DAY_WEEKS[6],'2026-11-06');
+ assert.deepEqual(CLASSQ_WEEKS,[6,8]);assert.equal(classDate(6),'2026-11-06');assert.equal(SAME_DAY_WEEKS[6],'2026-11-06');
  assert.ok(!CLASS_SCHEDULE.days.some(([w])=>w===6),'days 不放 Week 6（progress 的「本週」才不會變）');
  const inClass={q1:'2026-11-06T05:10:00Z',q2:'2026-11-06T05:20:00Z'};
  assert.equal(attendance(inClass,5),true);assert.equal(attendance(inClass,6),true);assert.equal(attendance(inClass,4),false);

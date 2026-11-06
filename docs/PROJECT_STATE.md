@@ -1963,3 +1963,11 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 診斷（老師在 SQL Editor 跑只讀查詢）：今天 12:00 後重新登入 22 人；Week 5 有資料列 37 人且都是今天存的；孤兒快照 0；登入已過期 2 人。結論〔推論〕：student_sessions 以 (class_id,student_id) upsert，手機登入答兩題後，電腦上原本的 token 立刻失效（401）→ 比較頁 expired=true、save() 直接 return；請重新進入的卡片在頁面上方。
 - 修：migration 20261106_multi_session.sql 拿掉 student_sessions 含 student_id 的唯一限制（改一般索引，token_hash 唯一），Student-api 登入改 insert（多裝置並存，舊的到期自然失效）。relogin 文字拿掉「另一台裝置登入」。**要 Run migration 再 Deploy Student-api**。單元 213/213（含多裝置登入測試）；week4／5 瀏覽器回歸全過。
 - 2026-11-06 18:30 上線後學生模擬（測試帳號）：Week 4 改兩欄→自動存→重整都在；Week 5 兩題、15 格計分＋證據、選 B＋理由、一頁六段→「完成，已存雲端」→重整全在（v41）；老師手機另外登入後，電腦端再存 Q1 仍 200、版本 43、沒跳重新進入。多裝置修正驗證通過。
+
+## 2026-11-06 Week 8（11/20）：課堂兩題＋建組登記
+- 決定（老師）：Week 8 課堂兩題＝講師選擇題＋一句理由（Q1 鍋具演進 → B 語音食譜機；Q2 半夜拋錨 → B 電瓶沒電、派最近有設備有空的技師），答案放 `DEFAULT_QUESTIONS[8].points` 給 AI 評語用。建組一上線就開放；一組 2–3 人（最多 3）；一組一條產業線（從組員 Week 4 選的產業挑）；三個方向各由一人認領（兩人組一人認兩個）；app 有「想請老師分組」按鈕；11/27 13:00 後學生不能改，老師隨時可改。
+- 新檔：`team-core.mjs`（規則：TEAM_MAX／MIN、TEAM_LOCK_AT、DIRECTIONS、makeCode 四碼不含 I/O/0/1、teamLocked、teamSummary、industryOptions）；`team.js`（學生端，掛 `week.html?week=8` 的 `[data-team]`）；`teacher-team.js`（老師頁 `#teacher-week8`：每組一卡＝改組名／產業線／替組員認方向／移出／加人下拉／鎖定；還沒有組名單標 ★ 想請老師分組；鎖定全部／解鎖全部／老師建一組／匯出 CSV）；`supabase/migrations/20261106_teams.sql`（teams、team_members、bump_version_touch 觸發器、RLS）。
+- Edge week2-api：學生 `team_load/create/join/want/leave/industry/claim`（鎖定後 409；滿 3 人 409；同方向兩人認 409；組碼錯 404）；老師 `teacher_team` op create/rename/industry/lock(team_id 或 all)/assign/remove/claim/delete（空組才能刪）；`teacher_load` 多回 `teams`、`team_members`。bundle 由 build-week2-function.mjs 含 team-core.mjs。
+- week4-core：`CLASSQ_WEEKS=[6,8]`、`DEFAULT_QUESTIONS[8]`。classq.js 改成挑網址那一週的 `[data-classq="N"]`（一頁有 Week 6 與 Week 8 兩區）。week.html／week.js：Week 8 導覽、`#week-eight`（data-classq="8" data-team）、`#week-eight-materials`（講義／簡報連結 ?v=20261106，檔案待放 materials/）。index.html 加 teacher-team.js；styles ?v=20261106-tm（.tm-*、.tt-*）。
+- 測試：單元 215/215（含 tests/team.test.mjs）；bundled 36/36；瀏覽器 tests/week8-student.mjs 19/19（兩題、建組、加入、認方向衝突、滿 3、想分組、老師指定、鎖定全部、Week 6 不受影響）；week4 18、week5 26、teacher-remarks 17 全過；week6 只剩 YouTube 雜訊。
+- **上線三步（老師按）**：① SQL Editor Run `supabase/migrations/20261106_teams.sql` ② push ③ Deploy week2-api（注入 bundle）。沒做 ① 建組會 500；沒做 ③ Week 8 題目是舊預設、建組按鈕會報「未知的動作」。

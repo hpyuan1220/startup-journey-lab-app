@@ -6,7 +6,7 @@ const weeks=[
 ["三個機會比一比，選最值得創業的一個", "用五問計分、讓 AI 反方拒絕三回合，寫一頁「為什麼這是好的商業痛點」。", "產業研究筆記 v2：五問分數、反方紀錄、選定的一個與理由（＝期中 PDF）", "教材已提供：課前影片、講義 PDF、簡報、研究筆記 v2 範本", ["課堂兩題。", "五問各打 0／1／2：有人在為它花錢嗎、多久一次損失多少、為什麼是現在、為什麼還沒被解好、小團隊進得去嗎。", "最高分的交給 AI 反方（撐了十年不想花錢的老闆）拒絕三回合，你逐一回應。", "寫「為什麼選它」：照五問順序，一段一個證據一個出處，最後一段寫反方與你的回應。", "這一頁加 Week 4 筆記就是期中報告；11/13 上課前上傳 TronClass。"]],
 ["AI 新創地圖（老師講，11/6 後半場）", "跟 Week 5 同一天：錢往哪流、4 大區 10 座島、世界模型、你的產業線在島 6 的對照組。", "課後把今天的例子對回自己的產業線", "教材已提供：課前影片、講義 PDF、AI 新創地圖簡報（PDF／PPT）", ["課堂兩題（Week 6 頁；跟 Week 5 頁的兩題分開算出席）。", "AI 原生服務公司：賣做完的工作，不賣軟體；搶的是人力與外包預算。", "agent 經濟的基礎設施：身分、協定、信任與付款。", "走進實體世界的 AI：機器人、感測、現場服務；台灣的供應鏈位置。", "課後：今天哪一個例子最接近你的產業？它搶的是誰的預算？補進期中報告。"]],
 ["期中：個人報告", "交兩件事：研究筆記 v2 的 PDF（11/13 13:00 前交到 TronClass），和課堂上 2 分鐘口頭報告（11/13 13:00–17:00，依學號順序）。", "研究筆記 v2 PDF＋2 分鐘上台", "期中說明已提供：PDF 九段格式、2 分鐘四段、老師看什麼（見下方）", ["到 Week 5 比較頁最下面：按「研究筆記 v2 草稿」排好 PDF 底稿，改成自己的句子、補來源。", "同一處按「2 分鐘口頭報告講稿」：四段、約 450 字，唸一遍計時。", "11/13 13:00 前把 PDF 交到 TronClass。", "11/13 13:00–17:00 課堂上依學號順序上台 2 分鐘。", "AI 回饋不是成績；看的是你的證據和判斷。下週（11/20）建組。"]],
-["AI agent 工具更新（老師講）＋建組", "agent 是什麼、現在能做到哪、哪些產業先被改；課堂最後 30 分鐘建組、選組的產業、認領方向。", "組卡：組名、組的產業、三個方向各由誰負責", "教材準備中", ["課堂兩題。", "agent 與協定、付款、記憶：2024–2026 的時間軸。", "建組：組長建組拿四碼組碼、組員輸入加入；3 人為主、最少 2。", "選組的產業：從組員第一輪的產業裡挑一個，之後全組只用這一個。", "認領方向：agent 基礎設施／AI 原生服務／實體世界 AI，一人一個；兩人組一人認兩個。"]],
+["AI agent 工具更新（講師講座）＋建組", "講師講 AI Agent 的三個方向：基礎設施、AI 原生服務、實體世界；下課前 25 分鐘建組、選組的產業線、認領方向。", "組卡：組名、組碼、組的產業、三個方向各由誰負責", "教材已提供：講義 PDF、教學簡報（PDF／PPT）；課堂兩題＋建組頁已開", ["課堂兩題（講師的選擇題＋一句理由）：11/20 13:00–17:00 內存檔＝出席。", "建組：組長建組拿四碼組碼、組員輸入加入；3 人為主、最少 2。現在就可以登記，11/27 13:00 鎖定。", "選組的產業：從組員 Week 4 的產業裡挑一條，之後全組只用這一個。", "認領方向：Agent 基礎設施／AI 原生服務／實體世界 AI，一人一個；兩人組一人認兩個。", "還沒找到組：按「想請老師分組」。"]],
 ["第二輪研究開跑：三個方向", "每個人依認領的方向，在組的產業裡找一個題目：跑同樣的三張卡。", "個人方向卡 v1", "教材準備中", ["課堂兩題。", "卡 1 問 AI：這個方向在這個產業裡能切什麼、現在誰在做。", "卡 2 NotebookLM 查證：5 個以上可靠來源。", "卡 3 整理成一個題目：第一個客戶、搶誰的預算、為什麼是現在。", "討論題：agent 基礎設施和 AI 原生服務在台灣找不到可查證的新創——是機會還是警訊？"]],
 ["第二輪研究工作坊", "NotebookLM 深挖、補來源，把三個人的題目寫到能用同一把尺比。", "個人方向卡 v2", "教材準備中", ["課堂兩題。", "來源怎麼補：政府統計、產業報告、近一年新聞、業者訪談、論壇。", "常見錯誤：只有 AI 說、沒有引用；題目太大、說不出第一個客戶。", "組內互看：三張卡能不能用同一把尺比。", "課後完成 v2。"]],
 ["三題比較、選一個、預演", "六準則計分、反方、寫組的結論；預演期末。", "期末報告初稿", "教材準備中", ["課堂兩題。", "六準則各打 0／1／2：誰的預算、資料優勢、可及性、為什麼是現在、台灣位置、可研究性。", "AI 反方拒絕三回合。", "結論：為什麼選它、它解的是哪個產業痛、另外兩個為什麼不選。", "預演：每組 6 分鐘。"]],
@@ -47,11 +47,12 @@ const w4m=document.querySelector("#week-four-materials"); if(w4m) w4m.hidden=n!=
 const w5m=document.querySelector("#week-five-materials"); if(w5m) w5m.hidden=n!==5;
 const w6m=document.querySelector("#week-six-materials"); if(w6m) w6m.hidden=n!==6;
 const w7m=document.querySelector("#week-seven-materials"); if(w7m) w7m.hidden=n!==7;
+const w8m=document.querySelector("#week-eight-materials"); if(w8m) w8m.hidden=n!==8;
 // Week 6（11/5 起）有自己的課堂兩題頁（classq.js），跟 Week 2–5 一樣走下面的「學習藍圖／作答頁」切換。
 
 // Switch views without rebuilding the form: unsaved answers remain in memory.
-if(n===2||n===3||n===4||n===5||n===6){
- const ids={2:['#week-two-navigation','#week-two-materials','#week-two'],3:['#week-three-navigation','#week-three-materials','#week-three'],4:['#week-four-navigation','#week-four-materials','#week-four'],5:['#week-five-navigation','#week-five-materials','#week-five'],6:['#week-six-navigation','#week-six-materials','#week-six']}[n];
+if(n===2||n===3||n===4||n===5||n===6||n===8){
+ const ids={2:['#week-two-navigation','#week-two-materials','#week-two'],3:['#week-three-navigation','#week-three-materials','#week-three'],4:['#week-four-navigation','#week-four-materials','#week-four'],5:['#week-five-navigation','#week-five-materials','#week-five'],6:['#week-six-navigation','#week-six-materials','#week-six'],8:['#week-eight-navigation','#week-eight-materials','#week-eight']}[n];
  const navigation=document.querySelector(ids[0]);
  const materials=document.querySelector(ids[1]);
  const cardSection=document.querySelector(ids[2]);
@@ -67,7 +68,7 @@ if(n===2||n===3||n===4||n===5||n===6){
   moved=true;loadVideo();});
  function loadVideo(){if(!pre||!moved||document.querySelector('#week-blueprint').hidden)return;pre.querySelectorAll('iframe[data-src]').forEach(f=>{f.src=f.dataset.src;delete f.dataset.src;});}
  function showWeekView(){
-  const cardView=['#card','#week-two','#week-three','#week-four','#week-five','#week-six'].includes(location.hash);
+  const cardView=['#card','#week-two','#week-three','#week-four','#week-five','#week-six','#week-eight'].includes(location.hash);
   document.querySelector('#week-blueprint').hidden=cardView;
   materials.hidden=cardView;
   cardSection.hidden=!cardView;

@@ -524,3 +524,17 @@ main > .my-progress{margin:12px 0 16px}
 .w4-draft-out textarea{width:100%;box-sizing:border-box;font:inherit;font-size:.92rem;margin:8px 0}
 .w4-near{flex-basis:100%;margin:4px 0 0}
 .w4-ai{width:100%;box-sizing:border-box;font:inherit;font-size:.92rem;margin-top:6px}
+/* Week 8 建組 */
+.tm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:8px 0}
+.tm-card{border:1px solid #d9d4c7;border-radius:10px;padding:10px 12px;background:#fbf8f1;display:flex;flex-direction:column;gap:8px}.tm-card h3{margin:0;font-size:1rem}
+.tm-card input,.tm-block select,.tm-block input{font:inherit;padding:8px 10px;border:1px solid #c9c2b2;border-radius:8px;width:100%}
+.tm-team{border:2px solid #2f6f86;border-radius:12px;padding:10px 14px;background:#eef6f8;margin:8px 0}.tm-team-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+.tm-code{font-family:ui-monospace,Menlo,monospace;font-size:1.4rem;letter-spacing:.18em;background:#fff;border:1px dashed #2f6f86;border-radius:8px;padding:2px 10px}
+.tm-block{margin:12px 0}.tm-block h3{margin:0 0 6px;font-size:1rem}
+.tm-table{width:100%;border-collapse:collapse}.tm-table th,.tm-table td{border:1px solid #d9d4c7;padding:6px 8px;text-align:left;font-size:.95rem}.tm-table th{background:#f1ede2}
+.tm-table button[aria-pressed=true]{background:#2f6f86;color:#fff;border-color:#2f6f86}
+.tt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin:10px 0}
+.tt-card{border:1px solid #d9d4c7;border-radius:10px;padding:10px 12px;background:#fbf8f1;display:flex;flex-direction:column;gap:8px}.tt-card.tt-locked{border-color:#2f6f86;background:#eef6f8}
+.tt-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.tt-head input{font:inherit;padding:4px 8px;border:1px solid #c9c2b2;border-radius:8px;width:9em}.tt-head .tm-code{font-size:1rem}
+.tt-card select,.tt-card input[type=text]{font:inherit;padding:6px 8px;border:1px solid #c9c2b2;border-radius:8px}
+.tt-noteam{columns:2;font-size:.95rem}@media(max-width:600px){.tt-noteam{columns:1}}

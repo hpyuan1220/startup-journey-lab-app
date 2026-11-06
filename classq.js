@@ -3,7 +3,9 @@ import {buildPrompt5} from './week5-core.mjs?v=20261104-rb';
 import {showRelogin} from './relogin.mjs?v=20261106-ms';
 // 只有課堂兩題的週（Week 6 起）：一頁只有兩題＋AI 評語。跟 Week 4／5 的課堂兩題同一套規則：
 // 上課日 13:00–17:00 內兩題都存檔＝這一週出席；之後還能答，但標「課後」。資料存在 week_class_answers（一人一週一列）。
-const root=document.querySelector('[data-classq]');
+// 一頁可能有好幾個 data-classq 區（Week 6、Week 8…），挑網址那一週的。
+const weekParam=new URLSearchParams(location.search).get('week');
+const root=document.querySelector(`[data-classq="${CSS.escape(weekParam||'')}"]`);
 const week=Number(root?.dataset.classq);
 if(root&&CLASSQ_WEEKS.includes(week)&&new URLSearchParams(location.search).get('week')===String(week)){
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
