@@ -75,8 +75,15 @@ ok('教師端 Week 5／4／2／1 標題旁都有收合：收合後整區隱藏�
 ok('CSV 有 Week 5 欄位與這位學生的分數',/W5 A 分,W5 B 分,W5 C 分,W5 選,W5 非最高分/.test(csv)&&csv.split('\n').some(l=>l.includes(SID)&&/,10,5,0,B,是（有理由）,5,3,6,/.test(l)),csv.split('\n').find(l=>l.includes(SID))?.slice(0,200));
 const mtT=await tp.evaluate(async()=>{const s=document.querySelector('#teacher-week7');if(!s)return null;const row=[...s.querySelectorAll('tbody tr')].find(r=>r.innerText.includes(window.__SID||''));return {txt:s.querySelector('tbody').innerText.replace(/\s+/g,' ').slice(0,300),order:[...s.querySelectorAll('tbody tr td:nth-child(2)')].map(t=>t.textContent.split('　')[0])};});
 ok('教師端期中名單：依學號排序、有產業線（餐飲小店）、選定的機會 B',!!mtT&&/餐飲小店/.test(mtT.txt)&&/B 外送抽成高/.test(mtT.txt)&&JSON.stringify(mtT.order)===JSON.stringify([...mtT.order].sort()),mtT);
-await tp.evaluate(()=>{const i=document.querySelector('#teacher-week7 tbody input');i.value='85';i.dispatchEvent(new Event('change'));});await tp.waitForTimeout(800);
+await tp.evaluate(()=>{const i=document.querySelector('#teacher-week7 tbody input');i.value='18';i.dispatchEvent(new Event('change'));});await tp.waitForTimeout(900);
+await tp.evaluate(()=>document.querySelector('#teacher-week7 tbody tr td:nth-child(2) button').click());await tp.waitForTimeout(400);
+const ev=await tp.evaluate(()=>{const d=document.querySelector('#teacher-week7 tbody .tw4-detail');return {items:d?d.querySelectorAll('button.trk-tag').length:0,txt:d?.innerText.replace(/\s+/g,' ')||''};});
+ok("評分表展開：七項各 0／5／10、附學生內容（錢流句、反方）與 B 完成度",ev.items===21&&/錢流句/.test(ev.txt)&&/拒絕 1/.test(ev.txt)&&/B 完成度/.test(ev.txt),{items:ev.items,tail:ev.txt.slice(-300)});
+await tp.evaluate(()=>{const d=document.querySelector('#teacher-week7 tbody .tw4-detail');[...d.querySelectorAll('button.trk-tag')].find(b=>b.textContent==='10').click();});await tp.waitForTimeout(900);
 const t7=await post('week2-api',{action:'teacher_load'},'teacher-token');
-ok('上台分數存進 Week 7 老師備註',t7.remarks.some(r=>r.week===7&&r.note==='85'));
+const n7=t7.remarks.find(r=>r.week===7)?.note||'';
+ok('分數存進 Week 7 老師備註（A1=10、上台 18）',/^MT1\|a=10,/.test(n7)&&/\|c=18$/.test(n7),n7);
+const tot=await tp.evaluate(()=>[...document.querySelector('#teacher-week7 tbody tr').children].map(td=>td.textContent));
+ok('總分＝A＋B＋C（未評完標「未完」）',/未完/.test(tot[7])&&Number(tot[7].replace(/\D.*$/,''))===10+Number(tot[5])+18,tot);
 ok('沒有 JS 錯誤',errs.length===0,errs);
 console.log(R.join('\n'));await b.close();process.exit(R.some(x=>x.startsWith('❌'))?1:0);
