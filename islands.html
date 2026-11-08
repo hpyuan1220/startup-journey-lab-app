@@ -8,22 +8,7 @@
  <div class="journey"><span class="location" id="journey-loc"><b>尋寶</b>　先選一個寶藏</span><div class="steps" aria-label="任務進度" id="steps"><span data-step="0"><i>1</i>選寶藏</span><span data-step="1"><i>2</i>找島</span><span data-step="2"><i>3</i>讀材料</span><span data-step="3"><i>4</i>三題</span><span data-step="4"><i>5</i>開箱</span></div></div>
  <div class="score-strip"><span>這一箱 <b id="box-score">0/30</b></span><span>已開寶箱 <b id="opened-count">0</b></span><span id="who"></span></div>
 
- <!-- 視圖 1：寶箱清單 -->
- <section id="view-hub" class="view">
-  <p class="lead">每個寶箱是一家 AI 新創。線索卡不寫公司名：先猜它在哪座島，登島讀材料、問 AI，答對三題就開箱，拿到這家公司的七格卡。從<b>自己認的方向</b>開始。</p>
-  <div class="dir-tabs" id="dir-tabs"></div>
-  <div class="treasures" id="treasures"></div>
- </section>
-
- <!-- 視圖 2：找島 -->
- <section id="view-find" class="view" hidden>
-  <div class="find-head"><div><p class="eyebrow">線索卡</p><ul class="clue-list" id="find-clues"></ul></div><div class="irene-hint"><span class="sprite-mini teacher"></span><div><b>Irene 老師</b><p id="find-hint">這家公司在哪座島？想想它賣什麼、賣給誰。點一座島。</p></div></div></div>
-  <div class="regions" id="find-map"></div>
-  <p class="fine">猜錯不扣分，Irene 會給提示。</p>
- </section>
-
- <!-- 視圖 3：島上 -->
- <section id="view-island" class="view" hidden>
+ <!-- 場景＋對話：所有視圖共用 -->
   <div class="scene" id="scene" aria-label="海島、三棟學習屋與可走動的角色">
    <img class="scenery" id="scenery" src="materials/islands/scene_island06.jpg" alt="木橋連接海島廣場，島上有紅瓦餐館、藍屋頂商店與研究屋。">
    <div class="chapter"><small id="chapter-small">CHAPTER 06</small><strong id="chapter-title">Owner</strong></div>
@@ -44,7 +29,22 @@
    <div aria-live="polite"><div class="speaker-row"><p class="speaker" id="speaker">你 · 新創探險者</p><span class="role-chip" id="role-chip">探索筆記</span></div><h2 id="d-title"></h2><p class="speech" id="d-speech"></p><div class="choices" id="choices"></div></div>
    <aside class="journal"><b>探索足跡</b><ul><li data-clue="shop">聽店家故事</li><li data-clue="house">Irene 整理</li><li data-clue="station">AI 探索站</li></ul><button type="button" class="ui" id="btn-quiz">答三題</button></aside>
   </section>
+
+ <!-- 視圖 1：寶箱清單 -->
+ <section id="view-hub" class="view">
+  <div class="dir-tabs" id="dir-tabs"></div>
+  <div class="treasures" id="treasures"></div>
  </section>
+
+ <!-- 視圖 2：找島 -->
+ <section id="view-find" class="view" hidden>
+  <div class="find-head"><div><p class="eyebrow">線索卡</p><ul class="clue-list" id="find-clues"></ul></div><div class="irene-hint"><span class="sprite-mini teacher"></span><div><b>Irene 老師</b><p id="find-hint">這家公司在哪座島？想想它賣什麼、賣給誰。點一座島。</p></div></div></div>
+  <div class="regions" id="find-map"></div>
+  <p class="fine">猜錯不扣分，Irene 會給提示。</p>
+ </section>
+
+ <!-- 視圖 3：島上 -->
+ <section id="view-island" class="view" hidden></section>
  <section class="overlay" id="overlay" hidden></section>
 
  <footer class="footer"><span id="foot-note">分數與寶箱只給老師參考，不進成績。期末只能講開過寶箱的公司。</span><button type="button" id="btn-reset">重設這一箱</button></footer>

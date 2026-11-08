@@ -17,7 +17,7 @@ let myDir=Number(store.dir)||Number(localStorage.getItem('sjl-team-dir'))||0;
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?' primary':''));b.type='button';b.disabled=busy;b.addEventListener('click',fn);return b;}
-function show(view){for(const v of ['hub','find','island'])$('#view-'+v).hidden=v!==view;mode=view;refreshTop();}
+function show(view){for(const v of ['hub','find','island'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();}
 function toast(t){clearTimeout(timer);const x=$('#toast');x.textContent=t;x.hidden=false;timer=setTimeout(()=>x.hidden=true,2400);}
 function openedCount(){return Object.values(store.boxes).filter(b=>b.opened).length;}
 function refreshTop(){
@@ -30,7 +30,10 @@ function refreshTop(){
 }
 // ---------- 視圖 1：寶箱清單 ----------
 function renderHub(){
- show('hub');current=null;refreshTop();
+ show('hub');current=null;refreshTop();closeOverlay();
+ $('#chapter-small').textContent='HARBOR · 群島港口';$('#chapter-title').textContent='AI 新創群島';$('#mission').textContent='已開寶箱 '+openedCount();
+ put(person(),[30,72]);put(teacher(),[60,60]);
+ say('teacher','Irene 老師 · 港口','每個寶箱是一家 AI 新創。先挑一個。','線索卡不寫公司名：讀線索，猜它在哪座島，登島研究，答對三題就開箱。從你自己認的方向開始，下面挑一個「出發找島」。'+(openedCount()?'\n你已開 '+openedCount()+' 箱。':''));
  const tabs=$('#dir-tabs');tabs.replaceChildren();
  for(const d of DIRECTIONS){const b=el('button',d.name,tabs);b.type='button';b.setAttribute('aria-pressed',String(myDir===d.id));b.addEventListener('click',()=>{myDir=d.id;store.dir=d.id;save();renderHub();});}
  const all=el('button','全部',tabs);all.type='button';all.setAttribute('aria-pressed',String(!myDir));all.addEventListener('click',()=>{myDir=0;store.dir=0;save();renderHub();});
@@ -49,7 +52,9 @@ function renderHub(){
 }
 // ---------- 視圖 2：找島 ----------
 function renderFind(){
- show('find');const c=company(),b=box();refreshTop();
+ show('find');const c=company(),b=box();refreshTop();closeOverlay();
+ $('#chapter-small').textContent='SEA CHART · 海圖';$('#chapter-title').textContent='找島';$('#mission').textContent='線索卡';
+ say('teacher','Irene 老師 · 海圖','這家公司在哪座島？','讀三句線索，想它賣什麼、賣給誰，點一座島。猜錯不扣分，我會提示。');
  const ul=$('#find-clues');ul.replaceChildren();for(const k of c.clues)el('li',k,ul);
  $('#find-hint').textContent=b.hints>=2?'（二選一）我把範圍縮到亮框的兩座島了。':b.hints===1?c.islandHints[0]:'這家公司在哪座島？想想它賣什麼、賣給誰。點一座島。';
  const map=$('#find-map');map.replaceChildren();
