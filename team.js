@@ -10,8 +10,8 @@ let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 const sec=el('section','',root,'w4 tm');
 el('p','WEEK 7 · 建組',sec,'eyebrow');
-el('h2','建組：三人一組、一組一個產業、三個方向各認一人',sec);
-el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。組的產業線從組員 Week 4 選的產業裡挑一條；每人認領一個方向（兩人組一人認兩個）。${TEAM_LOCK_LABEL} 前都可以改；之後只有老師能改。還沒找到組的人按「想請老師分組」。`,sec,'w4-hint');
+el('h2','建組：三人一組、三個方向各認一人',sec);
+el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。每人認領一個方向（兩人組一人認兩個），下半學期各自研究那個方向的 AI 新創，期末全組選一家上台。組的產業線選填。${TEAM_LOCK_LABEL} 前都可以改；之後只有老師能改。還沒找到組的人按「想請老師分組」。`,sec,'w4-hint');
 const msg=el('p','',sec,'w4-msg');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const body=el('div','',sec);
 let st=null;
@@ -39,7 +39,7 @@ function render(){
  el('span',`${sm.count}／${TEAM_MAX} 人${sm.full?'（已滿）':''}`,h,'w4-hint');
  if(locked)el('p',`已鎖定（${team.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}）：要改請找老師。`,head,'w4-lock');
  // 產業線
- const indBox=el('div','',body,'tm-block');el('h3','組的產業線（一組只做一條）',indBox);
+ const indBox=el('div','',body,'tm-block');el('h3','組的產業線（選填）',indBox);
  const opts=industryOptions(members,week4);
  const sel=el('select','',indBox);sel.setAttribute('aria-label','組的產業線');sel.disabled=locked;
  const o0=el('option','還沒選',sel);o0.value='';
@@ -52,7 +52,7 @@ function render(){
  const custom=el('input','',indBox);custom.type='text';custom.maxLength=40;custom.placeholder='自填產業：哪一行、誰付錢';custom.hidden=!cur.startsWith('custom:');custom.value=team.industry?.custom||'';custom.disabled=locked;custom.setAttribute('aria-label','自填產業');
  const indSave=()=>{const v=sel.value;if(!v){run({action:'team_industry',industry:{card:null}},'已清掉產業線。');return;}if(v.startsWith('custom:')){custom.hidden=false;if(!custom.value.trim()){custom.focus();return;}run({action:'team_industry',industry:{card:'custom',custom:custom.value}},'產業線已存。');return;}run({action:'team_industry',industry:{card:Number(v)}},'產業線已存。');};
  sel.addEventListener('change',()=>{custom.hidden=!sel.value.startsWith('custom:');indSave();});custom.addEventListener('change',indSave);
- el('p','挑哪一條：誰的 Week 4 證據最完整、島 6 有沒有對照公司、組裡有沒有人接觸得到真人。',indBox,'w4-hint');
+ el('p','想從自己熟的產業切入 AI 新創再填；不填也可以。',indBox,'w4-hint');
  // 組員與方向
  const mBox=el('div','',body,'tm-block');el('h3','組員與方向（每人認一個；兩人組一人認兩個）',mBox);
  const table=el('table','',mBox,'tm-table');const tr=el('tr','',el('thead','',table));for(const t of ['組員','方向一','方向二','方向三'])el('th',t,tr);
@@ -71,7 +71,7 @@ function render(){
  const legend=el('ul','',mBox,'w4-hint');for(const [,n,desc] of DIRECTIONS)el('li',`${n}：${desc}`,legend);
  // 狀態
  const stBox=el('div','',body,'w4-done');stBox.dataset.state=sm.complete?'done':'todo';
- el('p',sm.complete?'✅ 這一組建好了：產業線、三個方向都有人。':'還沒完成：',stBox,'w4-done-title');
+ el('p',sm.complete?'✅ 這一組建好了：三個方向都有人認。':'還沒完成：',stBox,'w4-done-title');
  if(!sm.complete){const ul=el('ul','',stBox);for(const x of sm.missing)el('li',x,ul);}
  if(!locked){const lb=el('button','離開這一組',body,'button-link w4-small');lb.type='button';let armed=false;lb.addEventListener('click',()=>{if(!armed){armed=true;lb.textContent='再按一次確認離開';setTimeout(()=>{armed=false;lb.textContent='離開這一組';},4000);return;}run({action:'team_leave'},'已離開。');});}
 }

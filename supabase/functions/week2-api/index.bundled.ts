@@ -580,7 +580,7 @@ function draftPage(d){
 }
 
 // Week 8 建組：共用規則（瀏覽器與 Edge Function 都用）。
-// 組：3 人為主、最少 2 人、最多 3 人；一組一個產業線；三個方向各由一人認領（兩人組一人認兩個）。
+// 組：3 人為主、最少 2 人、最多 3 人；三個方向各由一人認領（兩人組一人認兩個）；組的產業線選填（2026-11-08 起不綁）。
 // 11/27 13:00 前學生可自己建組／加入／離開／改產業／認方向；之後只有老師能改。老師也可以提前鎖住某一組或全部。
 const TEAM_MAX=3,TEAM_MIN=2;
 const TEAM_LOCK_AT='2026-11-27T13:00:00+08:00';
@@ -602,7 +602,6 @@ function teamSummary(team,members){
  const claimed={1:[],2:[],3:[]};for(const m of ms)for(const d of normalizeDirections(m.directions))claimed[d].push(m.student_id);
  const missing=[];
  if(ms.length<TEAM_MIN)missing.push(`還差 ${TEAM_MIN-ms.length} 人（最少 ${TEAM_MIN} 人）`);
- if(!industryLabel(team.industry))missing.push('還沒選組的產業線');
  const unclaimed=[1,2,3].filter(d=>!claimed[d].length);if(unclaimed.length)missing.push(`還沒人認領：${unclaimed.map(directionName).join('、')}`);
  const noDir=ms.filter(m=>!normalizeDirections(m.directions).length).map(m=>m.student_id);if(noDir.length)missing.push(`還沒認方向：${noDir.join('、')}`);
  return {members:ms,count:ms.length,full:ms.length>=TEAM_MAX,claimed,missing,complete:!missing.length};

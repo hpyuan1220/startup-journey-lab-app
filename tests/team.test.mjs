@@ -12,8 +12,8 @@ test('team-core：組碼 4 碼無 I/O/0/1、鎖定時間、摘要缺什麼、產
  const team={id:'t1',industry:{card:null,custom:''}};
  const ms=[{team_id:'t1',student_id:'S1',directions:[1]},{team_id:'t1',student_id:'S2',directions:[]},{team_id:'t2',student_id:'S9',directions:[2]}];
  const sm=teamSummary(team,ms);assert.equal(sm.count,2);assert.equal(sm.full,false);
- assert.ok(sm.missing.some(x=>/產業線/.test(x)));assert.ok(sm.missing.some(x=>/方向二/.test(x)&&/方向三/.test(x)));assert.ok(sm.missing.some(x=>/S2/.test(x)));
- const ok=teamSummary({id:'t1',industry:{card:1}},[{team_id:'t1',student_id:'S1',directions:[1]},{team_id:'t1',student_id:'S2',directions:[2,3]}]);assert.equal(ok.complete,true);
+ assert.ok(!sm.missing.some(x=>/產業線/.test(x)),'產業線選填，不算缺');assert.ok(sm.missing.some(x=>/方向二/.test(x)&&/方向三/.test(x)));assert.ok(sm.missing.some(x=>/S2/.test(x)));
+ const ok=teamSummary({id:'t1',industry:{card:null,custom:''}},[{team_id:'t1',student_id:'S1',directions:[1]},{team_id:'t1',student_id:'S2',directions:[2,3]}]);assert.equal(ok.complete,true);
  const opts=industryOptions(ms.slice(0,2),{S1:{card:1},S2:{card:'custom',custom:'保母'}});assert.deepEqual(opts.map(o=>o.label),['餐飲小店','保母']);
  assert.deepEqual(normalizeDirections([3,'1',3,9]),[1,3]);
 });

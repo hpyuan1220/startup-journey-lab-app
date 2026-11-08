@@ -1973,3 +1973,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-08（老師）：建組改放 **Week 7（11/13 期中）頁最下面**（`week.html?week=7#team`，`<div id="team" data-team>`），不放 Week 8。team.js 改吃 week=7；Week 8 作答頁只剩課堂兩題（拿掉 data-team）；Week 8 教材區的「建組規則」搬到 Week 7 頁；week.js Week 7／8 的藍圖文字對應改寫。老師頁區塊 id 改 `#teacher-team`、標題「Week 7 建組」。鎖定時間仍 11/27 13:00。
 - 同日：期中說明 PDF 改成「期中報告說明＋建組登記」（docs/handouts/MIDTERM_NOTICE.html → 期中報告說明＋建組_1113.pdf，2 頁，加第 ③ 段建組登記表）。瀏覽器測試 tests/week8-student.mjs 改成兩題在 Week 8、建組在 Week 7，20/20 過。
 - 2026-11-08 19:56 上線：migration 20261106_teams.sql Run（teams 0／members 0／triggers 1）；push 0c1db4d；week2-api 部署 bundle sha 7c8d383cbc7b4534，M=0。線上驗證（測試帳號 A1130309125）：Week 7 頁有建組區；team_load→create（拿組碼）→claim 方向二→industry 卡 3→leave 全 200，離開後空組由後端刪掉、team_load 回 null（沒留測試資料）；classq_load week 8 回新預設題（鍋具）。
+
+## 2026-11-08 晚：下半學期流程定案（研究公司、期末講一家）＋群島改尋寶版
+- 老師決定：下半學期目的＝認識現在的 AI agent／世界模型新創市場，每組選一家公司上台講「為什麼它是好新創」（不再找自己的題目）。Week 9＋10 的內容併成 Week 9；Week 10 比三家選一家＋發統一框架；Week 11 預演；Week 12 期末。組的產業線改**選填**。三家都研究、只講一家的四個綁法與 6 頁上台分工（每人至少 2 頁、兩人組 A 1–3／B 4–6）寫在 `docs/COURSE_V3_12WEEKS.md` 第二輪（舊版摺疊保留）。
+- 群島遊戲改**尋寶版**（`docs/GAME_AI_ISLANDS.md` 開頭新節）：選寶藏（線索卡）→ 找島（按三個方向分區；前 3 箱線索直接，之後 Irene 提示）→ 登島讀材料＋AI 探索站／找碴 → 三題四選一（第三題貼網址，附「去哪找」）→ 開箱拿夥伴＋七格卡→公司卡。分數只存紀錄不進成績；期末只能講開過寶箱的公司。否決：全班長條圖／排行榜、經營島劇本、照 Week 4 產業線帶路。畫面沿用 11/8 Owner 島 demo（ChatGPT visualize 匯出），原始碼與兩張圖已存 `116/1106_AI新創群島/`（Owner島_demo_源碼.html、island_scene_1200x675.jpg、island_cast_1086x362.png）。
+- 頁面：week.js Week 9–12 藍圖文字改寫；Week 7 建組規則第 2 條改成「下半學期做什麼／產業線選填」；team-core.teamSummary 不再把「沒選產業線」算缺（team.js 文案同步；tests/team.test.mjs 改）。bundle 重建（index.ts 沒用到 teamSummary，線上行為不變；下次 Deploy 時一併同步）。
+- 下一步：Owner 島尋寶版（用 demo 畫面）→ 同方向再 2 家＋登入／存檔／老師頁 → 11/27 最小版上線；公司卡、比較頁、PPT／講稿範本後續。
