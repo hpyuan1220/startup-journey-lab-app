@@ -1,12 +1,12 @@
 import {INDUSTRY_CARDS,normalizeWeek4,industryName} from './week4-core.mjs?v=20261106-tm';
 import {DIRECTIONS,directionName,industryLabel,teamSummary,normalizeDirections,TEAM_LOCK_LABEL,TEAM_MAX} from './team-core.mjs?v=20261106-tm';
-// 教師洞察 · Week 8 建組：每組一塊（組名、組碼、產業線、組員與方向、鎖定），下面是「還沒有組」名單（含想請老師分組的人）。
+// 教師洞察 · Week 7 建組：每組一塊（組名、組碼、產業線、組員與方向、鎖定），下面是「還沒有組」名單（含想請老師分組的人）。
 // 老師可以：建組、改組名、改產業線、把任何人指定進任何組、移出、替人認方向、鎖定／解鎖（單組或全部）、刪空組、匯出 CSV。不受 11/27 鎖定時間限制。
 const dashboard=document.getElementById('teacher-dashboard');
 if(dashboard){
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
-const root=document.createElement('section');root.id='teacher-week8';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
-el('h2','Week 8 建組：組別、產業線、方向認領',root);
+const root=document.createElement('section');root.id='teacher-team';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
+el('h2','Week 7 建組：組別、產業線、方向認領（下半學期分組）',root);
 el('p',`學生自己建組、加入、選產業、認方向；${TEAM_LOCK_LABEL} 後學生不能改，你在這裡隨時可以改。「還沒有組」名單裡標「想請老師分組」的人，用每組的「加人」下拉指定進組。`,root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const bar=el('div','',root,'w4-row');

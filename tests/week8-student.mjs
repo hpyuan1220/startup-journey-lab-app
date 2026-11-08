@@ -15,20 +15,22 @@ await p.goto(`${BASE}/week.html?week=8`);await p.waitForTimeout(1200);
 const v0=await p.evaluate(()=>({nav:!document.querySelector('#week-eight-navigation').hidden,card:document.querySelector('#week-eight').hidden,mat:!!document.querySelector('#week-eight-materials a[href*="Week8_講義.pdf"]')}));
 ok('Week 8 學習藍圖：導覽列、作答頁先藏、教材區有講義連結',v0.nav&&v0.card&&v0.mat,v0);
 await p.click('#week-eight-navigation a[data-week-view="card"]');await p.waitForTimeout(600);
-const v1=await p.evaluate(()=>({qs:document.querySelectorAll('#week-eight .w4-q').length,t1:document.querySelector('#week-eight .w4-q-title')?.textContent||'',rule:document.querySelector('#week-eight .w4-rule')?.textContent||'',team:!!document.querySelector('#week-eight .tm h2')}));
-ok('作答頁：兩題（講師選擇題）、規則寫 11/20、下面有建組區',v1.qs===2&&/鍋具/.test(v1.t1)&&/11\/20/.test(v1.rule)&&v1.team,v1);
+const v1=await p.evaluate(()=>({qs:document.querySelectorAll('#week-eight .w4-q').length,t1:document.querySelector('#week-eight .w4-q-title')?.textContent||'',rule:document.querySelector('#week-eight .w4-rule')?.textContent||'',team:!!document.querySelector('#team .tm h2')}));
+ok('作答頁：兩題（講師選擇題）、規則寫 11/20、Week 8 沒有建組區',v1.qs===2&&/鍋具/.test(v1.t1)&&/11\/20/.test(v1.rule)&&!v1.team,v1);
 await p.fill('textarea[aria-label="第一題答案"]','B：新鍋具多半當不了主菜');await p.waitForTimeout(2600);
 ok('Q1 自動存',await p.evaluate(()=>/已存/.test(document.querySelectorAll('#week-eight .w4-stamp')[0].textContent)));
-// 建組
-await p.fill('input[aria-label="組名"]','火鍋隊');await p.evaluate(()=>[...document.querySelectorAll('#week-eight .tm button')].find(x=>/建一組/.test(x.textContent)).click());await p.waitForTimeout(900);
-const code=await p.evaluate(()=>(document.querySelector('#week-eight .tm-code')?.textContent||'').replace('組碼 ','').trim());
+// 建組：在 Week 7 期中報告頁
+await p.goto(`${BASE}/week.html?week=7#team`);await p.waitForTimeout(1200);
+ok('Week 7 頁：期中報告內容＋建組區＋建組規則',await p.evaluate(()=>!document.querySelector('#week-seven-materials').hidden&&/研究筆記 v2/.test(document.querySelector('#week-seven-materials').innerText)&&!!document.querySelector('#team .tm h2')&&/建組規則/.test(document.querySelector('#week-seven-materials').innerText)));
+await p.fill('input[aria-label="組名"]','火鍋隊');await p.evaluate(()=>[...document.querySelectorAll('#team .tm button')].find(x=>/建一組/.test(x.textContent)).click());await p.waitForTimeout(900);
+const code=await p.evaluate(()=>(document.querySelector('#team .tm-code')?.textContent||'').replace('組碼 ','').trim());
 ok('建一組：拿到四碼組碼、組名顯示、1／3 人',/^[A-Z2-9]{4}$/.test(code)&&await p.evaluate(()=>/火鍋隊/.test(document.querySelector('.tm-team-head b').textContent)&&/1／3/.test(document.querySelector('.tm-team-head .w4-hint').textContent)),code);
 // 認方向一
-await p.evaluate(()=>[...document.querySelectorAll('#week-eight .tm-table button')][0].click());await p.waitForTimeout(700);
-ok('認方向一：按鈕變 ✓ 我認領',await p.evaluate(()=>document.querySelectorAll('#week-eight .tm-table button')[0].getAttribute('aria-pressed')==='true'));
+await p.evaluate(()=>[...document.querySelectorAll('#team .tm-table button')][0].click());await p.waitForTimeout(700);
+ok('認方向一：按鈕變 ✓ 我認領',await p.evaluate(()=>document.querySelectorAll('#team .tm-table button')[0].getAttribute('aria-pressed')==='true'));
 // ---- 學生 2：加入 ----
-const p2=await studentPage(S2);await p2.goto(`${BASE}/week.html?week=8#card`);await p2.waitForTimeout(1200);
-await p2.fill('input[aria-label="組碼"]',code.toLowerCase());await p2.evaluate(()=>[...document.querySelectorAll('#week-eight .tm button')].find(x=>/加入這一組/.test(x.textContent)).click());await p2.waitForTimeout(900);
+const p2=await studentPage(S2);await p2.goto(`${BASE}/week.html?week=7#team`);await p2.waitForTimeout(1200);
+await p2.fill('input[aria-label="組碼"]',code.toLowerCase());await p2.evaluate(()=>[...document.querySelectorAll('#team .tm button')].find(x=>/加入這一組/.test(x.textContent)).click());await p2.waitForTimeout(900);
 ok('學生 2 用小寫組碼加入：看到同一組、2／3 人、組員表兩列',await p2.evaluate(()=>/火鍋隊/.test(document.querySelector('.tm-team-head b')?.textContent||'')&&/2／3/.test(document.querySelector('.tm-team-head .w4-hint').textContent)&&document.querySelectorAll('.tm-table tbody tr').length===2));
 // 學生 2 認方向一（已被學生 1 認）→ 應被擋
 const c1=await post('week2-api',{action:'team_claim',directions:[1],token:T[S2]});
@@ -39,7 +41,7 @@ ok('兩人組：學生 2 認方向二＋三',c2.status===200&&c2.members.find(m=
 const ind=await post('week2-api',{action:'team_industry',industry:{card:3},token:T[S2]});
 ok('組的產業線存成卡 3',ind.status===200&&ind.team.industry.card===3,ind.team?.industry);
 await p.reload();await p.waitForTimeout(1500);
-ok('學生 1 重整：組建好了（✅）',await p.evaluate(()=>document.querySelector('#week-eight .w4-done')?.dataset.state==='done'));
+ok('學生 1 重整：組建好了（✅）',await p.evaluate(()=>document.querySelector('#team .w4-done')?.dataset.state==='done'));
 // ---- 學生 3、4 ----
 const j3=await post('week2-api',{action:'team_join',code,token:T[S3]});
 const j4=await post('week2-api',{action:'team_join',code,token:T[S4]});
@@ -53,18 +55,18 @@ const tp=await b.newPage();tp.on('pageerror',e=>errs.push('T:'+String(e).slice(0
 await tp.addInitScript(()=>{sessionStorage.setItem('sjl-teacher-token','teacher-token');});
 await tp.goto(`${BASE}/index.html#teacher`);await tp.waitForTimeout(800);
 await tp.evaluate(()=>{document.getElementById('teacher-dashboard').hidden=false;});await tp.waitForTimeout(2000);
-const tv=await tp.evaluate(([s4])=>{const s=document.querySelector('#teacher-week8');const t=s?.innerText||'';return {has:!!s,cards:s?.querySelectorAll('.tt-card').length,team:[...s.querySelectorAll('.tt-card input[aria-label="組名"]')].some(i=>i.value==='火鍋隊'),want:new RegExp(s4+'.*想請老師分組').test(t),rows:s?.querySelectorAll('.tt-card .tm-table tbody tr').length};},[S4]);
-ok('教師端 Week 8：有組卡、火鍋隊三列、還沒有組名單標出想請老師分組',tv.has&&tv.cards>=1&&tv.team&&tv.want&&tv.rows>=3,tv);
+const tv=await tp.evaluate(([s4])=>{const s=document.querySelector('#teacher-team');const t=s?.innerText||'';return {has:!!s,cards:s?.querySelectorAll('.tt-card').length,team:[...s.querySelectorAll('.tt-card input[aria-label="組名"]')].some(i=>i.value==='火鍋隊'),want:new RegExp(s4+'.*想請老師分組').test(t),rows:s?.querySelectorAll('.tt-card .tm-table tbody tr').length};},[S4]);
+ok('教師端 Week 7 建組：有組卡、火鍋隊三列、還沒有組名單標出想請老師分組',tv.has&&tv.cards>=1&&tv.team&&tv.want&&tv.rows>=3,tv);
 // 老師建一組、把學生 4 指定進去、鎖定
-await tp.fill('#teacher-week8 input[aria-label="新組名"]','老師組');await tp.evaluate(()=>[...document.querySelectorAll('#teacher-week8 button')].find(x=>/老師建一組/.test(x.textContent)).click());await tp.waitForTimeout(900);
-await tp.evaluate(([s4])=>{const card=[...document.querySelectorAll('#teacher-week8 .tt-card')].find(c=>c.querySelector('input[aria-label="組名"]').value==='老師組');const sel=card.querySelector('select[aria-label="加人"]');sel.value=s4;sel.dispatchEvent(new Event('change'));},[S4]);await tp.waitForTimeout(900);
+await tp.fill('#teacher-team input[aria-label="新組名"]','老師組');await tp.evaluate(()=>[...document.querySelectorAll('#teacher-team button')].find(x=>/老師建一組/.test(x.textContent)).click());await tp.waitForTimeout(900);
+await tp.evaluate(([s4])=>{const card=[...document.querySelectorAll('#teacher-team .tt-card')].find(c=>c.querySelector('input[aria-label="組名"]').value==='老師組');const sel=card.querySelector('select[aria-label="加人"]');sel.value=s4;sel.dispatchEvent(new Event('change'));},[S4]);await tp.waitForTimeout(900);
 const ta=await post('week2-api',{action:'team_load',token:T[S4]});
 ok('老師把學生 4 指定進「老師組」：學生端看到組、想分組旗標清掉',ta.team?.name==='老師組'&&ta.me?.wants_assignment===false,ta.team);
-await tp.evaluate(()=>[...document.querySelectorAll('#teacher-week8 button')].find(x=>x.textContent==='鎖定全部').click());await tp.waitForTimeout(900);
+await tp.evaluate(()=>[...document.querySelectorAll('#teacher-team button')].find(x=>x.textContent==='鎖定全部').click());await tp.waitForTimeout(900);
 const lk=await post('week2-api',{action:'team_leave',token:T[S4]});
 ok('鎖定全部後：學生不能離開（API 擋）',lk.status>=400,lk);
 await p.reload();await p.waitForTimeout(1500);
-ok('學生 1 重整：顯示已鎖定、沒有離開按鈕',await p.evaluate(()=>/已鎖定/.test(document.querySelector('#week-eight .w4-lock')?.textContent||'')&&![...document.querySelectorAll('#week-eight button')].some(x=>/離開這一組/.test(x.textContent))));
+ok('學生 1 重整：顯示已鎖定、沒有離開按鈕',await p.evaluate(()=>/已鎖定/.test(document.querySelector('#team .w4-lock')?.textContent||'')&&![...document.querySelectorAll('#team button')].some(x=>/離開這一組/.test(x.textContent))));
 // Week 6 不受影響
 await p.goto(`${BASE}/week.html?week=6#card`);await p.waitForTimeout(1200);
 ok('Week 6 頁：兩題還在、沒有建組區',await p.evaluate(()=>document.querySelectorAll('#week-six .w4-q').length===2&&!document.querySelector('.tm')));

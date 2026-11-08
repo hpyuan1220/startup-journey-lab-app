@@ -1,15 +1,15 @@
 import {INDUSTRY_CARDS} from './week4-core.mjs?v=20261106-tm';
 import {DIRECTIONS,directionName,industryLabel,teamSummary,industryOptions,normalizeDirections,TEAM_LOCK_LABEL,TEAM_MAX,TEAM_MIN} from './team-core.mjs?v=20261106-tm';
-// Week 8 建組（學生端）：掛在 Week 8 作答頁、課堂兩題下面。
+// Week 7 建組（學生端）：掛在 Week 7 期中報告頁最下面（#team）。
 // 沒有組：建組（拿四碼組碼）／輸入組碼加入／按「想請老師分組」。有組：組名與組碼、組員與各自認的方向、組的產業線（從組員 Week 4 選的產業挑）、離開。
 // 11/27 13:00 後鎖定，只有老師能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。
 const root=document.querySelector('[data-team]');
-if(root&&new URLSearchParams(location.search).get('week')==='8'){
+if(root&&new URLSearchParams(location.search).get('week')==='7'){
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
 let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 const sec=el('section','',root,'w4 tm');
-el('p','WEEK 8 · 建組',sec,'eyebrow');
+el('p','WEEK 7 · 建組',sec,'eyebrow');
 el('h2','建組：三人一組、一組一個產業、三個方向各認一人',sec);
 el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。組的產業線從組員 Week 4 選的產業裡挑一條；每人認領一個方向（兩人組一人認兩個）。${TEAM_LOCK_LABEL} 前都可以改；之後只有老師能改。還沒找到組的人按「想請老師分組」。`,sec,'w4-hint');
 const msg=el('p','',sec,'w4-msg');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
