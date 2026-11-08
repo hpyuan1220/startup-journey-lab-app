@@ -1972,3 +1972,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - **上線三步（老師按）**：① SQL Editor Run `supabase/migrations/20261106_teams.sql` ② push ③ Deploy week2-api（注入 bundle）。沒做 ① 建組會 500；沒做 ③ Week 8 題目是舊預設、建組按鈕會報「未知的動作」。
 - 2026-11-08（老師）：建組改放 **Week 7（11/13 期中）頁最下面**（`week.html?week=7#team`，`<div id="team" data-team>`），不放 Week 8。team.js 改吃 week=7；Week 8 作答頁只剩課堂兩題（拿掉 data-team）；Week 8 教材區的「建組規則」搬到 Week 7 頁；week.js Week 7／8 的藍圖文字對應改寫。老師頁區塊 id 改 `#teacher-team`、標題「Week 7 建組」。鎖定時間仍 11/27 13:00。
 - 同日：期中說明 PDF 改成「期中報告說明＋建組登記」（docs/handouts/MIDTERM_NOTICE.html → 期中報告說明＋建組_1113.pdf，2 頁，加第 ③ 段建組登記表）。瀏覽器測試 tests/week8-student.mjs 改成兩題在 Week 8、建組在 Week 7，20/20 過。
+- 2026-11-08 19:56 上線：migration 20261106_teams.sql Run（teams 0／members 0／triggers 1）；push 0c1db4d；week2-api 部署 bundle sha 7c8d383cbc7b4534，M=0。線上驗證（測試帳號 A1130309125）：Week 7 頁有建組區；team_load→create（拿組碼）→claim 方向二→industry 卡 3→leave 全 200，離開後空組由後端刪掉、team_load 回 null（沒留測試資料）；classq_load week 8 回新預設題（鍋具）。
