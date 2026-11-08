@@ -33,22 +33,33 @@ function renderHub(){
  show('hub');current=null;refreshTop();closeOverlay();
  $('#chapter-small').textContent='HARBOR · 群島港口';$('#chapter-title').textContent='AI 新創群島';$('#mission').textContent='已開寶箱 '+openedCount();
  put(person(),[30,72]);put(teacher(),[60,60]);
- say('teacher','Irene 老師 · 港口','每個寶箱是一家 AI 新創。先挑一個。','線索卡不寫公司名：讀線索，猜它在哪座島，登島研究，答對三題就開箱。從你自己認的方向開始，下面挑一個「出發找島」。'+(openedCount()?'\n你已開 '+openedCount()+' 箱。':''));
+ const ready=COMPANIES.filter(c=>c.ready!==false);
+ const next=ready.find(c=>!store.boxes[c.id]?.opened)||ready[0];
+ say('teacher','Irene 老師 · 港口','怎麼玩：四步開一箱。','① 一個寶箱＝一家 AI 新創公司，箱上只有三句線索，不寫公司名。\n② 讀線索，猜這家公司在哪座島（猜錯我會提示）。\n③ 上島：聽店家故事 → 到我的研究屋整理 → 答三題（第三題要貼一個網址）。\n④ 三題都對，寶箱打開：拿到這家公司的七格卡和一隻夥伴。'+(openedCount()?'\n你已開 '+openedCount()+' 箱。':''),
+  next?[[store.boxes[next.id]?.found?'繼續第 '+(COMPANIES.indexOf(next)+1)+' 箱':'開始第 '+(COMPANIES.indexOf(next)+1)+' 箱 →',()=>{current=next.id;if(box().found)enterIsland();else renderFind();},true]]:[]);
  const tabs=$('#dir-tabs');tabs.replaceChildren();
- for(const d of DIRECTIONS){const b=el('button',d.name,tabs);b.type='button';b.setAttribute('aria-pressed',String(myDir===d.id));b.addEventListener('click',()=>{myDir=d.id;store.dir=d.id;save();renderHub();});}
+ el('span','只看：',tabs,'fine').style.padding='6px 0';
+ for(const d of DIRECTIONS){const b=el('button',d.name.split('｜')[0],tabs);b.type='button';b.title=d.name;b.setAttribute('aria-pressed',String(myDir===d.id));b.addEventListener('click',()=>{myDir=d.id;store.dir=d.id;save();renderHub();});}
  const all=el('button','全部',tabs);all.type='button';all.setAttribute('aria-pressed',String(!myDir));all.addEventListener('click',()=>{myDir=0;store.dir=0;save();renderHub();});
  const list=$('#treasures');list.replaceChildren();
- const rows=COMPANIES.filter(c=>!myDir||c.dir===myDir).sort((a,b)=>(b.ready!==false)-(a.ready!==false)||(b.demo?1:0)-(a.demo?1:0));
- for(const c of rows){
-  const b=store.boxes[c.id];const ready=c.ready!==false;
-  const card=el('div','',list,'treasure'+(b?.opened?' opened':'')+(ready?'':' locked'));
-  const head=el('div','',card,'t-head');el('b',b?.opened?c.name:'？？？ 寶箱',head);
-  el('span',b?.opened?'已開箱 '+boxScore(b.scores)+'/30':ready?(b?.found?'研究中':'線索'):'材料準備中',head,'badge'+(b?.opened?' gold':''));
-  const ul=el('ul','',card,'clue-list');for(const k of c.clues)el('li',k,ul);
-  const foot=el('div','',card,'t-foot');el('small',dirById(c.dir).name.split('｜')[1]+(c.demo?' · 示範箱':''),foot);
-  const go=btn(b?.opened?'再看這一箱':b?.found?'回到島上':'出發找島',()=>{current=c.id;if(box().found)enterIsland();else renderFind();},!b?.opened);go.disabled=!ready;foot.append(go);
- }
- if(!rows.length)el('p','這一區還沒有寶箱。',list,'fine');
+ const rows=COMPANIES.filter(c=>!myDir||c.dir===myDir);
+ const open=rows.filter(c=>c.ready!==false),locked=rows.filter(c=>c.ready===false);
+ const section=(title,items,hidden)=>{
+  if(!items.length)return;
+  const h=el('h3',title,list,'t-section');if(hidden)h.classList.add('collapsed');
+  const wrap=el('div','',list,'t-wrap');if(hidden){wrap.hidden=true;h.style.cursor='pointer';h.addEventListener('click',()=>{wrap.hidden=!wrap.hidden;h.classList.toggle('collapsed',wrap.hidden);});}
+  for(const c of items){
+   const b=store.boxes[c.id];const ready=c.ready!==false;const no=COMPANIES.indexOf(c)+1;
+   const card=el('div','',wrap,'treasure'+(b?.opened?' opened':'')+(ready?'':' locked'));
+   const head=el('div','',card,'t-head');el('b',(b?.opened?c.name:'第 '+no+' 箱')+(c.demo?'（示範）':''),head);
+   el('span',b?.opened?'已開箱 '+boxScore(b.scores)+'/30':ready?(b?.found?'研究中':'可以玩'):'準備中',head,'badge'+(b?.opened?' gold':ready?' go':''));
+   const ul=el('ul','',card,'clue-list');for(const k of c.clues)el('li',k,ul);
+   const foot=el('div','',card,'t-foot');el('small',dirById(c.dir).name,foot);
+   const go=btn(b?.opened?'再看這一箱':b?.found?'回到島上':'出發找島 →',()=>{current=c.id;if(box().found)enterIsland();else renderFind();},!b?.opened);go.disabled=!ready;foot.append(go);
+  }
+ };
+ section(open.length?'可以玩的寶箱（'+open.length+'）':'這個方向還沒有可以玩的寶箱',open,false);
+ section('準備中的寶箱（'+locked.length+'）— 點開看線索',locked,true);
 }
 // ---------- 視圖 2：找島 ----------
 function renderFind(){

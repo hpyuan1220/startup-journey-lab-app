@@ -6,7 +6,7 @@ const srv=http.createServer((req,res)=>{const f=path.join(ROOT,decodeURIComponen
 const b=await chromium.launch();const p=await b.newPage({viewport:{width:900,height:1200}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text());});
 const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d).slice(0,200):''));
 await p.goto('http://127.0.0.1:4299/islands.html');await p.waitForTimeout(800);
-ok('寶箱清單：有線索卡、Owner 可出發、其他材料準備中',await p.evaluate(()=>{const t=[...document.querySelectorAll('.treasure')];return t.length>=15&&t.some(x=>!x.classList.contains('locked')&&/出發找島/.test(x.textContent))&&t.filter(x=>x.classList.contains('locked')).length>=10;}));
+ok('港口：Irene 四步說明＋「開始第 1 箱」；清單只攤開可玩的箱、準備中收起',await p.evaluate(()=>{const t=[...document.querySelectorAll('.treasure')];return /怎麼玩/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui')].some(b=>/開始第 1 箱/.test(b.textContent))&&t.length>=15&&document.querySelectorAll('.t-wrap[hidden] .treasure.locked').length>=10;}));
 await p.evaluate(()=>[...document.querySelectorAll('.treasure:not(.locked) .ui')].find(b=>/出發找島/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('找島頁：三區十島、線索三句',await p.evaluate(()=>!document.querySelector('#view-find').hidden&&document.querySelectorAll('.island-btn').length===10&&document.querySelectorAll('#find-clues li').length===3));
 await p.screenshot({path:'/tmp/islands-s1.png'});

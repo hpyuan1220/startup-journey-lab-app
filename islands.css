@@ -60,3 +60,8 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 #harbor.port .place,#harbor.port .chest,#harbor.port .npc-owner,#harbor.port .npc-robot,#harbor.port #island-pet,#harbor.port .journal{display:none!important}
 #harbor.port .dialogue{grid-template-columns:93px minmax(0,1fr)}
 #harbor.port .npc-teacher{left:60%;top:60%;width:clamp(42px,8%,90px)}#harbor.port .player{left:30%;top:72%}
+
+.t-section{grid-column:1/-1;font-size:13px;color:var(--muted);margin:6px 0 0;font-weight:500}.t-section.collapsed:before{content:'▸ '}.t-section:not(.collapsed):before{content:'▾ '}
+.t-wrap{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.treasure .badge.go{color:var(--green);border-color:var(--green)}
+#harbor .choices .primary{background:var(--green);border-color:var(--green);color:var(--paper);font-weight:600}
