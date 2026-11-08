@@ -1,0 +1,50 @@
+// AI 新創群島尋寶版 真瀏覽器測試（自帶靜態伺服器 4299）：node tests/islands-student.mjs
+import pw from '/home/claude/node_modules/playwright/index.js';const {chromium}=pw;
+import http from 'node:http';import fs from 'node:fs';import path from 'node:path';
+const ROOT=process.argv[2]||new URL("..",import.meta.url).pathname;const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml'};
+const srv=http.createServer((req,res)=>{const f=path.join(ROOT,decodeURIComponent(req.url.split('?')[0]));fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream'});res.end(d);});}).listen(4299);
+const b=await chromium.launch();const p=await b.newPage({viewport:{width:900,height:1200}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text());});
+const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d).slice(0,200):''));
+await p.goto('http://127.0.0.1:4299/islands.html');await p.waitForTimeout(800);
+ok('寶箱清單：有線索卡、Owner 可出發、其他材料準備中',await p.evaluate(()=>{const t=[...document.querySelectorAll('.treasure')];return t.length>=15&&t.some(x=>!x.classList.contains('locked')&&/出發找島/.test(x.textContent))&&t.filter(x=>x.classList.contains('locked')).length>=10;}));
+await p.evaluate(()=>[...document.querySelectorAll('.treasure:not(.locked) .ui')].find(b=>/出發找島/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('找島頁：三區十島、線索三句',await p.evaluate(()=>!document.querySelector('#view-find').hidden&&document.querySelectorAll('.island-btn').length===10&&document.querySelectorAll('#find-clues li').length===3));
+await p.screenshot({path:'/tmp/islands-s1.png'});
+// 猜錯兩次 → 二選一
+await p.evaluate(()=>[...document.querySelectorAll('.island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('猜錯一次：Irene 第一層提示、該島劃掉',await p.evaluate(()=>/不在這座島/.test(document.querySelector('#find-hint').textContent)&&document.querySelectorAll('.island-btn.wrong').length===1));
+await p.evaluate(()=>[...document.querySelectorAll('.island-btn')].find(b=>/島 7 /.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('猜錯兩次：二選一亮框',await p.evaluate(()=>document.querySelectorAll('.island-btn.candidate').length===2));
+await p.evaluate(()=>[...document.querySelectorAll('.island-btn')].find(b=>/島 6 /.test(b.textContent)).click());await p.waitForTimeout(600);
+ok('選對：進島、章節標 Owner',await p.evaluate(()=>!document.querySelector('#view-island').hidden&&document.querySelector('#chapter-title').textContent==='Owner'));
+// 沒讀材料直接答題 → 擋
+await p.click('#btn-quiz');await p.waitForTimeout(200);
+ok('沒讀材料就答題被擋',await p.evaluate(()=>/先聽店家故事/.test(document.querySelector('#d-title').textContent)));
+await p.evaluate(()=>document.querySelector('[data-destination="shop"]').click());await p.waitForTimeout(2500);
+ok('店家故事：阿晴開場 180 元',await p.evaluate(()=>/180 元/.test(document.querySelector('#d-title').textContent)&&document.querySelector('[data-clue="shop"]').classList.contains('done')));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/去 Irene/.test(b.textContent)).click());await p.waitForTimeout(2500);
+ok('Irene 整理兩件事',await p.evaluate(()=>/先整理/.test(document.querySelector('#d-title').textContent)));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/答三題/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('第 1 題出現、四選一',await p.evaluate(()=>document.querySelectorAll('#overlay .opt').length===4));
+// 答錯再答對
+await p.evaluate(()=>document.querySelectorAll('#overlay .opt')[0].click());await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出答案/.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('答錯：提示、下次 7 分',await p.evaluate(()=>/下次答對 7 分/.test(document.querySelector('#overlay .err').textContent)));
+await p.evaluate(()=>document.querySelectorAll('#overlay .opt')[1].click());await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出答案/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('答對：+7、總分 7/30',await p.evaluate(()=>/\+7/.test(document.querySelector('#d-title').textContent)&&document.querySelector('#box-score').textContent==='7/30'));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/下一題/.test(b.textContent)).click());await p.waitForTimeout(200);
+await p.evaluate(()=>document.querySelectorAll('#overlay .opt')[1].click());await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出答案/.test(b.textContent)).click());await p.waitForTimeout(300);
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/下一題/.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('第 3 題：要貼網址、有去哪找三連結',await p.evaluate(()=>!!document.querySelector('#q-url')&&document.querySelectorAll('#overlay .src-links a').length===3));
+await p.evaluate(()=>document.querySelectorAll('#overlay .opt')[0].click());await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出答案/.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('沒貼網址被擋',await p.evaluate(()=>/http 開頭/.test(document.querySelector('#overlay .err').textContent)));
+await p.fill('#q-url','https://www.owner.com/pricing');await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出答案/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('三題完成 27/30、寶箱 ready',await p.evaluate(()=>document.querySelector('#box-score').textContent==='27/30'&&document.querySelector('#chest').classList.contains('ready')));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/去開寶箱/.test(b.textContent)).click());await p.waitForTimeout(2500);
+ok('開箱：七格卡、哇數字、夥伴',await p.evaluate(()=>document.querySelectorAll('#overlay .facts dt').length===7&&/23 億/.test(document.querySelector('#overlay .wow').textContent)&&/糰糰/.test(document.querySelector('#overlay .companion-card').textContent)&&!document.querySelector('#island-pet').hidden));
+await p.screenshot({path:'/tmp/islands-s2.png',fullPage:true});
+await p.reload();await p.waitForTimeout(800);
+ok('重整：清單顯示 Owner 已開箱 27/30、情報袋 1',await p.evaluate(()=>/已開箱 27\/30/.test(document.querySelector('.treasure.opened')?.textContent||'')&&document.querySelector('#bag-count').textContent==='1'));
+await p.click('#btn-bag');await p.waitForTimeout(200);
+ok('情報袋有 Owner 七格',await p.evaluate(()=>document.querySelectorAll('#overlay .facts dt').length>=7));
+ok('沒有 JS 錯誤',errs.length===0,errs);
+await b.close();srv.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);
