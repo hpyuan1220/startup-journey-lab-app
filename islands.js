@@ -174,7 +174,7 @@ function showReward(){const c=company(),b=box();const ov=overlay('開箱！');
 }
 // ---------- 情報袋 ----------
 function closeOverlay(){$('#overlay').hidden=true;$('#overlay').replaceChildren();}
-function overlay(title){const o=$('#overlay');o.replaceChildren();o.hidden=false;const h=el('div','',o,'overlay-head');el('h2',title,h);h.append(btn('收起',closeOverlay));o.scrollIntoView({block:'nearest',behavior:reduced()?'auto':'smooth'});return o;}
+function overlay(title){const o=$('#overlay');o.replaceChildren();o.hidden=false;const h=el('div','',o,'overlay-head');el('h2',title,h);h.append(btn('收起',closeOverlay));const sc=$('#scene');if(sc)sc.scrollIntoView({block:'start',behavior:reduced()?'auto':'smooth'});return o;}
 function showBag(){const ov=overlay('情報袋：開過的寶箱');
  const opened=COMPANIES.filter(c=>store.boxes[c.id]?.opened);
  if(!opened.length)el('p','還沒開過寶箱。答對三題，公司的七格卡會收在這裡。',ov,'fine');

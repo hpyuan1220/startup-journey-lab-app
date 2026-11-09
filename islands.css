@@ -65,3 +65,8 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 .t-wrap{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
 .treasure .badge.go{color:var(--green);border-color:var(--green)}
 #harbor .choices .primary{background:var(--green);border-color:var(--green);color:var(--paper);font-weight:600}
+
+/* 對話框與三題同一個位置：開 overlay 時對話框收起，島不動 */
+#harbor .overlay{border-top:0;padding:16px 22px}
+#harbor:has(#overlay:not([hidden])) #dialogue{display:none}
+@media(max-width:650px){.scene{position:sticky;top:0;z-index:20;box-shadow:0 6px 18px #10303040}}

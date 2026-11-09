@@ -9,6 +9,7 @@
  <div class="score-strip"><span>這一箱 <b id="box-score">0/30</b></span><span>已開寶箱 <b id="opened-count">0</b></span><span id="who"></span></div>
 
  <!-- 場景＋對話：所有視圖共用 -->
+  <div class="stage" id="stage">
   <div class="scene" id="scene" aria-label="海島、三棟學習屋與可走動的角色">
    <img class="scenery" id="scenery" src="materials/islands/scene_island06.jpg" alt="木橋連接海島廣場，島上有紅瓦餐館、藍屋頂商店與研究屋。">
    <div class="chapter"><small id="chapter-small">CHAPTER 06</small><strong id="chapter-title">Owner</strong></div>
@@ -24,11 +25,13 @@
    <button type="button" id="island-pet" aria-label="查看夥伴" hidden><span class="pet-art"><span class="pet-cape"></span><img src="materials/islands/pet.svg" alt=""><span class="pet-star">✦</span></span><span id="pet-name"></span></button>
    <div class="toast" id="toast" hidden></div>
   </div>
-  <section class="dialogue" aria-label="角色對話與任務">
+  <section class="dialogue" id="dialogue" aria-label="角色對話與任務">
    <div class="portrait"><span class="sprite student" id="portrait"></span></div>
    <div aria-live="polite"><div class="speaker-row"><p class="speaker" id="speaker">你 · 新創探險者</p><span class="role-chip" id="role-chip">探索筆記</span></div><h2 id="d-title"></h2><p class="speech" id="d-speech"></p><div class="choices" id="choices"></div></div>
    <aside class="journal"><b>探索足跡</b><ul><li data-clue="shop">聽店家故事</li><li data-clue="house">Irene 整理</li><li data-clue="station">AI 探索站</li></ul><button type="button" class="ui" id="btn-quiz">答三題</button></aside>
   </section>
+  <section class="overlay" id="overlay" hidden></section>
+  </div>
 
  <!-- 視圖 1：寶箱清單 -->
  <section id="view-hub" class="view">
@@ -45,7 +48,6 @@
 
  <!-- 視圖 3：島上 -->
  <section id="view-island" class="view" hidden></section>
- <section class="overlay" id="overlay" hidden></section>
 
  <footer class="footer"><span id="foot-note">分數與寶箱只給老師參考，不進成績。期末只能講開過寶箱的公司。</span><button type="button" id="btn-reset">重設這一箱</button></footer>
 </div>
