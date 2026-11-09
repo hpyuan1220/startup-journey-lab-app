@@ -6,18 +6,22 @@ let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||
 const sid=session?.student_id||'guest';
 const KEY='sjl-islands:'+sid;
 const freshBox=()=>({found:false,wrong:[],hints:0,clues:[],attempts:[0,0,0],scores:[0,0,0],passed:0,url:'',deep:false,insight:'',argue:'',opened:false,at:null});
-let store={boxes:{},dir:null};
+let store={boxes:{},dir:null,candidates:[]};
 try{store={...store,...JSON.parse(localStorage.getItem(KEY)||'{}')};}catch{}
+if(!Array.isArray(store.candidates))store.candidates=[];
+const CAND_MAX=2;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}}
 let current=null;const box=()=>store.boxes[current]||(store.boxes[current]=freshBox());
 const company=()=>companyById(current);
 let busy=false,mode='hub',timer,walkingToken=0;
 // 我的方向：從建組資料來（team.js 存的 sjl-team-dir，沒有就讓學生點）
 let myDir=Number(store.dir)||Number(localStorage.getItem('sjl-team-dir'))||0;
+// 已有島圖的島；其他島先用島 6 的圖（之後每島一張）
+const SCENES=new Set([6]);const sceneSrc=id=>`materials/islands/scene_island${String(SCENES.has(Number(id))?id:6).padStart(2,'0')}.jpg`;
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?' primary':''));b.type='button';b.disabled=busy;b.addEventListener('click',fn);return b;}
-function show(view){for(const v of ['hub','find','island'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();}
+function show(view){for(const v of ['hub','find','island','browse'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();}
 function toast(t){clearTimeout(timer);const x=$('#toast');x.textContent=t;x.hidden=false;timer=setTimeout(()=>x.hidden=true,2400);}
 function openedCount(){return Object.values(store.boxes).filter(b=>b.opened).length;}
 function refreshTop(){
@@ -34,9 +38,17 @@ function renderHub(){
  $('#chapter-small').textContent='HARBOR · 群島港口';$('#chapter-title').textContent='AI 新創群島';$('#mission').textContent='已開寶箱 '+openedCount();
  put(person(),[30,72]);put(teacher(),[60,60]);
  const ready=COMPANIES.filter(c=>c.ready!==false);
- const next=ready.find(c=>!store.boxes[c.id]?.opened&&(!myDir||c.dir===myDir))||ready.find(c=>!store.boxes[c.id]?.opened)||ready[0];
- say('teacher','Irene 老師 · 港口','怎麼玩：四步開一箱。','① 一個寶箱＝一家 AI 新創公司，箱上只有三句線索，不寫公司名。\n② 讀線索，猜這家公司在哪座島（猜錯我會提示）。\n③ 上島：聽店家故事 → 到我的研究屋整理 → 答三題（第三題要貼一個網址）。\n④ 三題都對，寶箱打開：拿到這家公司的七格卡和一隻夥伴。'+(openedCount()?'\n你已開 '+openedCount()+' 箱。':''),
-  next?[[store.boxes[next.id]?.found?'繼續第 '+(COMPANIES.indexOf(next)+1)+' 箱':'開始第 '+(COMPANIES.indexOf(next)+1)+' 箱 →',()=>{current=next.id;if(box().found)enterIsland();else renderFind();},true]]:[]);
+ const cands=store.candidates.map(companyById).filter(Boolean);
+ const next=cands.find(c=>c.ready!==false&&!store.boxes[c.id]?.opened)||ready.find(c=>!store.boxes[c.id]?.opened&&(!myDir||c.dir===myDir))||ready.find(c=>!store.boxes[c.id]?.opened)||ready[0];
+ if(!myDir){
+  say('teacher','Irene 老師 · 港口','先告訴我：你在組裡認的是哪個方向？','之後我會優先帶你去你方向的島。還沒建組也沒關係，先選一個，之後可以改。',
+   DIRECTIONS.map(d=>[d.name,()=>{myDir=d.id;store.dir=d.id;save();renderHub();},false]));
+ }else{
+  const candLine=cands.length?`\n你的候選（${cands.length}／${CAND_MAX}）：${cands.map(c=>c.name).join('、')}。`:'\n你還沒圈候選：先去「逛島」，在自己方向圈 2 家，再開箱。';
+  say('teacher','Irene 老師 · 港口','怎麼玩：先逛島圈候選，再開箱。','① 逛島：到你方向那一區看看每座島住哪些公司，圈 2 家候選。\n② 開箱：一箱＝一家公司，讀線索找島、聽故事、答三題，開箱拿七格卡。\n③ 開完選 1 家當「方向代表」交給組；三個人湊 3 家，期末講 1 家。'+candLine,
+   [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:'開箱：'+(cands.includes(next)?next.name:'第 '+(COMPANIES.indexOf(next)+1)+' 箱'),()=>{current=next.id;if(box().found)enterIsland();else renderFind();},!!cands.length]]:[]),
+    ['換方向',()=>{myDir=0;store.dir=0;save();renderHub();},false]]);
+ }
  $('#dir-tabs').hidden=true;
  const list=$('#treasures');list.replaceChildren();
  const section=(title,items,hidden)=>{
@@ -54,10 +66,54 @@ function renderHub(){
   }
  };
  // 先列可以玩的；準備中的按三個方向分段收起
- // 只列做好的箱；做好的箱少於 4 箱時不分段，多了才按方向分段。準備中的不顯示。
- const open=COMPANIES.filter(c=>c.ready!==false);
+ // 先列候選；再列做好的箱（少於 4 箱不分段）。準備中且非候選的不顯示。
+ if(cands.length)section('你的候選（'+cands.length+'／'+CAND_MAX+'）',cands,false);
+ const open=COMPANIES.filter(c=>c.ready!==false&&!cands.includes(c));
  if(open.length<4)section('可以玩的寶箱（'+open.length+'）',open,false);
  else for(const d of DIRECTIONS){const items=open.filter(c=>c.dir===d.id);section(d.name+'（'+items.length+' 箱）',items,false);}
+}
+// ---------- 逛島、圈候選 ----------
+function renderBrowse(){
+ show('browse');current=null;refreshTop();closeOverlay();
+ $('#chapter-small').textContent='SEA CHART · 海圖';$('#chapter-title').textContent='逛島';$('#mission').textContent=`候選 ${store.candidates.length}／${CAND_MAX}`;
+ put(person(),[30,72]);put(teacher(),[60,60]);
+ const d=dirById(myDir);
+ say('teacher','Irene 老師 · 海圖','逛島：看每座島住哪些公司，圈 2 家候選。',`你的方向是${d.name}。候選只能圈自己方向的公司（別的方向可以看、可以開箱，但不算組的分工）。點一座島上去看看。`,[['回港口',renderHub,false]]);
+ const map=$('#browse-map');map.replaceChildren();
+ for(const dd of DIRECTIONS){
+  const r=el('div','',map,'region'+(dd.id===myDir?' mine':''));el('b',dd.name,r);el('h3',dd.short+'：'+dd.blurb,r);
+  for(const i of ISLANDS.filter(x=>x.dir===dd.id)){
+   const cs=COMPANIES.filter(c=>c.island===i.id);
+   const ib=el('button','',r,'island-btn');ib.type='button';ib.append(i.name+'　');const sm=el('small','',ib);sm.textContent=cs.length?cs.map(c=>store.candidates.includes(c.id)?'☆ '+c.name:c.name).join('・'):i.hint;
+   if(!cs.length)ib.disabled=true;
+   ib.addEventListener('click',()=>browseIsland(i.id));
+  }
+ }
+}
+function browseIsland(id){
+ const i=islandById(id),cs=COMPANIES.filter(c=>c.island===id);
+ $('#chapter-small').textContent='CHAPTER '+String(id).padStart(2,'0');$('#chapter-title').textContent=i.name.replace(/^島 \d+ /,'');
+ $('#scenery').src=sceneSrc(id);
+ const d=dirById(i.dir),mine=i.dir===myDir;
+ say('teacher','Irene 老師 · 島長介紹',i.name+'：'+i.hint,`這座島屬於${d.name}（${d.short}：${d.blurb}）。島上 ${cs.length} 家公司如下${mine?'，是你的方向，可以圈候選。':'，不是你的方向：可以看、可以開箱，但不能圈候選。'}`,[['回海圖',renderBrowse,false],['回港口',renderHub,false]]);
+ const ov=overlay(i.name+' 的公司');
+ for(const c of cs){
+  const b=store.boxes[c.id];const card=el('article','',ov,'treasure'+(b?.opened?' opened':'')+(c.ready===false?' locked':''));card.style.marginBottom='10px';
+  const head=el('div','',card,'t-head');el('b',c.name+(c.demo?'（示範）':''),head);el('span',c.ready===false?'材料準備中':b?.opened?'已開箱':'可以開箱',head,'badge'+(c.ready===false?'':' go'));
+  el('p',c.tagline,card,'fine').style.padding='0';
+  const ul=el('ul','',card,'clue-list');for(const k of c.clues)el('li',k,ul);
+  const row=el('div','',card,'t-foot');
+  const isC=store.candidates.includes(c.id);
+  const star=btn(isC?'★ 已是候選（取消）':'☆ 設為候選',()=>{
+   if(isC){store.candidates=store.candidates.filter(x=>x!==c.id);}
+   else{if(!mine){toast('候選只能圈自己方向的公司。');return;}if(store.candidates.length>=CAND_MAX){toast(`最多 ${CAND_MAX} 家，先取消一家。`);return;}store.candidates.push(c.id);}
+   save();browseIsland(id);},isC);
+  if(!mine&&!isC)star.disabled=true;
+  row.append(star);
+  if(c.ready!==false){row.append(btn(b?.opened?'再看這一箱':'開這一箱 →',()=>{current=c.id;if(box().found)enterIsland();else renderFind();}));}
+ }
+ el('div','',ov,'choices').append(btn('回海圖',renderBrowse),btn('回港口，開始開箱',renderHub,true));
+ refreshTop();
 }
 // ---------- 視圖 2：找島 ----------
 function renderFind(){
@@ -98,7 +154,7 @@ function say(role,name,title,body,actions=[]){root.dataset.speaker=role;$('#role
 function refreshIsland(){
  const c=company(),b=box();
  $('#chapter-small').textContent='CHAPTER '+String(c.island).padStart(2,'0')+' · '+islandById(c.island).name.replace(/^島 \d+ /,'');$('#chapter-title').textContent=c.name;
- $('#scenery').src=`materials/islands/scene_island${String(c.island).padStart(2,'0')}.jpg`;$('#scenery').onerror=()=>{$('#scenery').onerror=null;$('#scenery').src='materials/islands/scene_island06.jpg';};
+ $('#scenery').src=sceneSrc(c.island);
  root.querySelectorAll('[data-clue]').forEach(x=>x.classList.toggle('done',b.clues.includes(x.dataset.clue)));
  root.querySelectorAll('[data-destination]').forEach(x=>{x.classList.toggle('visited',b.clues.includes(x.dataset.destination));x.disabled=busy;});
  ['#btn-quiz','#chest','#btn-reset'].forEach(id=>$(id).disabled=busy);

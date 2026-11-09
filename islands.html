@@ -5,7 +5,7 @@
 <div class="game">
  <header class="top"><div class="brand"><span class="seal">⚓</span><div><p class="eyebrow">STARTUP JOURNEY LAB</p><h1>AI 新創群島・尋寶</h1></div></div>
   <div class="top-actions"><a class="ui" href="week.html?week=9" id="back-week">回 Week 9</a><button type="button" class="ui" id="btn-hub">寶箱清單</button><button type="button" class="ui" id="btn-bag">情報袋 <b class="count" id="bag-count">0</b></button></div></header>
- <div class="journey"><span class="location" id="journey-loc"><b>尋寶</b>　先選一個寶藏</span><div class="steps" aria-label="任務進度" id="steps"><span data-step="0"><i>1</i>選寶藏</span><span data-step="1"><i>2</i>找島</span><span data-step="2"><i>3</i>讀材料</span><span data-step="3"><i>4</i>三題</span><span data-step="4"><i>5</i>開箱</span></div></div>
+ <div class="journey"><span class="location" id="journey-loc"><b>尋寶</b>　先選一個寶藏</span><div class="steps" aria-label="任務進度" id="steps"><span data-step="0"><i>1</i>選寶箱</span><span data-step="1"><i>2</i>找島</span><span data-step="2"><i>3</i>讀材料</span><span data-step="3"><i>4</i>三題</span><span data-step="4"><i>5</i>開箱</span></div></div>
  <div class="score-strip"><span>這一箱 <b id="box-score">0/30</b></span><span>已開寶箱 <b id="opened-count">0</b></span><span id="who"></span></div>
 
  <!-- 場景＋對話：所有視圖共用 -->
@@ -37,6 +37,12 @@
  <section id="view-hub" class="view">
   <div class="dir-tabs" id="dir-tabs"></div>
   <div class="treasures" id="treasures"></div>
+ </section>
+
+ <!-- 視圖 1b：逛島 -->
+ <section id="view-browse" class="view" hidden>
+  <div class="regions" id="browse-map"></div>
+  <p class="fine">點一座島看住哪些公司。候選只能圈自己方向的公司，最多 2 家。</p>
  </section>
 
  <!-- 視圖 2：找島 -->
