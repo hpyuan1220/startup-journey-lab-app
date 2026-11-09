@@ -1988,3 +1988,8 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-09 18:30（老師：「分組不要關」→ 鎖到期末後）：TEAM_LOCK_AT 改 **2026-12-19 00:00**（原 11/27 13:00），整學期學生可建組、加入、換方向；老師隨時可鎖單組／全部。team.js／teacher-team.js／Week 7、8 頁文字、期中說明 PDF（重出）同步改「11/27 課堂確認分組、12/19 鎖定」。流程定案：W8 講座不玩遊戲、分組 W9 課堂確認、遊戲 W9 課堂玩（docs/SECOND_HALF_FLOW.md）。bundle 重建 sha fb72b20012cfdc17，**需 Deploy**（伺服器端鎖定時間在 bundle 裡）。單元 215／215、week8 瀏覽器 20／20。
 - 2026-11-09 20:30：**群島 15 箱全部可玩**（老師定案換成較不出名的 2026 新創）。新 11 家：Ampersand、n8n、Arcade、Baselayer、Natural／Palona、Respond.io、Clark／HappyRobot、Cargofy、Sage、Alloy Robotics；保留 Owner、Gorgias，Lovable 改為老師示範箱。島重排為 10 座（插座與流程／授權與監控／Agent 結算／AI 寫程式／餐飲零售／客服訊息／財務後台／物流派工／長照現場／機器人），方向一的三座島直接對到講師五大功能。每家事實來自 2026 年募資原始報導，未公開收費標〔待查〕。港口清單現在按三個方向分三段。各島仍共用島 6 的圖（SCENES 空集合）。瀏覽器測試 islands-student 24/24。
 - 2026-11-09 20:45（老師：收費方式再查一輪）：Arcade 查到公開定價（免費 2,000 次呼叫／月；Team 25 美元＋每次 0.01；企業客製，官網定價頁）；HappyRobot 訂閱制金額不公開（Sacra 推斷）；Palona 分析師稱按營收影響計價（未證實）；Sage 不公開、公司稱每住民每月 NOI +275 美元；Clark 不公開＋100% 正確保證（Accounting Today）；Baselayer（G2 亦無）、Ampersand、Cargofy、Alloy 不公開。七格卡「怎麼收費」全部改寫、不再出現〔待查〕；8 家不公開者的 Irene 加一句「企業軟體多半不公開價格，看收費方式就好」。結論寫進教學：賣小店／個人的公開價格、賣企業的不公開。
+
+## 2026-11-09 群島：估價題（選填加分）＋七格卡「怎麼收費」每家有內容
+- islands-data.mjs：9 家不公開價格的公司（Ampersand、Baselayer、Natural、Palona、Clark、HappyRobot、Cargofy、Sage、Alloy）各加 `estimate`：取代的人力年薪、原本的軟體年費兩個錨點（附〔據報／推估〕出處）、四個區間、正解 B 或 C、why。`cardText(c,est)` 第二格附「｜我的估價：…」；`EST_BONUS=5`。
+- islands.js：第三題答對後 Irene 加碼「估價加分 +5／直接開寶箱」；`estimateForm` 四選一，答對 +5（記在 box.est／estOk，不影響開箱、不進 30 分）；開箱卡與情報袋「怎麼收費」自動帶學生估價（答對加「（+5）」）；任務列／清單顯示「已開箱 27/30 +5」。Arcade、Owner 等公開價格的 6 家沒有估價題。
+- tests/islands-student.mjs 29 ✅（新增 5 條：估價按鈕、兩錨點四區間、+5、卡片帶估價、公開價格公司無估價題）。islands.html 版本參數 v=20261109-est。

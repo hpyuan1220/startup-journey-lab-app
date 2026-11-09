@@ -42,6 +42,7 @@ export const COMPANIES=[
   ],
   wow:{label:'創辦前先訪談了幾家公司？',value:'100+ 家',note:'兩位創辦人在推出前訪談超過 100 家正在做整合的公司，才決定做這個產品〔據報：Pulse 2.0〕。這就是 Week 3 教的訪談。'},
   card:[['誰付錢','做 AI Agent 產品的公司（B2B）〔據報：A 輪報導〕'],['怎麼收費','不公開（官網需聯絡業務；11/9 查無定價頁）。企業基礎設施通常不公開價格，看「收費方式」就好〔已查〕'],['以前誰在做','每家 Agent 公司自己寫整合、或 Zapier／MuleSoft 這類整合工具'],['為什麼是現在','Agent 要「出手」就得接系統；MCP 協定普及但客製欄位與權限仍要有人處理'],['數字','2026/10 A 輪 1,500 萬美元，Bessemer 領投，Yelp 參投；創辦人 Ayan Barua 曾把 Siftery 賣給 G2〔據報〕'],['風險','Salesforce 等大廠自己做 Agent 插座；MCP 生態把整合變免費；客戶是新創，付費能力有限'],['台灣同層','〔待查〕台灣幫診所、POS、補習班系統做連接器的業者？講師說這是企管系能做的生意']],
+  estimate:{"labor": ["一位整合工程師年薪（美國）", "約 13 萬美元〔據報：BLS 軟體開發者中位數約 13 萬〕"], "software": ["自己接一家客戶的 API 外包費", "約 2 萬美元〔推估〕"], "unit": "一家 Agent 公司一年付它", "ranges": ["2 萬以下", "2 萬–6 萬", "6 萬–13 萬", "13 萬以上"], "answer": [1, 2], "why": "它要比自己請工程師便宜、比一次外包貴（因為接很多家）；落在中間。選 D 等於比請人還貴，沒人買。"},
   pet:{name:'插插',kind:'電鰻',desc:'什麼插座都接得上的小電工'},
   links:[['官網','https://www.withampersand.com/'],['Pulse 2.0','https://pulse2.com/ampersand-raises-15-million-series-a-to-expand-integration-enterprise-infrastructure-connecting-ai-agents/']],
  },
@@ -108,6 +109,7 @@ export const COMPANIES=[
   ],
   wow:{label:'美國有幾分之幾的金融機構用它？',value:'約 1／5',note:'公司自稱服務 2,300+ 家金融機構與支付公司，約佔美國五分之一；已協助防堵逾 10 億美元詐騙〔據報：公司自述〕。'},
   card:[['誰付錢','金融機構、支付公司、大型企業、政府機關〔據報〕'],['怎麼收費','不公開（官網與 G2 都無定價，11/9 查）；同類 KYB／KYC 服務多按每次驗證計費〔據報〕'],['以前誰在做','KYC／KYB 服務商（只驗人與公司）＋人工審核'],['為什麼是現在','交易對手變成 Agent；Stripe 稱七成 API 存取來自 Agent；Visa、Mastercard 推 Agent 付款協定'],['數字','2024 年紐約創立；2026/9 A 輪 3,500 萬美元（M13 領投）；2,300+ 金融機構客戶〔據報〕'],['風險','Visa／Mastercard／Stripe 自己做 Agent 身分；標準尚未統一；客戶集中在美國金融業'],['台灣同層','〔待查〕台灣金融業的 KYC 廠商有沒有在做 Agent 身分？']],
+  estimate:{"labor": ["一位風控審核員年薪（美國）", "約 7 萬美元〔據報：BLS 金融審查員中位數約 7–8 萬〕"], "software": ["同類 KYB 每次驗證", "約 1–3 美元〔據報：didit、iDenfy 公開價〕"], "unit": "一家支付公司一年付它", "ranges": ["1 萬以下", "1 萬–7 萬", "7 萬–20 萬", "20 萬以上"], "answer": [1, 2], "why": "大客戶一年驗證幾萬次、取代好幾個審核員，所以會到 B–C；但不會超過它省下的人力。"},
   pet:{name:'驗驗',kind:'燈籠魚',desc:'一照就知道你是誰派來的'},
   links:[['官網','https://www.baselayerhq.com/'],['Pulse 2.0','https://pulse2.com/baselayer-raises-35-million-series-a/']],
  },
@@ -130,6 +132,7 @@ export const COMPANIES=[
   ],
   wow:{label:'成立幾天拿到 A 輪？',value:'193 天',note:'2026/7 完成 3,000 萬美元 A 輪時成立 193 天、17 名員工，累計募資逾 4,000 萬〔據報：FinTech Global〕。'},
   card:[['誰付錢','開發 Agent 的公司與平台〔據報〕'],['怎麼收費','官網規劃：按 API 呼叫計費（Charge）與成功計費（Billing）；目前金額未公開〔據報：FinTech Global〕'],['以前誰在做','Stripe／銀行（只服務人與公司）；Agent 借人的卡'],['為什麼是現在','Agent 開始談價下單；Visa／Mastercard／Stripe 2026 年陸續推 Agent 付款協定'],['數字','2026/7 A 輪 3,000 萬美元（Forerunner 領投），成立 193 天；17 人、13 項產品〔據報〕'],['風險','Stripe、Visa 自己做；金融法規；太早期、客戶少'],['台灣同層','〔待查〕台灣電子支付業者有沒有在談 Agent 付款？']],
+  estimate:{"labor": ["一位出納／付款專員年薪", "約 5 萬美元〔據報：BLS〕"], "software": ["Stripe 一筆交易手續費", "約 2.9%＋0.3 美元〔實證：Stripe 公開價〕"], "unit": "一家 Agent 平台一年付它", "ranges": ["5 千以下", "5 千–5 萬", "5 萬–15 萬", "15 萬以上"], "answer": [1, 2], "why": "按呼叫與成功計費，量大就多；早期客戶小，多在 B；它必須比請人付款便宜。"},
   pet:{name:'錢錢',kind:'河豚',desc:'肚子裡裝著 Agent 零用錢的小出納'},
   links:[['官網','https://natural.co/'],['FinTech Global','https://fintech.global/2026/07/21/natural-raises-30m-to-power-payments-for-ai-agents/']],
  },
@@ -234,6 +237,7 @@ export const COMPANIES=[
   ],
   wow:{label:'哪家台灣人都知道的餐廳是它的客戶？',value:'鼎泰豐',note:'公司公布客戶含鼎泰豐（Din Tai Fung）、Mountain Mike’s Pizza、Giordano’s、Cali BBQ〔據報：Pulse 2.0〕。'},
   card:[['誰付錢','餐廳與連鎖品牌（實體店）〔據報〕'],['怎麼收費','不公開（需聯絡業務）。分析師稱它按「營收影響」計價——找回的漏接來電、客單價提升、外燴成交，而非按席位〔據報：Sacra 分析，未經公司證實〕'],['以前誰在做','店員接電話；外送平台；訂位系統（只處理訂位不處理大單）'],['為什麼是現在','語音 AI 聽得懂電話了；餐飲缺工；大單與外燴是利潤最好的單'],['數字','2026/8 累計募資 2,000 萬美元（含 A 輪）；481 筆訂單、194 店日的實測；單一客戶父親節營收＋20%〔據報：公司公布〕'],['風險','Toast、Square 這類 POS 大廠加語音功能；成效數字來自公司自述；餐廳倒閉率高'],['台灣同層','〔待查〕台灣餐廳的 AI 接電話／LINE 訂位服務？']],
+  estimate:{"labor": ["一位接電話的店員年薪（美國）", "約 3 萬美元〔據報：BLS 餐飲接待中位數約 2.8–3.2 萬〕"], "software": ["訂位系統月費", "約 250 美元／月＝3,000 美元／年〔據報：OpenTable 等公開價〕"], "unit": "一家餐廳一年付它", "ranges": ["3,000 以下", "3,000–1.5 萬", "1.5 萬–3 萬", "3 萬以上"], "answer": [1, 2], "why": "比訂位系統貴（它接電話、抓大單），比多請一個人便宜；講師算術題的餐廳版。"},
   pet:{name:'鈴鈴',kind:'海豚',desc:'電話一響就跳起來接的小接線生'},
   links:[['官網','https://www.palona.ai/'],['Pulse 2.0','https://pulse2.com/palona-ai-reaches-20-million-in-funding-as-restaurant-deployments-show-20-revenue-growth/']],
  },
@@ -315,6 +319,7 @@ export const COMPANIES=[
   ],
   wow:{label:'它敢給什麼保證？',value:'100% 正確，錯了賠錢',note:'創辦人：「承諾正確只有在背後有錢的時候才算數。」35+ 家事務所使用〔據報：TNW〕。'},
   card:[['誰付錢','會計師事務所（美國）〔據報〕'],['怎麼收費','不公開（需聯絡業務，11/9 查無定價）；附 100% 正確保證與同業複核保證，錯了賠錢〔實證：Accounting Today〕'],['以前誰在做','初級審計員；或 Excel＋人工比對'],['為什麼是現在','美國事務所人力荒；LLM 能讀憑證與合約；事務所願意為「做完」付錢而不是為軟體'],['數字','2026/11 種子輪 1,100 萬美元（Touring Capital 領投），累計 1,600 萬；35+ 家事務所〔據報：TNW〕'],['風險','審計責任與監管；四大自己做；100% 保證的賠付成本'],['台灣同層','〔待查〕台灣事務所或記帳士用的 AI 查帳工具？']],
+  estimate:{"labor": ["一位初級審計員年薪（美國）", "約 6.5 萬美元〔據報：BLS 會計師中位數 7.9 萬，初級較低〕"], "software": ["事務所查帳軟體年費", "約 3,000 美元〔推估：同類軟體〕"], "unit": "事務所用一個 Clerk 一年付它", "ranges": ["3,000 以下", "3,000–2 萬", "2 萬–6.5 萬", "6.5 萬以上"], "answer": [1, 2], "why": "講師的算術題：軟體 3,000、人 35,000，AI 公司收 15,000。Clerk 會落在軟體與人之間；超過人就沒人買。"},
   pet:{name:'帳帳',kind:'水獺',desc:'抱著計算機翻憑證的小審計員'},
   links:[['官網','https://www.clark.ai/'],['TNW','https://thenextweb.com/news/clark-11m-seed-clerks-ai-audit-employees']],
  },
@@ -337,6 +342,7 @@ export const COMPANIES=[
   ],
   wow:{label:'一家客戶一個月省多少小時？',value:'28,000 小時',note:'公司稱單一客戶每月自動化 28,000 小時工作、自主解決率逾 70%；2026/8 估值 12 億美元〔據報：公司公布〕。'},
   card:[['誰付錢','物流、貨運、供應鏈企業；後擴至保險、能源、航空〔據報〕'],['怎麼收費','訂閱制，依部署的 AI 員工數或用量，金額不公開（文件頁需存取碼）〔據報：Sacra 分析師推斷〕'],['以前誰在做','調度員、客服打電話回信；TMS 系統只記錄不溝通'],['為什麼是現在','語音 AI 能講電話了；物流缺人；文件與電話是物流最大的人工成本'],['數字','150+ 企業客戶；2026/8 C 輪 1.5 億美元、估值 12 億、累計約 2 億；B 輪後業務成長 5 倍〔據報〕'],['風險','語音 AI 大廠降價；物流系統商內建；跨行擴張稀釋焦點'],['台灣同層','〔待查〕台灣貨運／搬家的調度 AI？講師情境 B 的本尊']],
+  estimate:{"labor": ["一位物流調度員年薪（美國）", "約 5 萬美元〔據報：BLS 調度員中位數約 4.5–5 萬〕"], "software": ["TMS 運輸管理系統年費", "約 1 萬美元〔推估：中型貨運〕"], "unit": "一家貨運公司一年付它", "ranges": ["1 萬以下", "1 萬–5 萬", "5 萬–50 萬", "50 萬以上"], "answer": [1, 2], "why": "它取代的不是一個調度員，是一整組（有客戶一個月省 28,000 小時），所以大客戶會到 C；但單位價一定低於人。"},
   pet:{name:'嗶嗶',kind:'海鷗',desc:'嘴裡叼著對講機的小調度'},
   links:[['官網','https://www.happyrobot.ai/'],['Pulse 2.0','https://pulse2.com/happyrobot-raises-150-million-series-c-at-1-2-billion-valuation/']],
  },
@@ -359,6 +365,7 @@ export const COMPANIES=[
   ],
   wow:{label:'接幾種物流工具？',value:'70+',note:'TMS、ERP、載貨板、合規系統、通訊管道都接；創辦人：「我們不是賣物流軟體，是讓公司僱用數位員工。」〔據報：Tech.eu〕'},
   card:[['誰付錢','貨運承攬、物流與運輸公司（歐美、裏海地區）〔據報〕'],['怎麼收費','不公開（11/9 查無定價頁）；「數位員工」同類多按月、按席位或按處理量〔據報〕'],['以前誰在做','營運人員人工在多個系統間搬資料、聯絡車行'],['為什麼是現在','LLM 能讀文件與寫信；物流系統多又舊，沒人想換；缺人'],['數字','2023 年轉做 AI；2026/6 A 輪 1,100 萬美元（600 萬新資＋500 萬次級）〔據報：Tech.eu〕'],['風險','HappyRobot 等大廠往下打；物流景氣；小團隊跨歐美三地'],['台灣同層','〔待查〕台灣貨運承攬業的自動化工具？']],
+  estimate:{"labor": ["一位物流營運人員年薪（歐洲）", "約 4 萬美元〔據報〕"], "software": ["TMS 系統年費", "約 1 萬美元〔推估〕"], "unit": "一家中型貨運公司一年付它", "ranges": ["1 萬以下", "1 萬–4 萬", "4 萬–12 萬", "12 萬以上"], "answer": [1, 2], "why": "「數位員工」的定價邏輯就是比人便宜、比軟體貴；一個數位員工約在 B，取代三個人就到 C。"},
   pet:{name:'箱箱',kind:'寄居蟹（扛貨櫃）',desc:'背著小貨櫃到處跑的搬運工'},
   links:[['官網','https://cargofy.com/'],['Tech.eu','https://tech.eu/2026/06/18/cargofy-lands-6m-to-scale-ai-workers-for-logistics/']],
  },
@@ -381,6 +388,7 @@ export const COMPANIES=[
   ],
   wow:{label:'累計募了多少？',value:'1.24 億美元',note:'種子 900 萬（2022）→ A 1,500 萬（2023）→ B 3,500 萬（2024）→ C 6,500 萬（2026/3，高盛領投）〔據報：MobiHealthNews〕。'},
   card:[['誰付錢','安養中心、長照機構（美國）〔據報〕'],['怎麼收費','不公開（需聯絡業務）；公司稱導入後每位住民每月淨營業收入 +275 美元；講師投影片：此類服務通例為按床位月費〔據報〕'],['以前誰在做','巡房、呼叫鈴、傳統護理站系統'],['為什麼是現在','高齡化＋照護缺工；感測器便宜；AI 能從訊號判斷事件而不是只警報'],['數字','2020 年紐約創立；C 輪 6,500 萬美元（2026/3，高盛領投）；累計 1.24 億〔據報〕'],['風險','隱私與法規；機構預算有限；大型照護系統商整合同功能'],['台灣同層','〔待查〕台灣長照機構的跌倒／離床偵測業者？講師說這是台灣有主場優勢的方向']],
+  estimate:{"labor": ["一位夜班照服員年薪（美國）", "約 3.8 萬美元〔據報：BLS 護理助理中位數約 3.8 萬〕"], "software": ["傳統呼叫鈴系統，每床每年", "約 300 美元〔推估〕"], "unit": "一家 60 床安養中心一年付它", "ranges": ["1.8 萬以下（每床 300 以下）", "1.8 萬–4 萬", "4 萬–8 萬（約一到兩個照服員）", "8 萬以上"], "answer": [1, 2], "why": "公司說每住民每月 NOI +275 美元＝60 床一年 +20 萬；它收的要明顯少於這個，才有人買。按床位月費算，落在 B–C。"},
   pet:{name:'守守',kind:'海龜',desc:'整夜不睡、慢慢巡房的守護者'},
   links:[['官網','https://www.hellosage.com/'],['MobiHealthNews','https://www.mobihealthnews.com/news/sage-secures-65m-scale-ai-monitoring-platform-aging-population']],
  },
@@ -403,6 +411,7 @@ export const COMPANIES=[
   ],
   wow:{label:'分析一次飛測從多久變多久？',value:'一整天 → 10 分鐘',note:'客戶 Advanced Navigation 的數字；近 1,000 台機器人、1 萬+ 任務〔據報：Pulse 2.0〕。'},
   card:[['誰付錢','機器人公司：導航、無人機、農業、人形、工地、醫療〔據報〕'],['怎麼收費','不公開（11/9 查無定價頁）；同類多按機器人數或資料量〔據報〕'],['以前誰在做','工程師人工翻 log／影片；通用的監控工具'],['為什麼是現在','機器人進現場的數量暴增；資料多到人看不完；LLM 能讀 log 也能讀 Slack'],['數字','2025 年雪梨創立；2026/8 募 800 萬美元、估值 8,000 萬（Square Peg 領投）、累計約 1,050 萬；近 1,000 台機器人〔據報〕'],['風險','太早期；機器人公司自己做；大廠（如 NVIDIA）平台內建'],['台灣同層','〔待查〕台灣機器人／無人機公司的測試與除錯怎麼做？']],
+  estimate:{"labor": ["一位機器人測試工程師年薪（美／澳）", "約 12 萬美元〔據報〕"], "software": ["通用監控工具（Datadog 類）年費", "約 1 萬美元〔據報：公開價〕"], "unit": "一家機器人公司一年付它", "ranges": ["1 萬以下", "1 萬–5 萬", "5 萬–12 萬", "12 萬以上"], "answer": [1, 2], "why": "它省的是工程師找 bug 的時間（一天變 10 分鐘），所以比監控工具貴、比一位工程師便宜。"},
   pet:{name:'螺螺',kind:'小機器海馬',desc:'拿著扳手找 bug 的機械師'},
   links:[['官網','https://www.alloyrobotics.com/'],['Pulse 2.0','https://pulse2.com/alloy-robotics-raises-8-million-at-80-million-valuation-to-help-engineers-debug-robot-fleets-with-ai-agents/']],
  },
@@ -413,4 +422,5 @@ export const scoreFor=attempts=>SCORE_BY_ATTEMPT[Math.min(attempts-1,2)];
 export const boxScore=scores=>scores.reduce((a,b)=>a+(b||0),0);
 export const isUrl=s=>/^https?:\/\/[^\s]+\.[^\s]+/.test(String(s||'').trim());
 /** 七格卡 → 可貼進公司卡的純文字 */
-export const cardText=c=>`【${c.name}】${c.tagline}\n`+c.card.map(([k,v])=>`${k}：${v}`).join('\n');
+export const cardText=(c,est)=>`【${c.name}】${c.tagline}\n`+c.card.map(([k,v],i)=>`${k}：${v}${i===1&&est?`｜我的估價：${est}`:''}`).join('\n');
+export const EST_BONUS=5;

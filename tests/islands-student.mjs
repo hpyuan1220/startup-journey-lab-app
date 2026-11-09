@@ -60,5 +60,17 @@ await p.reload();await p.waitForTimeout(800);
 ok('重整：清單顯示 Owner 已開箱 27/30、情報袋 1',await p.evaluate(()=>/已開箱 27\/30/.test(document.querySelector('.treasure.opened')?.textContent||'')&&document.querySelector('#bag-count').textContent==='1'));
 await p.click('#btn-bag');await p.waitForTimeout(200);
 ok('情報袋有 Owner 七格',await p.evaluate(()=>document.querySelectorAll('#overlay .facts dt').length>=7));
+// 估價題（Palona 不公開價格）：預先寫入三題全過的進度，驗證 Irene 加碼、+5、七格卡「怎麼收費」帶估價
+await p.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('sjl-islands:'));const st=JSON.parse(localStorage.getItem(k));st.boxes.palona={found:true,wrong:[],hints:0,clues:['shop','house'],attempts:[1,1,1],scores:[10,10,10],passed:3,url:'https://palona.ai',deep:false,insight:'',argue:'',opened:false,at:null,est:'',estOk:null};localStorage.setItem(k,JSON.stringify(st));});
+await p.reload();await p.waitForTimeout(800);
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/繼續：Palona/.test(b.textContent)).click());await p.waitForTimeout(600);
+ok('三題全過進島：Irene 提供估價加分按鈕',await p.evaluate(()=>document.querySelector('#chapter-title').textContent==='Palona'&&[...document.querySelectorAll('#choices .ui')].some(b=>/估價加分/.test(b.textContent))));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/估價加分/.test(b.textContent)).click());await p.waitForTimeout(200);
+ok('估價題：人力價、軟體價兩個錨點、四個區間',await p.evaluate(()=>document.querySelectorAll('#overlay .facts dt').length===2&&document.querySelectorAll('#overlay .opt').length===4&&/3 萬美元/.test(document.querySelector('#overlay').textContent)));
+await p.evaluate(()=>document.querySelectorAll('#overlay .opt')[1].click());await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/送出估價/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('選 B 答對：Irene 說估得準 +5',await p.evaluate(()=>/估得準/.test(document.querySelector('#d-title').textContent)&&/\+5/.test(document.querySelector('#d-title').textContent)));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/去開寶箱/.test(b.textContent)).click());await p.waitForTimeout(2500);
+ok('Palona 開箱：怎麼收費帶「我的估價」與 +5、任務列顯示 +5',await p.evaluate(()=>/我的估價：3,000–1.5 萬（\+5）/.test(document.querySelectorAll('#overlay .facts dd')[1].textContent)&&/\+5/.test(document.querySelector('#mission').textContent)));
+ok('Owner 公開價格：沒有估價題',await p.evaluate(()=>!document.querySelector('#overlay').textContent.includes('估價加分')));
 ok('沒有 JS 錯誤',errs.length===0,errs);
 await b.close();srv.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);
