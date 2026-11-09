@@ -32,6 +32,9 @@ function refreshTop(){
  $('#box-score').textContent=(b?boxScore(b.scores):0)+'/30';$('#opened-count').textContent=openedCount();$('#bag-count').textContent=openedCount();
  $('#who').textContent=sid==='guest'?'未登入：進度只存這台裝置':'學號 '+sid;
 }
+// 下一箱：先候選、再自己方向、再任何做好的箱
+function nextBox(){const ready=COMPANIES.filter(c=>c.ready!==false&&!store.boxes[c.id]?.opened);const cands=store.candidates.map(companyById).filter(Boolean);return cands.find(c=>ready.includes(c))||ready.find(c=>c.dir===myDir)||ready[0]||null;}
+function goBox(c){current=c.id;if(box().found)enterIsland();else renderFind();}
 // ---------- 視圖 1：寶箱清單 ----------
 function renderHub(){
  show('hub');current=null;refreshTop();closeOverlay();
@@ -169,7 +172,7 @@ function refreshIsland(){
 function enterIsland(fresh=false){
  show('island');const c=company(),b=box();closeOverlay();
  location='start';put(person(),points.start);put(teacher(),[85,52]);walkingToken++;busy=false;refreshIsland();
- if(b.opened)say('student','你 · 探索進度','這一箱已經開過了。','可以再看店家故事、公司卡，或回寶箱清單選下一個。',[['看公司卡與夥伴',showBag,true],['回寶箱清單',renderHub,false]]);
+ if(b.opened){const n=nextBox();say('student','你 · 探索進度','這一箱已經開過了。','可以再看店家故事、公司卡，或開下一箱。',[...(n?[['開下一箱：'+n.name,()=>goBox(n),true]]:[]),['看公司卡與夥伴',showBag,!n],['回寶箱清單',renderHub,false]]);}
  else if(b.passed===3)say('teacher','Irene 老師','三題都對了，去開寶箱。','',[['走到寶箱',openChest,true]]);
  else say('student','你 · 新創探險者',fresh?'登島成功：'+islandById(c.island).name:'回到 '+c.name+' 島','先去店家聽故事，再到 Irene 研究屋整理；探索站是加分。三題都對才能開箱。',[['走過木橋，去店家',()=>visit('shop'),true],['直接找 Irene',()=>visit('house'),false]]);
 }
@@ -221,14 +224,14 @@ function argueForm(){const c=company(),b=box();const ov=overlay('我要找碴：
  row.append(btn('存起來（夥伴升級）',()=>{if(ta.value.trim().length<8){err.textContent='貼一句至少 8 字。';return;}b.argue=ta.value.trim();const first=!b.deep;b.deep=true;save();refreshIsland();closeOverlay();if(first)confetti();say('robot','小潮 · 找碴紀錄','存好了。這一句就是期末「風險與反方」那一頁的材料。','',[['去答三題',quiz,true],['回島上',()=>enterIsland(),false]]);},true),btn('回島上',closeOverlay));}
 // ---------- 開箱 ----------
 function confetti(){if(reduced())return;const burst=el('div','',$('#scene'),'burst');for(let i=0;i<16;i++){const p=el('i','',burst);p.style.setProperty('--dx',(Math.cos(i/16*Math.PI*2)*95)+'px');p.style.setProperty('--dy',(Math.sin(i/16*Math.PI*2)*75-35)+'px');}setTimeout(()=>burst.remove(),1300);}
-function openChest(){const b=box();if(busy)return;if(b.opened){showBag();return;}walk('chest',()=>{if(b.passed<3){say('teacher','Irene 老師','還差 '+(3-b.passed)+' 題。','三題都對，寶箱才會開。',[['去答題',quiz,true]]);return;}b.opened=true;b.at=new Date().toISOString();save();refreshIsland();confetti();const c=company();say('owner',c.story.speaker,'開箱！'+c.pet.name+'加入你的探索隊。','七格卡收進情報袋了，可以一鍵貼進公司卡。'+(b.deep?'探索也做完，披風解鎖。':'去探索站或找碴，牠會升級。'),[['看七格卡',showReward,true],['回寶箱清單',renderHub,false]]);showReward();});}
+function openChest(){const b=box();if(busy)return;if(b.opened){showBag();return;}walk('chest',()=>{if(b.passed<3){say('teacher','Irene 老師','還差 '+(3-b.passed)+' 題。','三題都對，寶箱才會開。',[['去答題',quiz,true]]);return;}b.opened=true;b.at=new Date().toISOString();save();refreshIsland();confetti();const c=company();say('owner',c.story.speaker,'開箱！'+c.pet.name+'加入你的探索隊。','七格卡收進情報袋了，可以一鍵貼進公司卡。'+(b.deep?'探索也做完，披風解鎖。':'去探索站或找碴，牠會升級。'),(()=>{const n=nextBox();return [['看七格卡',showReward,true],...(n?[['開下一箱：'+n.name,()=>goBox(n),false]]:[]),['回寶箱清單',renderHub,false]];})());showReward();});}
 function showReward(){const c=company(),b=box();const ov=overlay('開箱！');
  const card=el('article','',ov,'reward-card');const h=el('div','',card,'reward-heading');el('span','✦',h,'reward-emblem');const t=el('div','',h);el('small','TREASURE · '+islandById(c.island).name,t);el('h3',c.name+'：'+c.tagline,t);
  const w=el('div','',card,'wow');el('span',c.wow.label,w,'fine').style.padding='0';el('b',c.wow.value,w);el('span',c.wow.note,w,'fine').style.padding='0';
  const dl=el('dl','',card,'facts');for(const [k,v] of c.card){el('dt',k,dl);el('dd',v,dl);}
  const pet=el('div','',card,'companion-card');pet.innerHTML=`<div class="pet-art ${b.deep?'evolved':''}"><span class="pet-cape"></span><img src="materials/islands/pet.svg" alt=""><span class="pet-star">✦</span></div><div><p class="eyebrow">夥伴</p><h3 style="font-size:16px">${c.pet.name} · ${c.pet.kind}${b.deep?' · 研究員':''}</h3><p class="fine" style="padding:0">${c.pet.desc}。${b.deep?'探索站做完，披風已解鎖。':'做完探索站或找碴，牠會升級。'}</p></div>`;
  const row=el('div','',card,'choices');const st=el('p','',card,'fine');st.style.padding='4px 0 0';
- row.append(btn('複製七格，貼進公司卡',async()=>{st.textContent=(await copyText(cardText(c)))?'已複製，到 Week 9 公司卡貼上。':'複製失敗，請手動選取。';},true),btn('回寶箱清單，開下一箱',renderHub));
+ const n=nextBox();row.append(btn('複製七格，貼進公司卡',async()=>{st.textContent=(await copyText(cardText(c)))?'已複製，到 Week 9 公司卡貼上。':'複製失敗，請手動選取。';}),...(n?[btn('開下一箱：'+n.name,()=>goBox(n),true)]:[]),btn('回寶箱清單',renderHub));
 }
 // ---------- 情報袋 ----------
 function closeOverlay(){$('#overlay').hidden=true;$('#overlay').replaceChildren();}
