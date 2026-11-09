@@ -54,9 +54,10 @@ function renderHub(){
   }
  };
  // 先列可以玩的；準備中的按三個方向分段收起
+ // 只列做好的箱；做好的箱少於 4 箱時不分段，多了才按方向分段。準備中的不顯示。
  const open=COMPANIES.filter(c=>c.ready!==false);
- section('可以玩的寶箱（'+open.length+'）',open,false);
- for(const d of DIRECTIONS){const items=COMPANIES.filter(c=>c.ready===false&&c.dir===d.id);section(d.name+'：準備中（'+items.length+'）— 點開看線索',items,true);}
+ if(open.length<4)section('可以玩的寶箱（'+open.length+'）',open,false);
+ else for(const d of DIRECTIONS){const items=open.filter(c=>c.dir===d.id);section(d.name+'（'+items.length+' 箱）',items,false);}
 }
 // ---------- 視圖 2：找島 ----------
 function renderFind(){
