@@ -1993,3 +1993,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - islands-data.mjs：9 家不公開價格的公司（Ampersand、Baselayer、Natural、Palona、Clark、HappyRobot、Cargofy、Sage、Alloy）各加 `estimate`：取代的人力年薪、原本的軟體年費兩個錨點（附〔據報／推估〕出處）、四個區間、正解 B 或 C、why。`cardText(c,est)` 第二格附「｜我的估價：…」；`EST_BONUS=5`。
 - islands.js：第三題答對後 Irene 加碼「估價加分 +5／直接開寶箱」；`estimateForm` 四選一，答對 +5（記在 box.est／estOk，不影響開箱、不進 30 分）；開箱卡與情報袋「怎麼收費」自動帶學生估價（答對加「（+5）」）；任務列／清單顯示「已開箱 27/30 +5」。Arcade、Owner 等公開價格的 6 家沒有估價題。
 - tests/islands-student.mjs 29 ✅（新增 5 條：估價按鈕、兩錨點四區間、+5、卡片帶估價、公開價格公司無估價題）。islands.html 版本參數 v=20261109-est。
+- 2026-11-09 22:00：Week 7 建組規則、Week 8「接下來」、Week 9 藍圖三處仍寫「11/27 之後只有老師能改／13:00 起鎖定／15 家是非題」→ 統一改成「11/27 課堂確認分組；學生端開放到 12/19 00:00 才鎖定」與尋寶流程。
