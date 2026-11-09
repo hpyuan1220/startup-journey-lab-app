@@ -21,11 +21,13 @@
 - AI：app 不呼叫模型、不需金鑰；探索站與找碴都是複製 prompt → 學生自己開 Gemini／ChatGPT → 貼回一句。
 - 老師頁：一人一列（開了哪些島、每箱分數、第三題網址、探索站有沒有貼、夥伴）；不投影、不排行榜（老師判斷這班不在意全班表現）。
 
-## 15 家（沿用 10/29 名單；島按三個方向分區）
-- 方向一 Agent 經濟基礎設施：島 1 基礎模型 Mistral（示範寶箱，不計分）；島 2 算力 Crusoe；島 3 資料平台 Supabase；島 5 Agent 基礎設施 LangChain、n8n
-- 方向二 AI 原生服務：島 4 AI 寫程式 Lovable、Cognition；島 6 垂直 Agent Owner、Gorgias、EliseAI；島 7 消費創意 ElevenLabs、Suno
-- 方向三 AI 進入實體世界：島 8 實體 AI Figure AI、Skild AI；島 9 世界模型 World Labs、Odyssey；島 10 AI for Science 只看不出題
-- 每家要寫的內容：線索卡 3 句、店家故事（生活場景開頭，5 句內）、Irene 兩件事、三個深問、三題四選一＋第三題「去哪找」三連結、七格全圖卡、「哇」數字一個。資料以 `群島遊戲_15家審核表_20261029.xlsx` 為底，寫時逐家查最新一輪。
+## 15 家（2026-11-09 定案：換成較不出名、2026 年剛募資、能用講師框架解釋的公司）
+老師 11/9：「研究更多 AI agent 新創，不要太有名的」。篩選：2024–2026 成立或剛拿 A／B 輪、估值 1–40 億美元、誰付錢一句話講得清、跟台灣生活或產業接得上。只留 Owner、Gorgias；Lovable 當老師示範箱。
+- 方向一 賣鏟子（對到講師五大功能）：島 1 插座與流程 Ampersand（①）、n8n；島 2 授權與監控 Arcade（③）、Baselayer（④）；島 3 Agent 結算 Natural（⑤）
+- 方向二 賣結果：島 4 AI 寫程式 Lovable（示範）；島 5 餐飲零售 Owner、Palona（客戶含鼎泰豐）；島 6 客服訊息 Gorgias、Respond.io（馬來西亞、接 LINE）；島 7 財務後台 Clark（AI 審計員）
+- 方向三 進現場：島 8 物流派工 HappyRobot、Cargofy；島 9 長照現場 Sage（講師長照例子本尊）；島 10 機器人 Alloy Robotics（最早期的一箱）
+- 每家已寫：線索卡 3 句、找島提示 2 層、店家故事（生活場景開頭＋三段）、Irene 兩件事、三個深問＋深問 prompt、找碴 prompt、三題四選一（第三題貼網址＋「去哪找」三連結）、哇數字、七格全圖卡（標實證／據報／待查）、夥伴。來源：各家 2026 年募資原始報導（Pulse 2.0、TNW、Tech.eu、FinTech Global、MobiHealthNews、公司新聞稿），未公開的收費一律標〔待查〕。
+- 舊名單（Mistral、Crusoe、Supabase、LangChain、Cognition、EliseAI、ElevenLabs、Suno、Figure、Skild、World Labs、Odyssey）移出遊戲；`群島遊戲_15家審核表_20261029.xlsx` 保留作參考。
 
 ## 製作順序
 1. Owner 島尋寶版（用 demo 畫面）→ 老師看過

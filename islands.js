@@ -17,7 +17,8 @@ let busy=false,mode='hub',timer,walkingToken=0;
 // 我的方向：從建組資料來（team.js 存的 sjl-team-dir，沒有就讓學生點）
 let myDir=Number(store.dir)||Number(localStorage.getItem('sjl-team-dir'))||0;
 // 已有島圖的島；其他島先用島 6 的圖（之後每島一張）
-const SCENES=new Set([6]);const sceneSrc=id=>`materials/islands/scene_island${String(SCENES.has(Number(id))?id:6).padStart(2,'0')}.jpg`;
+// 還沒有各島專屬圖，全部先用島 6（餐館島）那張；有圖的島加進 SCENES
+const SCENES=new Set([]);const sceneSrc=id=>`materials/islands/scene_island${String(SCENES.has(Number(id))?id:6).padStart(2,'0')}.jpg`;
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?' primary':''));b.type='button';b.disabled=busy;b.addEventListener('click',fn);return b;}

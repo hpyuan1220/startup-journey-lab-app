@@ -8,20 +8,19 @@ const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d)
 await p.goto('http://127.0.0.1:4299/islands.html');await p.waitForTimeout(800);
 ok('港口第一次：Irene 先問方向，三個選項',await p.evaluate(()=>/哪個方向/.test(document.querySelector('#d-title').textContent)&&document.querySelectorAll('#choices .ui').length===3));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方向二/.test(b.textContent)).click());await p.waitForTimeout(300);
-ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、清單 3 箱可玩',await p.evaluate(()=>/先逛島圈候選/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/逛島/.test(b.textContent))&&document.querySelectorAll('.treasure').length===3));
+ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、清單 15 箱按三個方向分段',await p.evaluate(()=>/先逛島圈候選/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/逛島/.test(b.textContent))&&document.querySelectorAll('.treasure').length===15&&document.querySelectorAll('.t-section').length===3));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/逛島/.test(b.textContent)).click());await p.waitForTimeout(300);
-ok('海圖：十座島、方向二那區亮框、島 6 列出三家',await p.evaluate(()=>document.querySelectorAll('#browse-map .island-btn').length===10&&!!document.querySelector('#browse-map .region.mine')&&/Owner・Gorgias・EliseAI/.test([...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 6 /.test(b.textContent)).textContent)));
+ok('海圖：十座島、方向二那區亮框、島 5 列出 Owner・Palona',await p.evaluate(()=>document.querySelectorAll('#browse-map .island-btn').length===10&&!!document.querySelector('#browse-map .region.mine')&&/Owner・Palona/.test([...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).textContent)));
 await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('逛別方向的島：可看，☆ 不能按',await p.evaluate(()=>/不是你的方向/.test(document.querySelector('#d-speech').textContent)&&[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent)).every(b=>b.disabled)));
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/回海圖/.test(b.textContent)).click());await p.waitForTimeout(200);
-await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 6 /.test(b.textContent)).click());await p.waitForTimeout(300);
+await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(300);
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent))[0].click());await p.waitForTimeout(200);
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent))[0].click());await p.waitForTimeout(200);
 ok('圈兩家候選：★ 兩個',await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/已是候選/.test(b.textContent)).length===2));
-await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent))[0].click());await p.waitForTimeout(200);
-ok('第三家被擋（上限 2）',await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/已是候選/.test(b.textContent)).length===2));
+ok('島 5 只有兩家，都成候選；候選上限 2',await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/已是候選/.test(b.textContent)).length===2&&[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent)).length===0));
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/回港口/.test(b.textContent)).click());await p.waitForTimeout(300);
-ok('港口：顯示你的候選 2／2、「開箱：Owner」變主要按鈕、清單先列候選',await p.evaluate(()=>/你的候選（2／2）：Owner、Gorgias/.test(document.querySelector('#d-speech').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/開箱：Owner/.test(b.textContent))&&/你的候選/.test(document.querySelector('.t-section').textContent)));
+ok('港口：顯示你的候選 2／2、「開箱：Owner」變主要按鈕、清單先列候選',await p.evaluate(()=>/你的候選（2／2）：Owner、Palona/.test(document.querySelector('#d-speech').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/開箱：Owner/.test(b.textContent))&&/你的候選/.test(document.querySelector('.t-section').textContent)));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/開箱：Owner/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('找島頁：三區十島、線索三句',await p.evaluate(()=>!document.querySelector('#view-find').hidden&&document.querySelectorAll('#find-map .island-btn').length===10&&document.querySelectorAll('#find-clues li').length===3));
 await p.screenshot({path:'/tmp/islands-s1.png'});
@@ -30,7 +29,7 @@ await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].fin
 ok('猜錯一次：Irene 第一層提示、該島劃掉',await p.evaluate(()=>/不在這座島/.test(document.querySelector('#find-hint').textContent)&&document.querySelectorAll('#find-map .island-btn.wrong').length===1));
 await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 7 /.test(b.textContent)).click());await p.waitForTimeout(200);
 ok('猜錯兩次：二選一亮框',await p.evaluate(()=>document.querySelectorAll('#find-map .island-btn.candidate').length===2));
-await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 6 /.test(b.textContent)).click());await p.waitForTimeout(600);
+await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(600);
 ok('選對：進島、章節標 Owner',await p.evaluate(()=>!document.querySelector('#view-island').hidden&&document.querySelector('#chapter-title').textContent==='Owner'));
 // 沒讀材料直接答題 → 擋
 await p.click('#btn-quiz');await p.waitForTimeout(200);
