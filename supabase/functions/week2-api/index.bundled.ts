@@ -677,10 +677,10 @@ Deno.serve(async req=>{
   const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'請重新登入教師帳號。'},401);
   const allowed=must(await db.from('teacher_classes').select('class_id').eq('teacher_id',user.id)).map((r:any)=>r.class_id);
   if(b.action==='teacher_load'){
-   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[],teams:[],team_members:[]});
-   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class,teams,team_members]=await Promise.all([
-    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed),db.from('teams').select('*').in('class_id',allowed),db.from('team_members').select('*').in('class_id',allowed)]);
-   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class),teams:must(teams),team_members:must(team_members)});
+   if(!allowed.length)return reply({classes:[],rows:[],week1:[],feedback:[],versions:[],usage:[],settings:[],roster:[],week3:[],survey_topics:[],survey_responses:[],week4:[],week_questions:[],remarks:[],week5:[],week_class:[],teams:[],team_members:[],islands:[]});
+   const [classes,rows,week1,feedback,versions,usage,settings,roster,week3,survey_topics,survey_responses,week4,week_questions,remarks,week5,week_class,teams,team_members,islands]=await Promise.all([
+    db.from('classes').select('id,name').in('id',allowed),db.from('week2_submissions').select('*').in('class_id',allowed),db.from('week1_submissions').select('*').in('class_id',allowed),db.from('week1_ai_feedback_latest').select('*').in('class_id',allowed),db.from('learning_versions').select('class_id,student_id,week,version,created_at').in('class_id',allowed).order('created_at',{ascending:false}).limit(500),db.from('week2_ai_requests').select('class_id,student_id,kind,state,feedback,submission_version,tokens,created_at').in('class_id',allowed),db.from('week2_settings').select('*').in('class_id',allowed),db.from('class_roster').select('class_id,student_id,student_name').in('class_id',allowed),db.from('week3_submissions').select('*').in('class_id',allowed),db.from('week3_survey_topics').select('*').in('class_id',allowed),db.from('week3_survey_responses').select('*').in('class_id',allowed),db.from('week4_research').select('*').in('class_id',allowed),db.from('week_questions').select('*').in('class_id',allowed),db.from('teacher_remarks').select('*').in('class_id',allowed),db.from('week5_compare').select('*').in('class_id',allowed),db.from('week_class_answers').select('*').in('class_id',allowed),db.from('teams').select('*').in('class_id',allowed),db.from('team_members').select('*').in('class_id',allowed),db.from('islands_progress').select('*').in('class_id',allowed)]);
+   return reply({classes:must(classes),rows:must(rows),week1:must(week1),feedback:must(feedback),versions:must(versions),usage:must(usage),settings:must(settings),roster:must(roster),week3:must(week3),survey_topics:must(survey_topics),survey_responses:must(survey_responses),week4:must(week4),week_questions:must(week_questions),remarks:must(remarks),week5:must(week5),week_class:must(week_class),teams:must(teams),team_members:must(team_members),islands:must(islands)});
   }
   if(!allowed.includes(b.class_id))return reply({error:'你沒有這個班級的權限。'},403);
   if(b.action==='teacher_history'){const versions=must(await db.from('learning_versions').select('*').match({class_id:b.class_id,student_id:String(b.student_id||'')}).order('created_at',{ascending:false}).limit(30));return reply({versions});}
@@ -946,6 +946,22 @@ Deno.serve(async req=>{
    must(await db.from('team_members').update({directions:dirs,...touch}).match(scope));return reply(await loadTeam());
   }
   return reply({error:'未知建組操作。'},400);
+ }
+ // ---- 群島尋寶進度（islands_load／islands_save）：整包 jsonb，伺服器為準；回傳我在組裡認的方向，遊戲用來預選。不進成績。
+ if(b.action==='islands_load'||b.action==='islands_save'){
+  const mem=must(await db.from('team_members').select('team_id,directions').match(scope).maybeSingle());
+  const directions=normalizeDirections(mem?.directions);
+  let r=must(await db.from('islands_progress').select('*').match(scope).maybeSingle());
+  if(b.action==='islands_save'){
+   const data=b.data;
+   if(!data||typeof data!=='object'||Array.isArray(data))return reply({error:'進度格式不正確。'},422);
+   const txt=JSON.stringify(data);if(txt.length>200000)return reply({error:'進度太大，請聯絡老師。'},422);
+   if(data.boxes&&(typeof data.boxes!=='object'||Array.isArray(data.boxes)))return reply({error:'進度格式不正確。'},422);
+   const next={...data,saved_at:new Date().toISOString()};
+   if(r)r=must(await db.from('islands_progress').update({data:next}).match(scope).select().single());
+   else r=must(await db.from('islands_progress').insert({...scope,data:next}).select().single());
+  }
+  return reply({row:r,directions,team_id:mem?.team_id||null});
  }
  if(b.action==='classq_load'||b.action==='classq_save'){
   const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);

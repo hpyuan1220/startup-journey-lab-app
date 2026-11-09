@@ -1995,3 +1995,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - tests/islands-student.mjs 29 ✅（新增 5 條：估價按鈕、兩錨點四區間、+5、卡片帶估價、公開價格公司無估價題）。islands.html 版本參數 v=20261109-est。
 - 2026-11-09 22:00：Week 7 建組規則、Week 8「接下來」、Week 9 藍圖三處仍寫「11/27 之後只有老師能改／13:00 起鎖定／15 家是非題」→ 統一改成「11/27 課堂確認分組；學生端開放到 12/19 00:00 才鎖定」與尋寶流程。
 - 2026-11-09 22:30：**Week 9 頁第一塊「我的組」**（week.html `#week-nine-materials`，`<div id="team9" data-team="9">`）：team.js 同一套掛 Week 7（data-team="7"）與 Week 9；Week 9 版標題「先確認我的組」，沒登入提示去首頁起點卡，沒組的人就在這裡建組／加入／想請老師分組，有組多一塊「進群島：開始尋寶 →」（三個方向沒認滿會提醒）。頁面另有 11/27 課堂流程、規則、接下來三週。tests/week8-student.mjs 加 2 條（22 ✅）。week6-student 的「沒有 JS 錯誤」在沙箱本來就紅（localStorage SecurityError，改前改後一樣），與此無關。
+- 2026-11-09 22:50：**群島進度存 Supabase ＋ 老師頁群島區**（需 Deploy，bundle sha 5b73e88b98d547a8；需跑 migration 20261109_islands_progress.sql）
+  - 表 islands_progress（class_id, student_id, data jsonb, version；一人一列；RLS 同 week_class_answers）。week2-api 新 action `islands_load`（回 row＋我在組裡認的 directions、team_id）／`islands_save`（整包 jsonb，伺服器為準，加 saved_at；格式錯 422、>200KB 422）；teacher_load 多回 `islands`。
+  - islands.js：登入學生每次 save() 700ms 後同步雲端，失敗 5 秒重試；進場先 islands_load（雲端 updated_at ≥ 本機就用雲端；本機較新就推上去）；方向還沒選就用組裡認的第一個；頁首顯示「學號 · 已存雲端／存檔中／沒存到雲端」。**沒登入：可逛島，按開箱被擋**（提示回首頁登入）。
+  - teacher-islands.js（教師洞察，建組區下面）：統計列（還沒登入過／登入了沒組／方向沒認滿的組／圈了候選／開過箱的人／開箱總數）、三個檢查塊、每人一列（組、認的方向、遊戲方向≠認領會標紅、候選、開過的箱與分數＋估價加分、第三題網址、探索／找碴、估價、最後存檔）、匯出 CSV（一人一箱一列）。
+  - teacher-team.js 欄名「一／二／三」→「方向一／二／三」（滑鼠停留有說明）。
+  - 測試：tests/islands-api.test.mjs 新（216 ✅）；tests/islands-student.mjs 改走 serve-acceptance 4261 登入學生，37 ✅（雲端同步、換電腦還原、沒登入被擋、老師頁列）。

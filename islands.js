@@ -1,6 +1,6 @@
-import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261109-est';
+import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261109-sync';
 // AI 新創群島・尋寶版（學生端）。流程：寶箱清單 → 找島 → 島上（店家／Irene／探索站）→ 三題 → 開箱。
-// 進度先存本機（localStorage，依學號分開）；正式版再加 island_save 存 Supabase。老師頁只看紀錄，不投影。
+// 進度：localStorage 當快取（依學號分開），登入的學生每次存檔同步到 Supabase（islands_save，伺服器為準）；老師頁只看紀錄，不投影。沒登入只能逛島，不能開箱。
 const root=document.getElementById('harbor'),$=s=>root.querySelector(s);
 let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const sid=session?.student_id||'guest';
@@ -10,7 +10,20 @@ let store={boxes:{},dir:null,candidates:[]};
 try{store={...store,...JSON.parse(localStorage.getItem(KEY)||'{}')};}catch{}
 if(!Array.isArray(store.candidates))store.candidates=[];
 const CAND_MAX=2;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}}
+const cfg=window.STARTUP_JOURNEY_CONFIG||{};
+async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/week2-api`,{method:'POST',headers:{apikey:cfg.supabaseAnonKey,'Content-Type':'application/json'},body:JSON.stringify({...body,token:session?.token})});const b=await r.json().catch(()=>({}));if(!r.ok){const e=Error(b.error||`連線失敗 ${r.status}`);e.status=r.status;throw e;}return b;}
+let syncTimer=null,syncState='';// '' | 'saving' | 'saved' | 'error'
+function setSync(st){syncState=st;const w=$('#who');if(!w)return;if(!session?.token){w.textContent='未登入：進度只在這台電腦，老師看不到；要開箱請先登入';w.className='who warn';return;}w.textContent=(session.student_id||'')+(st==='saving'?' · 存檔中…':st==='error'?' · 沒存到雲端，重試中':st==='saved'?' · 已存雲端':'');w.className='who'+(st==='error'?' warn':'');}
+async function syncNow(){if(!session?.token)return;clearTimeout(syncTimer);setSync('saving');try{await api({action:'islands_save',data:store});setSync('saved');}catch{setSync('error');syncTimer=setTimeout(syncNow,5000);}}
+function save(){store.updated_at=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}if(session?.token){clearTimeout(syncTimer);syncTimer=setTimeout(syncNow,700);}}
+async function loadRemote(){if(!session?.token)return;try{const r=await api({action:'islands_load'});const remote=r.row?.data;
+  if(remote&&typeof remote==='object'&&(!store.updated_at||!remote.updated_at||remote.updated_at>=store.updated_at)){store={boxes:{},dir:null,candidates:[],...remote};if(!Array.isArray(store.candidates))store.candidates=[];try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}}
+  else if(store.updated_at&&(!remote||!remote.updated_at||store.updated_at>remote.updated_at)&&Object.keys(store.boxes).length)syncNow();
+  // 方向：還沒選就用組裡認的（認兩個的人先用第一個）
+  if(!store.dir&&Array.isArray(r.directions)&&r.directions.length){store.dir=r.directions[0];}
+  myDir=Number(store.dir)||0;setSync('saved');}catch(e){setSync('error');}}
+const loggedIn=()=>!!session?.token;
+function needLogin(){say('teacher','Irene 老師','開箱要先登入。','沒登入的進度不會存，老師頁也看不到你開了哪一箱。逛島可以，開箱請先回首頁用學號和邀請碼進入，再回來。',[['回首頁登入',()=>{location.href='index.html';},true],['先逛島',renderBrowse,false],['回港口',renderHub,false]]);}
 let current=null;const box=()=>store.boxes[current]||(store.boxes[current]=freshBox());
 const company=()=>companyById(current);
 let busy=false,mode='hub',timer,walkingToken=0;
@@ -31,11 +44,11 @@ function refreshTop(){
  root.querySelectorAll('#steps [data-step]').forEach(x=>{const n=Number(x.dataset.step);x.classList.toggle('active',n===Math.min(stage,4));x.classList.toggle('done',n<stage);});
  $('#journey-loc').innerHTML=c?`<b>${dirById(c.dir).name.split('｜')[0]}</b>　${b.found?islandById(c.island).name+' › '+c.name:'線索卡 › 找島'}`:`<b>尋寶</b>　先選一個寶藏`;
  $('#box-score').textContent=(b?boxScore(b.scores):0)+'/30';$('#opened-count').textContent=openedCount();$('#bag-count').textContent=openedCount();
- $('#who').textContent=sid==='guest'?'未登入：進度只存這台裝置':'學號 '+sid;
+ setSync(syncState);
 }
 // 下一箱：先候選、再自己方向、再任何做好的箱
 function nextBox(){const ready=COMPANIES.filter(c=>c.ready!==false&&!store.boxes[c.id]?.opened);const cands=store.candidates.map(companyById).filter(Boolean);return cands.find(c=>ready.includes(c))||ready.find(c=>c.dir===myDir)||ready[0]||null;}
-function goBox(c){current=c.id;if(box().found)enterIsland();else renderFind();}
+function goBox(c){if(!loggedIn()){needLogin();return;}current=c.id;if(box().found)enterIsland();else renderFind();}
 // ---------- 視圖 1：寶箱清單 ----------
 function renderHub(){
  show('hub');current=null;refreshTop();closeOverlay();
@@ -50,7 +63,7 @@ function renderHub(){
  }else{
   const candLine=cands.length?`\n你的候選（${cands.length}／${CAND_MAX}）：${cands.map(c=>c.name).join('、')}。`:'\n你還沒圈候選：先去「逛島」，在自己方向圈 2 家，再開箱。';
   say('teacher','Irene 老師 · 港口','怎麼玩：先逛島圈候選，再開箱。','① 逛島：到你方向那一區看看每座島住哪些公司，圈 2 家候選。\n② 開箱：一箱＝一家公司，讀線索找島、聽故事、答三題，開箱拿七格卡。\n③ 開完選 1 家當「方向代表」交給組；三個人湊 3 家，期末講 1 家。'+candLine,
-   [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:'開箱：'+(cands.includes(next)?next.name:'第 '+(COMPANIES.indexOf(next)+1)+' 箱'),()=>{current=next.id;if(box().found)enterIsland();else renderFind();},!!cands.length]]:[]),
+   [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:'開箱：'+(cands.includes(next)?next.name:'第 '+(COMPANIES.indexOf(next)+1)+' 箱'),()=>goBox(next),!!cands.length]]:[]),
     ['換方向',()=>{myDir=0;store.dir=0;save();renderHub();},false]]);
  }
  $('#dir-tabs').hidden=true;
@@ -66,7 +79,7 @@ function renderHub(){
    el('span',b?.opened?'已開箱 '+boxScore(b.scores)+'/30'+bonus(b):ready?(b?.found?'研究中':'可以玩'):'準備中',head,'badge'+(b?.opened?' gold':ready?' go':''));
    const ul=el('ul','',card,'clue-list');for(const k of c.clues)el('li',k,ul);
    const foot=el('div','',card,'t-foot');el('small',islandById(c.island)?dirById(c.dir).short:'',foot);
-   const go=btn(b?.opened?'再看這一箱':b?.found?'回到島上':'出發找島 →',()=>{current=c.id;if(box().found)enterIsland();else renderFind();},!b?.opened);go.disabled=!ready;foot.append(go);
+   const go=btn(b?.opened?'再看這一箱':b?.found?'回到島上':'出發找島 →',()=>goBox(c),!b?.opened);go.disabled=!ready;foot.append(go);
   }
  };
  // 先列可以玩的；準備中的按三個方向分段收起
@@ -115,7 +128,7 @@ function browseIsland(id){
    save();browseIsland(id);},isC);
   if(!mine&&!isC)star.disabled=true;
   row.append(star);
-  if(c.ready!==false){row.append(btn(b?.opened?'再看這一箱':'開這一箱 →',()=>{current=c.id;if(box().found)enterIsland();else renderFind();}));}
+  if(c.ready!==false){row.append(btn(b?.opened?'再看這一箱':'開這一箱 →',()=>goBox(c)));}
  }
  el('div','',ov,'choices').append(btn('回海圖',renderBrowse),btn('回港口，開始開箱',renderHub,true));
  refreshTop();
@@ -271,4 +284,4 @@ $('#btn-quiz').addEventListener('click',quiz);$('#chest').addEventListener('clic
 $('#btn-hub').addEventListener('click',renderHub);$('#btn-bag').addEventListener('click',showBag);
 $('#btn-reset').addEventListener('click',()=>{if(!current){toast('先選一個寶箱。');return;}const ov=overlay('重設這一箱？');el('p','會清掉這一箱的找島、三題、探索筆記（其他寶箱不動）。',ov,'fine');el('div','',ov,'choices').append(btn('確定重設',()=>{delete store.boxes[current];save();renderFind();},true),btn('保留',closeOverlay));});
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
-renderHub();
+(async()=>{setSync('');await loadRemote();renderHub();})();

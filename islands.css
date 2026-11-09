@@ -70,3 +70,5 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 #harbor .overlay{border-top:0;padding:16px 22px}
 #harbor:has(#overlay:not([hidden])) #dialogue{display:none}
 @media(max-width:650px){.scene{position:sticky;top:0;z-index:20;box-shadow:0 6px 18px #10303040}}
+
+.who{margin-left:auto;font-size:12px;opacity:.8}.who.warn{color:#8a3b2a;opacity:1;font-weight:600}

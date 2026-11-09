@@ -54,7 +54,7 @@ function render(){
    const cus=el('input','',card);cus.type='text';cus.placeholder='自填產業';cus.value=t.industry?.custom||'';cus.hidden=cur!=='custom';cus.setAttribute('aria-label','自填產業');
    const saveInd=()=>{const v=sel.value;cus.hidden=v!=='custom';if(v==='custom'&&!cus.value.trim()){cus.focus();return;}op(c,{op:'industry',team_id:t.id,industry:v===''?{card:null}:v==='custom'?{card:'custom',custom:cus.value}:{card:Number(v)}},'產業線已改。');};
    sel.addEventListener('change',saveInd);cus.addEventListener('change',saveInd);
-   const table=el('table','',card,'tm-table');const tr=el('tr','',el('thead','',table));for(const x of ['組員','一','二','三','Week 4 產業',''])el('th',x,tr);
+   const table=el('table','',card,'tm-table');const tr=el('tr','',el('thead','',table));for(const x of ['組員','方向一','方向二','方向三','Week 4 產業','']){const th=el('th',x,tr);const d=DIRECTIONS.find(dd=>dd[1].startsWith(x));if(d)th.title=d[1]+'：'+d[2];}
    const tb=el('tbody','',table);
    for(const m of sm.members){
     const r=el('tr','',tb);el('td',m.student_id+(nameOf(m.student_id)?'　'+nameOf(m.student_id):''),r);

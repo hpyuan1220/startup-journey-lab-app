@@ -1,11 +1,13 @@
-// AI 新創群島尋寶版 真瀏覽器測試（自帶靜態伺服器 4299）：node tests/islands-student.mjs
+// AI 新創群島尋寶版 真瀏覽器測試（登入學生＋雲端同步）。先啟動：SJL_WRITE_OPEN_AT=2000-01-01T00:00:00Z PORT=4261 node tests/serve-acceptance.mjs
 import pw from '/home/claude/node_modules/playwright/index.js';const {chromium}=pw;
-import http from 'node:http';import fs from 'node:fs';import path from 'node:path';
-const ROOT=process.argv[2]||new URL("..",import.meta.url).pathname;const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml'};
-const srv=http.createServer((req,res)=>{const f=path.join(ROOT,decodeURIComponent(req.url.split('?')[0]));fs.readFile(f,(e,d)=>{if(e){res.writeHead(404);res.end();return;}res.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream'});res.end(d);});}).listen(4299);
-const b=await chromium.launch();const p=await b.newPage({viewport:{width:900,height:1200}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text());});
+const BASE=process.env.BASE||'http://127.0.0.1:4261';const SID='A1139900'+String(Date.now()%100).padStart(2,'0');
+const post=(path,body)=>fetch(`${BASE}/functions/v1/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(async r=>({status:r.status,...(await r.json())}));
+const TOKEN=(await post('Student-api',{action:'login',student_id:SID,invite_code:'GOOD-CODE',confirm_new:true})).token;
+const b=await chromium.launch();const errs=[];
+const ctx=await b.newContext({viewport:{width:900,height:1200}});await ctx.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));},[TOKEN,SID]);
+const p=await ctx.newPage();p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text());});
 const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d).slice(0,200):''));
-await p.goto('http://127.0.0.1:4299/islands.html');await p.waitForTimeout(800);
+await p.goto(`${BASE}/islands.html`);await p.waitForTimeout(1200);
 ok('港口第一次：Irene 先問方向，三個選項',await p.evaluate(()=>/哪個方向/.test(document.querySelector('#d-title').textContent)&&document.querySelectorAll('#choices .ui').length===3));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方向二/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、清單 15 箱按三個方向分段',await p.evaluate(()=>/先逛島圈候選/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/逛島/.test(b.textContent))&&document.querySelectorAll('.treasure').length===15&&document.querySelectorAll('.t-section').length===3));
@@ -60,8 +62,22 @@ await p.reload();await p.waitForTimeout(800);
 ok('重整：清單顯示 Owner 已開箱 27/30、情報袋 1',await p.evaluate(()=>/已開箱 27\/30/.test(document.querySelector('.treasure.opened')?.textContent||'')&&document.querySelector('#bag-count').textContent==='1'));
 await p.click('#btn-bag');await p.waitForTimeout(200);
 ok('情報袋有 Owner 七格',await p.evaluate(()=>document.querySelectorAll('#overlay .facts dt').length>=7));
+// 雲端同步：伺服器有這個學生的進度（Owner 已開箱、方向二、候選 2）
+await p.waitForTimeout(1200);
+const cloud=await post('week2-api',{action:'islands_load',token:TOKEN});
+ok('islands_load：伺服器有進度，Owner opened、dir 2、候選 2、估價欄位在',cloud.status===200&&cloud.row?.data?.boxes?.owner?.opened===true&&cloud.row.data.dir===2&&cloud.row.data.candidates.length===2&&'est' in cloud.row.data.boxes.owner,{status:cloud.status,keys:Object.keys(cloud.row?.data||{})});
+ok('頁首顯示學號＋已存雲端',await p.evaluate(()=>/已存雲端/.test(document.querySelector('#who').textContent)));
+// 換一台電腦（新 context、空 localStorage）：進度從雲端回來
+const ctx2=await b.newContext();await ctx2.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));},[TOKEN,SID]);const q=await ctx2.newPage();await q.goto(`${BASE}/islands.html`);await q.waitForTimeout(1500);
+ok('另一台電腦登入：清單顯示 Owner 已開箱、情報袋 1',await q.evaluate(()=>/已開箱 27\/30/.test(document.querySelector('.treasure.opened')?.textContent||'')&&document.querySelector('#bag-count').textContent==='1'));await ctx2.close();
+// 沒登入：可逛島，不能開箱
+const g=await b.newPage();await g.goto(`${BASE}/islands.html`);await g.waitForTimeout(1000);
+await g.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方向一/.test(b.textContent)).click());await g.waitForTimeout(300);
+ok('沒登入：頁首警示、港口可逛島',await g.evaluate(()=>/未登入/.test(document.querySelector('#who').textContent)&&[...document.querySelectorAll('#choices .ui')].some(b=>/逛島/.test(b.textContent))));
+await g.evaluate(()=>[...document.querySelectorAll('.treasure .ui')].find(b=>/出發找島/.test(b.textContent)).click());await g.waitForTimeout(300);
+ok('沒登入按開箱：被擋、提示回首頁登入',await g.evaluate(()=>/開箱要先登入/.test(document.querySelector('#d-title').textContent)&&document.querySelector('#view-find').hidden));await g.close();
 // 估價題（Palona 不公開價格）：預先寫入三題全過的進度，驗證 Irene 加碼、+5、七格卡「怎麼收費」帶估價
-await p.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('sjl-islands:'));const st=JSON.parse(localStorage.getItem(k));st.boxes.palona={found:true,wrong:[],hints:0,clues:['shop','house'],attempts:[1,1,1],scores:[10,10,10],passed:3,url:'https://palona.ai',deep:false,insight:'',argue:'',opened:false,at:null,est:'',estOk:null};localStorage.setItem(k,JSON.stringify(st));});
+await p.evaluate(()=>{const k=Object.keys(localStorage).find(k=>k.startsWith('sjl-islands:'));const st=JSON.parse(localStorage.getItem(k));st.boxes.palona={found:true,wrong:[],hints:0,clues:['shop','house'],attempts:[1,1,1],scores:[10,10,10],passed:3,url:'https://palona.ai',deep:false,insight:'',argue:'',opened:false,at:null,est:'',estOk:null};st.updated_at=new Date(Date.now()+1000).toISOString();localStorage.setItem(k,JSON.stringify(st));});
 await p.reload();await p.waitForTimeout(800);
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/繼續：Palona/.test(b.textContent)).click());await p.waitForTimeout(600);
 ok('三題全過進島：Irene 提供估價加分按鈕',await p.evaluate(()=>document.querySelector('#chapter-title').textContent==='Palona'&&[...document.querySelectorAll('#choices .ui')].some(b=>/估價加分/.test(b.textContent))));
@@ -72,5 +88,12 @@ ok('選 B 答對：Irene 說估得準 +5',await p.evaluate(()=>/估得準/.test(
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/去開寶箱/.test(b.textContent)).click());await p.waitForTimeout(2500);
 ok('Palona 開箱：怎麼收費帶「我的估價」與 +5、任務列顯示 +5',await p.evaluate(()=>/我的估價：3,000–1.5 萬（\+5）/.test(document.querySelectorAll('#overlay .facts dd')[1].textContent)&&/\+5/.test(document.querySelector('#mission').textContent)));
 ok('Owner 公開價格：沒有估價題',await p.evaluate(()=>!document.querySelector('#overlay').textContent.includes('估價加分')));
+// 老師頁群島區：三個檢查塊、每人一列（這個學生：Owner 27/30、Palona 30/30 +5、候選、網址、估價）
+const tp=await b.newPage();tp.on('pageerror',e=>errs.push('T:'+String(e)));await tp.addInitScript(()=>{sessionStorage.setItem('sjl-teacher-token','teacher-token');});
+await tp.goto(`${BASE}/index.html#teacher`);await tp.waitForTimeout(800);await tp.evaluate(()=>{document.getElementById('teacher-dashboard').hidden=false;});await tp.waitForTimeout(2500);
+const tv=await tp.evaluate((sid)=>{const s=document.querySelector('#teacher-islands');const row=[...s.querySelectorAll('tbody tr')].find(r=>r.children[0].textContent===sid);const cells=row?[...row.children].map(c=>c.innerText):[];return {has:!!s,checks:s.querySelectorAll('.ti-check').length,stats:s.querySelector('.tw4-live')?.innerText.replace(/\s+/g,' '),cells,th:[...document.querySelectorAll('#teacher-team th')].map(x=>x.textContent)};},SID);
+ok('老師頁群島區：三個檢查塊、統計列',tv.has&&tv.checks===3&&/開箱總數/.test(tv.stats),tv.stats);
+ok('這個學生那一列：方向二、候選 Owner、Palona、Owner 27/30、Palona 30/30 +5、網址、估價 ✓',/方向二/.test(tv.cells[4])&&/Owner、Palona/.test(tv.cells[5])&&/Owner 27\/30/.test(tv.cells[6])&&/Palona 30\/30 \+5/.test(tv.cells[6])&&/Owner/.test(tv.cells[7])&&/Palona：3,000–1.5 萬 ✓/.test(tv.cells[9]),tv.cells);
+import fs from 'node:fs';ok('老師頁建組表欄名改成方向一／二／三（來源檔）',/\['組員','方向一','方向二','方向三','Week 4 產業',''\]/.test(fs.readFileSync(new URL('../teacher-team.js',import.meta.url),'utf8')));await tp.close();
 ok('沒有 JS 錯誤',errs.length===0,errs);
-await b.close();srv.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);
+await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);
