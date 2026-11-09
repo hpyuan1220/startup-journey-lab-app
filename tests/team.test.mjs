@@ -7,7 +7,7 @@ test('team-core：組碼 4 碼無 I/O/0/1、鎖定時間、摘要缺什麼、產
  for(let i=0;i<50;i++){const c=makeCode();assert.match(c,/^[A-HJ-NP-Z2-9]{4}$/);}
  assert.equal(normalizeCode(' ab-c9 '),'ABC9');
  assert.equal(teamLocked(null,Date.parse('2026-11-20T06:00:00Z')),false);
- assert.equal(teamLocked(null,Date.parse(TEAM_LOCK_AT)),true);
+ assert.equal(TEAM_LOCK_AT,'2026-12-19T00:00:00+08:00','期末後才鎖');assert.equal(teamLocked(null,Date.parse('2026-11-27T06:00:00Z')),false,'11/27 還不鎖');assert.equal(teamLocked(null,Date.parse(TEAM_LOCK_AT)),true);
  assert.equal(teamLocked({locked:true},Date.parse('2026-11-20T06:00:00Z')),true);
  const team={id:'t1',industry:{card:null,custom:''}};
  const ms=[{team_id:'t1',student_id:'S1',directions:[1]},{team_id:'t1',student_id:'S2',directions:[]},{team_id:'t2',student_id:'S9',directions:[2]}];

@@ -2,7 +2,7 @@ import {INDUSTRY_CARDS} from './week4-core.mjs?v=20261106-tm';
 import {DIRECTIONS,directionName,industryLabel,teamSummary,industryOptions,normalizeDirections,TEAM_LOCK_LABEL,TEAM_MAX,TEAM_MIN} from './team-core.mjs?v=20261106-tm';
 // Week 7 建組（學生端）：掛在 Week 7 期中報告頁最下面（#team）。
 // 沒有組：建組（拿四碼組碼）／輸入組碼加入／按「想請老師分組」。有組：組名與組碼、組員與各自認的方向、組的產業線（從組員 Week 4 選的產業挑）、離開。
-// 11/27 13:00 後鎖定，只有老師能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。
+// 12/19（期末後）才自動鎖；老師在老師頁鎖住的組也不能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。
 const root=document.querySelector('[data-team]');
 if(root&&new URLSearchParams(location.search).get('week')==='7'){
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
@@ -11,7 +11,7 @@ const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(tex
 const sec=el('section','',root,'w4 tm');
 el('p','WEEK 7 · 建組',sec,'eyebrow');
 el('h2','建組：三人一組、三個方向各認一人',sec);
-el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。每人認領一個方向（兩人組一人認兩個），下半學期各自研究那個方向的 AI 新創，期末全組選一家上台。組的產業線選填。${TEAM_LOCK_LABEL} 前都可以改；之後只有老師能改。還沒找到組的人按「想請老師分組」。`,sec,'w4-hint');
+el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。每人認領一個方向（兩人組一人認兩個），下半學期各自研究那個方向的 AI 新創，期末全組選一家上台。組的產業線選填。整學期都可以改（${TEAM_LOCK_LABEL} 期末後鎖定）；還沒找到組的人按「想請老師分組」，老師會在課堂上幫你分。`,sec,'w4-hint');
 const msg=el('p','',sec,'w4-msg');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const body=el('div','',sec);
 let st=null;
@@ -23,7 +23,7 @@ function render(){
  if(!st)return;
  const {team,members,me,locked,names,week4}=st;
  if(!team){
-  if(locked){el('p',`建組已經鎖定（${TEAM_LOCK_LABEL} 後）。你還沒有組：請直接找老師。`,body,'w4-lock');return;}
+  if(locked){el('p','建組已鎖定。你還沒有組：請直接找老師。',body,'w4-lock');return;}
   const grid=el('div','',body,'tm-grid');
   const c1=el('div','',grid,'tm-card');el('h3','我是組長：建一組',c1);const nameIn=el('input','',c1);nameIn.type='text';nameIn.maxLength=30;nameIn.placeholder='組名（例：火鍋隊）';nameIn.setAttribute('aria-label','組名');
   const cb=el('button','建一組、拿組碼',c1,'primary-link');cb.type='button';cb.addEventListener('click',()=>run({action:'team_create',name:nameIn.value},'建好了：把組碼給組員。'));
@@ -37,7 +37,7 @@ function render(){
  const head=el('div','',body,'tm-team');
  const h=el('div','',head,'tm-team-head');el('b',team.name,h);const code=el('span','',h,'tm-code');code.textContent='組碼 '+team.code;code.title='給組員輸入這四碼加入';
  el('span',`${sm.count}／${TEAM_MAX} 人${sm.full?'（已滿）':''}`,h,'w4-hint');
- if(locked)el('p',`已鎖定（${team.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}）：要改請找老師。`,head,'w4-lock');
+ if(locked)el('p',`已鎖定（${team.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 期末後'}）：要改請找老師。`,head,'w4-lock');
  // 產業線
  const indBox=el('div','',body,'tm-block');el('h3','組的產業線（選填）',indBox);
  const opts=industryOptions(members,week4);

@@ -1,10 +1,10 @@
 // Week 8 建組：共用規則（瀏覽器與 Edge Function 都用）。
 // 組：3 人為主、最少 2 人、最多 3 人；三個方向各由一人認領（兩人組一人認兩個）；組的產業線選填（2026-11-08 起不綁）。
-// 11/27 13:00 前學生可自己建組／加入／離開／改產業／認方向；之後只有老師能改。老師也可以提前鎖住某一組或全部。
+// 建組一路開放到期末結束：2026-12-19 00:00 才自動鎖（老師 2026-11-09 定）；老師隨時可提前鎖某一組或全部。
 import {cardById} from './week4-core.mjs';
 export const TEAM_MAX=3,TEAM_MIN=2;
-export const TEAM_LOCK_AT='2026-11-27T13:00:00+08:00';
-export const TEAM_LOCK_LABEL='11/27 13:00';
+export const TEAM_LOCK_AT='2026-12-19T00:00:00+08:00';
+export const TEAM_LOCK_LABEL='12/19';
 export const DIRECTIONS=[[1,'方向一｜Agent 經濟基礎設施','賣鏟子：協定、授權、監控、結算，賣給做 Agent 的公司'],[2,'方向二｜AI 原生服務','賣做完的結果：按件收費，搶的是老闆的人力預算'],[3,'方向三｜AI 進入實體世界','感測器進、派工出：讓現場的人與機器動起來']];
 export const directionName=n=>(DIRECTIONS.find(d=>d[0]===Number(n))||[])[1]||'';
 const CODE_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉 I／O／0／1
@@ -15,7 +15,7 @@ export function normalizeIndustry(input){const i=input&&typeof input==='object'?
 export const industryLabel=ind=>ind?.card==='custom'?(ind.custom||'（自填）'):(cardById(ind?.card)?.name||'');
 export function normalizeDirections(arr){const out=[...new Set((Array.isArray(arr)?arr:[]).map(Number).filter(n=>[1,2,3].includes(n)))].sort();return out;}
 /** 學生還能不能改：過了鎖定時間、或老師鎖了這一組，就不能 */
-export function teamLocked(team,now=Date.now(),lockAt=TEAM_LOCK_AT){if(team?.locked)return true;const t=Date.parse(lockAt);return Number.isFinite(t)&&now>=t;}
+export function teamLocked(team,now=Date.now(),lockAt=TEAM_LOCK_AT){if(team?.locked)return true;if(!lockAt)return false;const t=Date.parse(lockAt);return Number.isFinite(t)&&now>=t;}
 /** 一組的狀態摘要：人數、產業、三個方向各由誰認、缺什麼 */
 export function teamSummary(team,members){
  const ms=(members||[]).filter(m=>m.team_id===team.id);

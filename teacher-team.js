@@ -7,7 +7,7 @@ if(dashboard){
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 const root=document.createElement('section');root.id='teacher-team';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
 el('h2','Week 7 建組：組別、產業線、方向認領（下半學期分組）',root);
-el('p',`學生自己建組、加入、選產業、認方向；${TEAM_LOCK_LABEL} 後學生不能改，你在這裡隨時可以改。「還沒有組」名單裡標「想請老師分組」的人，用每組的「加人」下拉指定進組。`,root,'tw2-intro');
+el('p',`學生自己建組、加入、認方向，整學期開放到 ${TEAM_LOCK_LABEL}（期末後）才自動鎖；你要提前定組時按「鎖定」（單組或全部），鎖了學生就不能改、你還是可以。「還沒有組」名單裡標「想請老師分組」的人，用每組的「加人」下拉指定進組。`,root,'tw2-intro');
 const status=el('p','',root);status.setAttribute('role','status');
 const bar=el('div','',root,'w4-row');
 const reloadBtn=el('button','重新載入建組',bar,'quiet');reloadBtn.type='button';
