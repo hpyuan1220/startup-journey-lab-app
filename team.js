@@ -3,14 +3,17 @@ import {DIRECTIONS,directionName,industryLabel,teamSummary,industryOptions,norma
 // Week 7 建組（學生端）：掛在 Week 7 期中報告頁最下面（#team）。
 // 沒有組：建組（拿四碼組碼）／輸入組碼加入／按「想請老師分組」。有組：組名與組碼、組員與各自認的方向、組的產業線（從組員 Week 4 選的產業挑）、離開。
 // 12/19（期末後）才自動鎖；老師在老師頁鎖住的組也不能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。
-const root=document.querySelector('[data-team]');
-if(root&&new URLSearchParams(location.search).get('week')==='7'){
+// Week 9 頁第一塊也掛同一套（data-team="9"）：標題改成「先確認我的組」，有組的人多一個「進群島」按鈕。
+const WEEK=new URLSearchParams(location.search).get('week');
+const root=document.querySelector(`[data-team="${WEEK}"]`);
+if(root&&(WEEK==='7'||WEEK==='9')){
+const W9=WEEK==='9';
 const cfg=window.STARTUP_JOURNEY_CONFIG||{};
 let session;try{session=JSON.parse(localStorage.getItem('sjl-student-session')||'null');}catch{}
 const el=(tag,text,parent=root,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 const sec=el('section','',root,'w4 tm');
-el('p','WEEK 7 · 建組',sec,'eyebrow');
-el('h2','建組：三人一組、三個方向各認一人',sec);
+el('p',W9?'WEEK 9 · 先確認我的組':'WEEK 7 · 建組',sec,'eyebrow');
+el('h2',W9?'我的組與方向':'建組：三人一組、三個方向各認一人',sec);
 el('p',`自己找組員（${TEAM_MIN}–${TEAM_MAX} 人）：組長按「建一組」拿到四碼組碼，組員輸入組碼加入。每人認領一個方向（兩人組一人認兩個），下半學期各自研究那個方向的 AI 新創，期末全組選一家上台。組的產業線選填。整學期都可以改（${TEAM_LOCK_LABEL} 期末後鎖定）；還沒找到組的人按「想請老師分組」，老師會在課堂上幫你分。`,sec,'w4-hint');
 const msg=el('p','',sec,'w4-msg');msg.setAttribute('role','status');msg.setAttribute('aria-live','polite');
 const body=el('div','',sec);
@@ -19,7 +22,7 @@ async function api(body){const r=await fetch(`${cfg.supabaseUrl}/functions/v1/we
 async function run(body,okText){msg.textContent='處理中…';try{st=await api(body);render();msg.textContent=okText||'';}catch(e){msg.textContent=e.message;render();}}
 function render(){
  body.replaceChildren();
- if(!session?.token){el('p','先用學號和邀請碼進入，才能建組。',body,'w4-hint');return;}
+ if(!session?.token){el('p',W9?'先用學號和邀請碼進入（首頁「學生起點卡」），才看得到你的組、才能進群島。':'先用學號和邀請碼進入，才能建組。',body,'w4-hint');return;}
  if(!st)return;
  const {team,members,me,locked,names,week4}=st;
  if(!team){
@@ -73,6 +76,7 @@ function render(){
  const stBox=el('div','',body,'w4-done');stBox.dataset.state=sm.complete?'done':'todo';
  el('p',sm.complete?'✅ 這一組建好了：三個方向都有人認。':'還沒完成：',stBox,'w4-done-title');
  if(!sm.complete){const ul=el('ul','',stBox);for(const x of sm.missing)el('li',x,ul);}
+ if(W9){const go=el('div','',body,'tm-go');const a=el('a','進群島：開始尋寶 →',go,'primary-link');a.href='islands.html';el('p',sm.complete?'組建好了。到群島選你認的方向，逛島圈 2 家候選、開 2 箱。':'可以先進群島；三個方向沒認滿，期末框架會拿不到，記得回來補。',go,'w4-hint');}
  if(!locked){const lb=el('button','離開這一組',body,'button-link w4-small');lb.type='button';let armed=false;lb.addEventListener('click',()=>{if(!armed){armed=true;lb.textContent='再按一次確認離開';setTimeout(()=>{armed=false;lb.textContent='離開這一組';},4000);return;}run({action:'team_leave'},'已離開。');});}
 }
 async function load(){if(!session?.token){render();return;}msg.textContent='正在讀取建組…';try{st=await api({action:'team_load'});msg.textContent='';}catch(e){msg.textContent=e.message;}render();}

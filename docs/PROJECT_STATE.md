@@ -1994,3 +1994,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - islands.js：第三題答對後 Irene 加碼「估價加分 +5／直接開寶箱」；`estimateForm` 四選一，答對 +5（記在 box.est／estOk，不影響開箱、不進 30 分）；開箱卡與情報袋「怎麼收費」自動帶學生估價（答對加「（+5）」）；任務列／清單顯示「已開箱 27/30 +5」。Arcade、Owner 等公開價格的 6 家沒有估價題。
 - tests/islands-student.mjs 29 ✅（新增 5 條：估價按鈕、兩錨點四區間、+5、卡片帶估價、公開價格公司無估價題）。islands.html 版本參數 v=20261109-est。
 - 2026-11-09 22:00：Week 7 建組規則、Week 8「接下來」、Week 9 藍圖三處仍寫「11/27 之後只有老師能改／13:00 起鎖定／15 家是非題」→ 統一改成「11/27 課堂確認分組；學生端開放到 12/19 00:00 才鎖定」與尋寶流程。
+- 2026-11-09 22:30：**Week 9 頁第一塊「我的組」**（week.html `#week-nine-materials`，`<div id="team9" data-team="9">`）：team.js 同一套掛 Week 7（data-team="7"）與 Week 9；Week 9 版標題「先確認我的組」，沒登入提示去首頁起點卡，沒組的人就在這裡建組／加入／想請老師分組，有組多一塊「進群島：開始尋寶 →」（三個方向沒認滿會提醒）。頁面另有 11/27 課堂流程、規則、接下來三週。tests/week8-student.mjs 加 2 條（22 ✅）。week6-student 的「沒有 JS 錯誤」在沙箱本來就紅（localStorage SecurityError，改前改後一樣），與此無關。

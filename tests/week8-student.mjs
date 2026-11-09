@@ -42,6 +42,11 @@ const ind=await post('week2-api',{action:'team_industry',industry:{card:3},token
 ok('組的產業線存成卡 3',ind.status===200&&ind.team.industry.card===3,ind.team?.industry);
 await p.reload();await p.waitForTimeout(1500);
 ok('學生 1 重整：組建好了（✅）',await p.evaluate(()=>document.querySelector('#team .w4-done')?.dataset.state==='done'));
+// Week 9 頁第一塊：我的組 + 進群島
+await p.goto(`${BASE}/week.html?week=9`);await p.waitForTimeout(1500);
+ok('Week 9 頁：Week 9 教材顯示、Week 7 教材藏、「我的組」顯示同一組、有「進群島」連結',await p.evaluate(()=>!document.querySelector('#week-nine-materials').hidden&&document.querySelector('#week-seven-materials').hidden&&/火鍋隊/.test(document.querySelector('#team9 .tm-team-head b')?.textContent||'')&&/islands\.html/.test(document.querySelector('#team9 .tm-go a')?.getAttribute('href')||'')&&/先確認我的組/.test(document.querySelector('#team9 .eyebrow').textContent)));
+const p0=await b.newPage();await p0.goto(`${BASE}/week.html?week=9`);await p0.waitForTimeout(1200);
+ok('Week 9 沒登入：提示先進入、沒有進群島',await p0.evaluate(()=>/先用學號和邀請碼進入/.test(document.querySelector('#team9').innerText)&&!document.querySelector('#team9 .tm-go')));await p0.close();
 // ---- 學生 3、4 ----
 const j3=await post('week2-api',{action:'team_join',code,token:T[S3]});
 const j4=await post('week2-api',{action:'team_join',code,token:T[S4]});
@@ -65,7 +70,7 @@ ok('老師把學生 4 指定進「老師組」：學生端看到組、想分組�
 await tp.evaluate(()=>[...document.querySelectorAll('#teacher-team button')].find(x=>x.textContent==='鎖定全部').click());await tp.waitForTimeout(900);
 const lk=await post('week2-api',{action:'team_leave',token:T[S4]});
 ok('鎖定全部後：學生不能離開（API 擋）',lk.status>=400,lk);
-await p.reload();await p.waitForTimeout(1500);
+await p.goto(`${BASE}/week.html?week=7#team`);await p.waitForTimeout(1500);
 ok('學生 1 重整：顯示已鎖定、沒有離開按鈕',await p.evaluate(()=>/已鎖定/.test(document.querySelector('#team .w4-lock')?.textContent||'')&&![...document.querySelectorAll('#team button')].some(x=>/離開這一組/.test(x.textContent))));
 // Week 6 不受影響
 await p.goto(`${BASE}/week.html?week=6#card`);await p.waitForTimeout(1200);

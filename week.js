@@ -48,6 +48,7 @@ const w5m=document.querySelector("#week-five-materials"); if(w5m) w5m.hidden=n!=
 const w6m=document.querySelector("#week-six-materials"); if(w6m) w6m.hidden=n!==6;
 const w7m=document.querySelector("#week-seven-materials"); if(w7m) w7m.hidden=n!==7;
 const w8m=document.querySelector("#week-eight-materials"); if(w8m) w8m.hidden=n!==8;
+const w9m=document.querySelector("#week-nine-materials"); if(w9m) w9m.hidden=n!==9;
 // Week 6（11/5 起）有自己的課堂兩題頁（classq.js），跟 Week 2–5 一樣走下面的「學習藍圖／作答頁」切換。
 
 // Switch views without rebuilding the form: unsaved answers remain in memory.
