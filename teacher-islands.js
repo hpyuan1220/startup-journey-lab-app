@@ -16,7 +16,8 @@ const csvBtn=el('button','匯出群島 CSV',bar,'quiet');csvBtn.type='button';
 const body=el('div','',root);
 let data=null;
 async function call(b,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(b,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
-async function load(){status.textContent='正在載入群島…';try{data=await call({action:'teacher_load'});render();status.textContent='';}catch(e){status.textContent=e.message;}}
+let tries=0;
+async function load(){status.textContent='正在載入群島…';try{data=await call({action:'teacher_load'});render();status.textContent='';}catch(e){status.textContent=e.message;if(!data&&tries++<2)setTimeout(load,2500);}}// 老師剛登入時 token 可能還在換新，失敗就隔 2.5 秒再試兩次
 reloadBtn.addEventListener('click',load);
 const dirShort=id=>DIRECTIONS.find(d=>d.id===id)?.name.split('｜')[0]||'';
 function rows(c){
