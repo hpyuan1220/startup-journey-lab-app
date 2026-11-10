@@ -2002,3 +2002,11 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - teacher-team.js 欄名「一／二／三」→「方向一／二／三」（滑鼠停留有說明）。
   - 測試：tests/islands-api.test.mjs 新（216 ✅）；tests/islands-student.mjs 改走 serve-acceptance 4261 登入學生，37 ✅（雲端同步、換電腦還原、沒登入被擋、老師頁列）。
 - 2026-11-10 22:05：教師洞察區塊順序固定（teacher-fold.mjs 的 ORDER：群島 → Week 8 → Week 7 期中評分 → Week 7 建組 → 6 → 5 → 4 → 2 → 1，最新在上，不再看各模組載入先後）；建組、群島兩區也有收合鈕。teacher-islands 第一次載入若遇 token 還在換新而失敗，2.5 秒後自動重試兩次（老師原本看到「請重新登入教師帳號」要手動按重新載入）。
+- 2026-11-10 22:20：**方向代表 → 組卡三格 → 公司卡 v1**（需 Deploy，bundle sha a14ebb51613e8348；需跑 migration 20261110_team_reps.sql）
+  - islands-core.mjs 新（前端與 Edge 共用）：公司→島→方向、公司名、normalizeReps、teamReps；有測試比對 islands-data.mjs。team_members 加 `reps jsonb`（{方向:公司}）。
+  - week2-api 新 action `team_rep {direction, company|null}`：要在組、方向是我認的、公司在該方向、而且 islands_progress 裡那箱已開；islands_load 多回 reps。鎖定文字改用 TEAM_LOCK_LABEL（原寫死 11/27 13:00）。
+  - islands.js 情報袋：每張開過的卡有「設為我的代表（方向 N）」（只對我認的方向、有組才出現；同方向一次一家，可換可取消）；底部摘要「我的代表：…／還缺」。
+  - team.js Week 9 組卡多一塊「組的三家：方向代表」三格（誰研究、還沒設的提示）、N／3 家。
+  - company-card.js 新（Week 9 頁 `#company-card`）：每個代表一張公司卡 v1——七格（含估價）、探索／找碴、來源①＝第三題網址＋補兩個（網址驗證）、一句話「為什麼是好新創」、複製整張；存 islands_progress.data.cards[公司]（先 islands_load 再 save，不蓋遊戲進度）；三個來源＋一句話＝完成。
+  - teacher-islands.js：統計多「三家到齊的組」、檢查塊 ④ 代表三家還沒到齊、每列多「代表／公司卡」欄（來源 n/3、一句話）、CSV 多代表欄。
+  - 測試：islands-api.test.mjs（core 一致性、team_rep 流程）218 ✅；islands-student.mjs 46 ✅。

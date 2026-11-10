@@ -88,12 +88,32 @@ ok('選 B 答對：Irene 說估得準 +5',await p.evaluate(()=>/估得準/.test(
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/去開寶箱/.test(b.textContent)).click());await p.waitForTimeout(2500);
 ok('Palona 開箱：怎麼收費帶「我的估價」與 +5、任務列顯示 +5',await p.evaluate(()=>/我的估價：3,000–1.5 萬（\+5）/.test(document.querySelectorAll('#overlay .facts dd')[1].textContent)&&/\+5/.test(document.querySelector('#mission').textContent)));
 ok('Owner 公開價格：沒有估價題',await p.evaluate(()=>!document.querySelector('#overlay').textContent.includes('估價加分')));
+// 設為我的代表：沒組→提示；建組認方向二→情報袋 Owner 有按鈕→按→確認→✓；Week 9 頁組卡三格＋公司卡 v1
+await p.goto(`${BASE}/islands.html`);await p.waitForTimeout(1200);await p.evaluate(()=>document.querySelector('#btn-bag').click());await p.waitForTimeout(300);
+ok('沒組：情報袋提示有組之後才能設代表',await p.evaluate(()=>/有組之後才能設為代表/.test(document.querySelector('#overlay').innerText)&&!document.querySelector('#overlay .rep-btn')));
+await post('week2-api',{action:'team_create',token:TOKEN,name:'島隊'});await post('week2-api',{action:'team_claim',token:TOKEN,directions:[2]});
+await p.reload();await p.waitForTimeout(1200);await p.evaluate(()=>document.querySelector('#btn-bag').click());await p.waitForTimeout(300);
+ok('認方向二後：Owner、Palona 都有「設為我的代表（方向二）」、摘要寫還沒設',await p.evaluate(()=>document.querySelectorAll('#overlay .rep-btn').length===2&&/方向二 還缺|還沒設/.test(document.querySelector('#overlay .rep-summary').textContent)));
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .rep-btn')].find(b=>b.closest('.reward-card').querySelector('h3').textContent==='Owner').click());await p.waitForTimeout(200);
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/確定，設為代表/.test(b.textContent)).click());await p.waitForTimeout(1200);
+ok('設 Owner 為代表：按鈕變 ✓、Palona 顯示目前代表是 Owner、摘要「都設好了」',await p.evaluate(()=>{const cards=[...document.querySelectorAll('#overlay .reward-card')];const o=cards.find(c=>c.querySelector('h3').textContent==='Owner'),pa=cards.find(c=>c.querySelector('h3').textContent==='Palona');return /✓ 我的代表/.test(o.querySelector('.rep-btn').textContent)&&/目前的代表：Owner/.test(pa.innerText)&&/都設好了/.test(document.querySelector('#overlay .rep-summary').textContent);}));
+const rep=await post('week2-api',{action:'team_load',token:TOKEN});ok('team_load：我的 reps {2:owner}',JSON.stringify(rep.members?.[0]?.reps)==='{"2":"owner"}',rep.members?.[0]?.reps);
+await p.goto(`${BASE}/week.html?week=9`);await p.waitForTimeout(2000);
+ok('Week 9 組卡三格：方向二＝Owner、方向一／三還沒設、1／3 家',await p.evaluate(()=>{const g=[...document.querySelectorAll('#team9 .tm-rep')];return g.length===3&&g[1].dataset.state==='done'&&/Owner/.test(g[1].textContent)&&g[0].dataset.state==='todo'&&/1／3 家/.test(document.querySelector('#team9 .tm-reps').textContent);}));
+ok('公司卡 v1：Owner 一張、七格、來源①是第三題網址、還差來源 2 個＋一句話',await p.evaluate(()=>{const c=document.querySelector('#company-card .cc-card[data-company=owner]');return !!c&&c.querySelectorAll('.cc-facts dt').length>=7&&/owner\.com/.test(c.querySelector('.cc-src a')?.href||'')&&/來源 2 個/.test(c.querySelector('.cc-done').textContent)&&/一句話/.test(c.querySelector('.cc-done').textContent);}));
+await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 2"]','https://www.owner.com/pricing');await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 3"]','not a url');
+await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存公司卡/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('來源不是網址被擋',await p.evaluate(()=>/完整網址/.test(document.querySelector('#company-card .w4-row .w4-hint').textContent)));
+await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 3"]','https://techcrunch.com/owner');await p.fill('#company-card textarea','接電話的錢比請人便宜。');
+await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存公司卡/.test(b.textContent)).click());await p.waitForTimeout(1500);await p.reload();await p.waitForTimeout(2000);
+ok('存公司卡後重整：三個來源＋一句話都在、顯示完成 ✅',await p.evaluate(()=>{const c=document.querySelector('#company-card .cc-card[data-company=owner]');return c.dataset.done==='true'&&c.querySelector('input[aria-label="Owner 來源 3"]').value==='https://techcrunch.com/owner'&&/便宜/.test(c.querySelector('textarea').value);}));
+const cl=await post('week2-api',{action:'islands_load',token:TOKEN});ok('公司卡存在 islands_progress.data.cards.owner，遊戲進度沒被蓋掉',cl.row.data.cards?.owner?.sources?.length===2&&cl.row.data.boxes.palona.opened===true);
 // 老師頁群島區：三個檢查塊、每人一列（這個學生：Owner 27/30、Palona 30/30 +5、候選、網址、估價）
 const tp=await b.newPage();tp.on('pageerror',e=>errs.push('T:'+String(e)));await tp.addInitScript(()=>{sessionStorage.setItem('sjl-teacher-token','teacher-token');});
 await tp.goto(`${BASE}/index.html#teacher`);await tp.waitForTimeout(800);await tp.evaluate(()=>{document.getElementById('teacher-dashboard').hidden=false;});await tp.waitForTimeout(2500);
 const tv=await tp.evaluate((sid)=>{const s=document.querySelector('#teacher-islands');const row=[...s.querySelectorAll('tbody tr')].find(r=>r.children[0].textContent===sid);const cells=row?[...row.children].map(c=>c.innerText):[];return {has:!!s,checks:s.querySelectorAll('.ti-check').length,stats:s.querySelector('.tw4-live')?.innerText.replace(/\s+/g,' '),cells,th:[...document.querySelectorAll('#teacher-team th')].map(x=>x.textContent)};},SID);
-ok('老師頁群島區：三個檢查塊、統計列',tv.has&&tv.checks===3&&/開箱總數/.test(tv.stats),tv.stats);
-ok('這個學生那一列：方向二、候選 Owner、Palona、Owner 27/30、Palona 30/30 +5、網址、估價 ✓',/方向二/.test(tv.cells[4])&&/Owner、Palona/.test(tv.cells[5])&&/Owner 27\/30/.test(tv.cells[6])&&/Palona 30\/30 \+5/.test(tv.cells[6])&&/Owner/.test(tv.cells[7])&&/Palona：3,000–1.5 萬 ✓/.test(tv.cells[9]),tv.cells);
+ok('老師頁群島區：四個檢查塊、統計列（含三家到齊的組）',tv.has&&tv.checks===4&&/三家到齊的組/.test(tv.stats),tv.stats);
+ok('這個學生那一列：方向二、候選 Owner、Palona、Owner 27/30、Palona 30/30 +5、網址、估價 ✓',/方向二/.test(tv.cells[4])&&/Owner、Palona/.test(tv.cells[5])&&/Owner 27\/30/.test(tv.cells[6])&&/Palona 30\/30 \+5/.test(tv.cells[6])&&/方向二＝Owner（來源 3\/3、一句話 ✓）/.test(tv.cells[7])&&/Owner/.test(tv.cells[8])&&/Palona：3,000–1.5 萬 ✓/.test(tv.cells[10]),tv.cells);
 import fs from 'node:fs';ok('老師頁建組表欄名改成方向一／二／三（來源檔）',/\['組員','方向一','方向二','方向三','Week 4 產業',''\]/.test(fs.readFileSync(new URL('../teacher-team.js',import.meta.url),'utf8')));await tp.close();
 ok('沒有 JS 錯誤',errs.length===0,errs);
 await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);

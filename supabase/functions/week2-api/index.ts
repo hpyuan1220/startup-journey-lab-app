@@ -3,7 +3,8 @@ import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '.
 import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
 import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommendCards,writeOpen,WRITE_OPEN_AT,WRITE_OPEN_LABEL,buildPrompt,CLASS_Q_AI_LIMIT,CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ} from '../../../week4-core.mjs';
 import {normalizeWeek5,applyStamps5,OPP_KEYS,buildPrompt5,rebuttalNext,buildRebuttalTurn,appendRebuttal,REBUTTAL_AI_LIMIT} from '../../../week5-core.mjs';
-import {TEAM_MAX,TEAM_MIN,TEAM_LOCK_AT,makeCode,normalizeCode,normalizeTeamName,normalizeIndustry,normalizeDirections,teamLocked,directionName} from '../../../team-core.mjs';
+import {TEAM_MAX,TEAM_MIN,TEAM_LOCK_AT,makeCode,normalizeCode,normalizeTeamName,normalizeIndustry,normalizeDirections,teamLocked,directionName,TEAM_LOCK_LABEL} from '../../../team-core.mjs';
+import {companyDir,normalizeReps} from '../../../islands-core.mjs';
 import {studentProgress} from '../../../progress-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
@@ -249,7 +250,7 @@ Deno.serve(async req=>{
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
   const touch={updated_at:new Date().toISOString()};
   if(b.action==='team_load')return reply(await loadTeam());
-  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':'11/27 13:00 後'}），要改請找老師。`},423);
+  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}），要改請找老師。`},423);
   if(b.action==='team_create'){
    if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
    const name=normalizeTeamName(b.name);if(!name)return reply({error:'先取一個組名。'},422);
@@ -283,6 +284,18 @@ Deno.serve(async req=>{
    return reply(await loadTeam());
   }
   if(b.action==='team_industry'){must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());}
+  // 設為我的代表：{direction, company|null}。方向要是我認的、公司要在那個方向、而且我開過那一箱（islands_progress）。一個方向一家，可換、可清。
+  if(b.action==='team_rep'){
+   const d=Number(b.direction);const mine=normalizeDirections(me.directions);
+   if(!mine.includes(d))return reply({error:'先在組卡認這個方向，才能設代表。'},422);
+   const reps=normalizeReps(me.reps);
+   if(b.company==null||b.company===''){delete reps[d];}
+   else{const id=String(b.company).toLowerCase();if(companyDir(id)!==d)return reply({error:'這家公司不在你認的方向。'},422);
+    const prog=must(await db.from('islands_progress').select('data').match(scope).maybeSingle());
+    if(!prog?.data?.boxes?.[id]?.opened)return reply({error:'先開完這家的寶箱，才能設為代表。'},422);
+    reps[d]=id;}
+   must(await db.from('team_members').update({reps,...touch}).match(scope));return reply(await loadTeam());
+  }
   if(b.action==='team_claim'){
    const dirs=normalizeDirections(b.directions);if(dirs.length>2)return reply({error:'一個人最多認兩個方向。'},422);
    const others=must(await db.from('team_members').select('student_id,directions').match({class_id:s.class_id,team_id:myTeam.id}));
@@ -294,7 +307,7 @@ Deno.serve(async req=>{
  }
  // ---- 群島尋寶進度（islands_load／islands_save）：整包 jsonb，伺服器為準；回傳我在組裡認的方向，遊戲用來預選。不進成績。
  if(b.action==='islands_load'||b.action==='islands_save'){
-  const mem=must(await db.from('team_members').select('team_id,directions').match(scope).maybeSingle());
+  const mem=must(await db.from('team_members').select('team_id,directions,reps').match(scope).maybeSingle());
   const directions=normalizeDirections(mem?.directions);
   let r=must(await db.from('islands_progress').select('*').match(scope).maybeSingle());
   if(b.action==='islands_save'){
@@ -306,7 +319,7 @@ Deno.serve(async req=>{
    if(r)r=must(await db.from('islands_progress').update({data:next}).match(scope).select().single());
    else r=must(await db.from('islands_progress').insert({...scope,data:next}).select().single());
   }
-  return reply({row:r,directions,team_id:mem?.team_id||null});
+  return reply({row:r,directions,team_id:mem?.team_id||null,reps:normalizeReps(mem?.reps)});
  }
  if(b.action==='classq_load'||b.action==='classq_save'){
   const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);

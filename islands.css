@@ -72,3 +72,5 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 @media(max-width:650px){.scene{position:sticky;top:0;z-index:20;box-shadow:0 6px 18px #10303040}}
 
 .who{margin-left:auto;font-size:12px;opacity:.8}.who.warn{color:#8a3b2a;opacity:1;font-weight:600}
+
+.rep-btn.is-rep{background:#2f6f86;color:#fff;border-color:#2f6f86}.rep-summary{font-weight:600;color:#3a2b1a}

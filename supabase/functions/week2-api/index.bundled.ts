@@ -613,6 +613,17 @@ function industryOptions(members,week4ByStudent){
  return [...seen.values()];
 }
 
+// 群島尋寶的最小共用資料：前端（islands-data.mjs、team.js）與 Edge（week2-api）都用。
+// 公司→島、島→方向；「設為我的代表」要靠這個驗證公司方向＝我認的方向。改公司名單時這裡要跟 islands-data.mjs 一起改（有測試比對）。
+const ISLAND_DIR={1:1,2:1,3:1,4:2,5:2,6:2,7:2,8:3,9:3,10:3};
+const COMPANY_ISLAND={ampersand:1,n8n:1,arcade:2,baselayer:2,natural:3,lovable:4,owner:5,palona:5,gorgias:6,respondio:6,clark:7,happyrobot:8,cargofy:8,sage:9,alloy:10};
+const COMPANY_NAME={ampersand:'Ampersand',n8n:'n8n',arcade:'Arcade',baselayer:'Baselayer',natural:'Natural',lovable:'Lovable',owner:'Owner',palona:'Palona',gorgias:'Gorgias',respondio:'Respond.io',clark:'Clark',happyrobot:'HappyRobot',cargofy:'Cargofy',sage:'Sage',alloy:'Alloy Robotics'};
+const companyDir=id=>ISLAND_DIR[COMPANY_ISLAND[String(id||'')]]||0;
+// reps：{ "1":"ampersand", "2":"owner" }（方向→公司）。只留合法鍵與已知公司。
+function normalizeReps(v){const out={};if(!v||typeof v!=='object'||Array.isArray(v))return out;for(const [k,c] of Object.entries(v)){const d=Number(k);if(![1,2,3].includes(d))continue;const id=String(c||'').toLowerCase();if(companyDir(id)===d)out[d]=id;}return out;}
+// 組的三格：每個方向由認領的人的 reps 填；回 {1:{student_id,company}|null,...}
+function teamReps(members){const out={1:null,2:null,3:null};for(const m of members||[]){const reps=normalizeReps(m.reps);for(const d of [1,2,3])if(reps[d]&&!out[d])out[d]={student_id:m.student_id,company:reps[d]};}return out;}
+
 // 「我的進度」：學生端（課程地圖最上面一條）和老師端（之後的全班總表）共用同一套判定。
 // 輸入是各週那一列（可為 null）；輸出每週 {week, state, label, detail, next, href}。
 // state：done（做完）／partial（做了一部分）／revise（老師退回）／none（沒開始）。
@@ -904,7 +915,7 @@ Deno.serve(async req=>{
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
   const touch={updated_at:new Date().toISOString()};
   if(b.action==='team_load')return reply(await loadTeam());
-  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':'11/27 13:00 後'}），要改請找老師。`},423);
+  if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}），要改請找老師。`},423);
   if(b.action==='team_create'){
    if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
    const name=normalizeTeamName(b.name);if(!name)return reply({error:'先取一個組名。'},422);
@@ -938,6 +949,18 @@ Deno.serve(async req=>{
    return reply(await loadTeam());
   }
   if(b.action==='team_industry'){must(await db.from('teams').update({industry:normalizeIndustry(b.industry)}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());}
+  // 設為我的代表：{direction, company|null}。方向要是我認的、公司要在那個方向、而且我開過那一箱（islands_progress）。一個方向一家，可換、可清。
+  if(b.action==='team_rep'){
+   const d=Number(b.direction);const mine=normalizeDirections(me.directions);
+   if(!mine.includes(d))return reply({error:'先在組卡認這個方向，才能設代表。'},422);
+   const reps=normalizeReps(me.reps);
+   if(b.company==null||b.company===''){delete reps[d];}
+   else{const id=String(b.company).toLowerCase();if(companyDir(id)!==d)return reply({error:'這家公司不在你認的方向。'},422);
+    const prog=must(await db.from('islands_progress').select('data').match(scope).maybeSingle());
+    if(!prog?.data?.boxes?.[id]?.opened)return reply({error:'先開完這家的寶箱，才能設為代表。'},422);
+    reps[d]=id;}
+   must(await db.from('team_members').update({reps,...touch}).match(scope));return reply(await loadTeam());
+  }
   if(b.action==='team_claim'){
    const dirs=normalizeDirections(b.directions);if(dirs.length>2)return reply({error:'一個人最多認兩個方向。'},422);
    const others=must(await db.from('team_members').select('student_id,directions').match({class_id:s.class_id,team_id:myTeam.id}));
@@ -949,7 +972,7 @@ Deno.serve(async req=>{
  }
  // ---- 群島尋寶進度（islands_load／islands_save）：整包 jsonb，伺服器為準；回傳我在組裡認的方向，遊戲用來預選。不進成績。
  if(b.action==='islands_load'||b.action==='islands_save'){
-  const mem=must(await db.from('team_members').select('team_id,directions').match(scope).maybeSingle());
+  const mem=must(await db.from('team_members').select('team_id,directions,reps').match(scope).maybeSingle());
   const directions=normalizeDirections(mem?.directions);
   let r=must(await db.from('islands_progress').select('*').match(scope).maybeSingle());
   if(b.action==='islands_save'){
@@ -961,7 +984,7 @@ Deno.serve(async req=>{
    if(r)r=must(await db.from('islands_progress').update({data:next}).match(scope).select().single());
    else r=must(await db.from('islands_progress').insert({...scope,data:next}).select().single());
   }
-  return reply({row:r,directions,team_id:mem?.team_id||null});
+  return reply({row:r,directions,team_id:mem?.team_id||null,reps:normalizeReps(mem?.reps)});
  }
  if(b.action==='classq_load'||b.action==='classq_save'){
   const week=Number(b.week);if(!CLASSQ_WEEKS.includes(week))return reply({error:'這一週沒有課堂兩題頁。'},400);

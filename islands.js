@@ -1,4 +1,4 @@
-import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261109-sync';
+import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261110-rep';
 // AI 新創群島・尋寶版（學生端）。流程：寶箱清單 → 找島 → 島上（店家／Irene／探索站）→ 三題 → 開箱。
 // 進度：localStorage 當快取（依學號分開），登入的學生每次存檔同步到 Supabase（islands_save，伺服器為準）；老師頁只看紀錄，不投影。沒登入只能逛島，不能開箱。
 const root=document.getElementById('harbor'),$=s=>root.querySelector(s);
@@ -20,9 +20,15 @@ async function loadRemote(){if(!session?.token)return;try{const r=await api({act
   if(remote&&typeof remote==='object'&&(!store.updated_at||!remote.updated_at||remote.updated_at>=store.updated_at)){store={boxes:{},dir:null,candidates:[],...remote};if(!Array.isArray(store.candidates))store.candidates=[];try{localStorage.setItem(KEY,JSON.stringify(store));}catch{}}
   else if(store.updated_at&&(!remote||!remote.updated_at||store.updated_at>remote.updated_at)&&Object.keys(store.boxes).length)syncNow();
   // 方向：還沒選就用組裡認的（認兩個的人先用第一個）
-  if(!store.dir&&Array.isArray(r.directions)&&r.directions.length){store.dir=r.directions[0];}
+  myDirs=Array.isArray(r.directions)?r.directions:[];myReps=r.reps||{};myTeamId=r.team_id||null;
+  if(!store.dir&&myDirs.length){store.dir=myDirs[0];}
   myDir=Number(store.dir)||0;setSync('saved');}catch(e){setSync('error');}}
 const loggedIn=()=>!!session?.token;
+// 我在組裡認的方向、我的代表（方向→公司），islands_load 帶回
+let myDirs=[],myReps={},myTeamId=null;
+async function setRep(c,d,on){const ov=overlay(on?'設為我的代表？':'取消代表？');el('p',on?`「${c.name}」會成為你在組裡「${dirShort(d)}」的代表，Week 9 頁的公司卡會用它生成；之後可以換。`:`清掉「${c.name}」的代表身分（公司卡會跟著收起來）。`,ov,'fine');
+ el('div','',ov,'choices').append(btn(on?'確定，設為代表':'確定取消',async()=>{try{const r=await api({action:'team_rep',direction:d,company:on?c.id:null});myReps={};for(const m of r.members||[]){if(m.student_id===session.student_id)myReps=m.reps||{};}toast(on?'已設為代表。到 Week 9 頁看公司卡。':'已取消。');showBag();}catch(e){toast(e.message);}},true),btn('先不要',showBag));}
+const dirShort=d=>DIRECTIONS.find(x=>x.id===Number(d))?.name.split('｜')[0]||('方向'+d);
 function needLogin(){say('teacher','Irene 老師','開箱要先登入。','沒登入的進度不會存，老師頁也看不到你開了哪一箱。逛島可以，開箱請先回首頁用學號和邀請碼進入，再回來。',[['回首頁登入',()=>{location.href='index.html';},true],['先逛島',renderBrowse,false],['回港口',renderHub,false]]);}
 let current=null;const box=()=>store.boxes[current]||(store.boxes[current]=freshBox());
 const company=()=>companyById(current);
@@ -275,7 +281,12 @@ function showBag(){const ov=overlay('情報袋：開過的寶箱');
  for(const c of opened){const b=store.boxes[c.id];const a=el('article','',ov,'reward-card');a.style.margin='0 0 12px';const h=el('div','',a,'reward-heading');el('span','✦',h,'reward-emblem');const t=el('div','',h);el('small',islandById(c.island).name+' · '+boxScore(b.scores)+'/30'+bonus(b)+(b.deep?' · 探索完成':''),t);el('h3',c.name,t);
   const dl=el('dl','',a,'facts');c.card.forEach(([k,v],i)=>{el('dt',k,dl);el('dd',v+(i===1&&b.est?'｜我的估價：'+b.est+(b.estOk?'（+'+EST_BONUS+'）':''):''),dl);});
   if(b.argue){el('dt','找碴',dl);el('dd','業務最站不住腳：'+b.argue,dl);}if(b.insight){el('dt','我的理解',dl);el('dd',b.insight,dl);}if(b.url){el('dt','我貼的來源',dl);el('dd',b.url,dl);}
-  const row=el('div','',a,'choices');const st=el('span','',row,'fine');row.append(btn('複製七格',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製':'複製失敗';}));}
+  const row=el('div','',a,'choices');const st=el('span','',row,'fine');row.append(btn('複製七格',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製':'複製失敗';}));
+  // 設為我的代表：只有我認的方向、而且有組才會出現；同方向一次一家
+  const d=islandById(c.island).dir;if(loggedIn()&&myTeamId&&myDirs.includes(d)){const isRep=myReps[d]===c.id;const rb=btn(isRep?'✓ 我的代表（'+dirShort(d)+'）— 取消':'設為我的代表（'+dirShort(d)+'）',()=>setRep(c,d,!isRep),!isRep&&!myReps[d]);rb.classList.add('rep-btn');if(isRep)rb.classList.add('is-rep');row.append(rb);if(!isRep&&myReps[d])el('span','這個方向目前的代表：'+(companyById(myReps[d])?.name||myReps[d]),row,'fine');}
+  else if(loggedIn()&&!myTeamId)el('span','有組之後才能設為代表（Week 9 頁建組）。',row,'fine');
+  else if(loggedIn()&&!myDirs.includes(d))el('span','這家在'+dirShort(d)+'，不是你認的方向；可以學，不能當代表。',row,'fine');}
+ if(loggedIn()&&myTeamId&&myDirs.length){const done=myDirs.filter(d=>myReps[d]);el('p','我的代表：'+(done.length?done.map(d=>dirShort(d)+'＝'+(companyById(myReps[d])?.name||'')).join('、'):'還沒設')+(myDirs.length>done.length?'（'+myDirs.filter(d=>!myReps[d]).map(dirShort).join('、')+' 還缺）':'　✓ 都設好了，到 Week 9 頁看公司卡'),ov,'fine rep-summary');}
  el('div','',ov,'choices').append(btn('回寶箱清單',renderHub,true));
 }
 // ---------- 事件 ----------

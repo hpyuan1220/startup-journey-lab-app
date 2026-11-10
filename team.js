@@ -1,5 +1,6 @@
 import {INDUSTRY_CARDS} from './week4-core.mjs?v=20261106-tm';
 import {DIRECTIONS,directionName,industryLabel,teamSummary,industryOptions,normalizeDirections,TEAM_LOCK_LABEL,TEAM_MAX,TEAM_MIN} from './team-core.mjs?v=20261106-tm';
+import {teamReps,COMPANY_NAME} from './islands-core.mjs?v=20261110-rep';
 // Week 7 建組（學生端）：掛在 Week 7 期中報告頁最下面（#team）。
 // 沒有組：建組（拿四碼組碼）／輸入組碼加入／按「想請老師分組」。有組：組名與組碼、組員與各自認的方向、組的產業線（從組員 Week 4 選的產業挑）、離開。
 // 12/19（期末後）才自動鎖；老師在老師頁鎖住的組也不能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。
@@ -72,6 +73,13 @@ function render(){
   }
  }
  const legend=el('ul','',mBox,'w4-hint');for(const [,n,desc] of DIRECTIONS)el('li',`${n}：${desc}`,legend);
+ // 組卡三格：每個方向的代表（在群島情報袋「設為我的代表」設的）
+ if(W9){const rBox=el('div','',body,'tm-block tm-reps');el('h3','組的三家：方向代表（期末從這三家選一家上台）',rBox);
+  const reps=teamReps(members);const grid=el('div','',rBox,'tm-rep-grid');let filled=0;
+  for(const [d,n] of DIRECTIONS){const cell=el('div','',grid,'tm-rep');el('small',n.split('｜')[0]+'｜'+n.split('｜')[1],cell);const r=reps[d];const owner=members.find(m=>normalizeDirections(m.directions).includes(d));
+   if(r){filled++;el('b',COMPANY_NAME[r.company]||r.company,cell);el('span','由 '+(names[r.student_id]||r.student_id)+' 研究',cell,'w4-hint');cell.dataset.state='done';}
+   else{el('b','還沒設',cell,'tm-rep-empty');el('span',owner?('由 '+(names[owner.student_id]||owner.student_id)+(owner.student_id===session.student_id?'（我）':'')+' 開箱後在情報袋按「設為我的代表」'):'這個方向還沒人認',cell,'w4-hint');cell.dataset.state='todo';}}
+  el('p',filled===3?'✅ 三家都到齊了。12/4 課堂拿這三家做五問比較、選一家。':`${filled}／3 家。三格填滿才拿得到期末框架（PPT 6 頁、講稿）。`,rBox,'w4-hint');}
  // 狀態
  const stBox=el('div','',body,'w4-done');stBox.dataset.state=sm.complete?'done':'todo';
  el('p',sm.complete?'✅ 這一組建好了：三個方向都有人認。':'還沒完成：',stBox,'w4-done-title');
