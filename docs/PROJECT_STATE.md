@@ -2022,3 +2022,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - 比較頁 compare.js＋compare-core.mjs（前端與 Edge 共用）：三家（組員推薦的）× 五問公司版，每格 0/1/2＋證據、「從理由卡帶入」（七格卡＋估價）、總分與最高分、選定一家（非最高分要 20 字理由）、反方三格＋最狠的一刀、完成度；選定後 `buildFramework` 生期末框架：六頁（標題、內容自動帶入、誰講）、每人講稿草稿（研究選定那家的人講 1–3 頁，其他人 4–6）、PDF 五段；複製按鈕。一組一份存 `teams.compare`（新 action `team_compare_save`，任一組員可存、鎖定建組不影響；只收該組推薦的公司）；team_load 多回 `cards`（組員理由卡摘要）。
   - 老師頁 teacher-compare.js（最上面）：每組三家、總分、選定（非最高分的理由）、反方三格★、缺什麼；哪家被幾組選；CSV。teacher-fold ORDER：compare → week10 → week9 → islands → week8 → …
   - 測試：tests/compare.test.mjs（core＋Edge）、tests/week10-student.mjs 11 ✅、islands 52 ✅、week8 23 ✅、單元 221 ✅。
+- 2026-11-12 02:40：交接文件 `docs/HANDOVER.md`（東西在哪、規則、改程式流程、程式地圖含「Week 8 內容改哪裡」、下半學期每週老師要看什麼、待辦、常見狀況）；舊 `docs/HANDOFF.md` 開頭指向新檔。
