@@ -1,5 +1,5 @@
 <!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI 新創群島｜尋寶</title><meta name="description" content="Startup Journey Lab · AI 新創群島尋寶：選寶藏、找島、研究一家公司、答對三題開箱">
-<link rel="stylesheet" href="islands.css?v=20261110-rep"></head>
+<link rel="stylesheet" href="islands.css?v=20261111-art"></head>
 <body>
 <div id="harbor" data-speaker="student">
 <div class="game">
@@ -11,13 +11,13 @@
  <!-- 場景＋對話：所有視圖共用 -->
   <div class="stage" id="stage">
   <div class="scene" id="scene" aria-label="海島、三棟學習屋與可走動的角色">
-   <img class="scenery" id="scenery" src="materials/islands/scene_island06.jpg" alt="木橋連接海島廣場，島上有紅瓦餐館、藍屋頂商店與研究屋。">
+   <img class="scenery" id="scenery" src="materials/islands/scene_island05.jpg" alt="木橋連接海島廣場，島上有店家、AI 探索站與研究屋。">
    <div class="chapter"><small id="chapter-small">CHAPTER 06</small><strong id="chapter-title">Owner</strong></div>
    <div class="mission-pill" id="mission">三題 0/3</div>
    <button type="button" class="place" data-destination="shop" style="left:39%;top:29%">店家<small>聽故事</small></button>
    <button type="button" class="place" data-destination="station" style="left:65.5%;top:23%">AI 探索站<small>深問・找碴</small></button>
    <button type="button" class="place" data-destination="house" style="left:84%;top:36%">Irene 研究屋<small>整理・三題</small></button>
-   <div class="character npc-owner"><span class="sprite owner"></span><span class="marker" id="owner-marker">!</span></div>
+   <div class="character npc-owner"><img class="npc-art" id="owner-art" src="materials/islands/npc_island05.png" alt="店家"><span class="marker" id="owner-marker">!</span></div>
    <div class="character npc-teacher" id="npc-teacher"><span class="sprite teacher"></span></div>
    <div class="character npc-robot"><span class="sprite robot"></span><span class="marker" id="robot-marker">?</span></div>
    <div class="character player" id="player"><span class="sprite student"></span><span class="marker">你</span></div>
@@ -26,7 +26,7 @@
    <div class="toast" id="toast" hidden></div>
   </div>
   <section class="dialogue" id="dialogue" aria-label="角色對話與任務">
-   <div class="portrait"><span class="sprite student" id="portrait"></span></div>
+   <div class="portrait"><span class="sprite student" id="portrait"></span><img id="portrait-img" alt="" hidden></div>
    <div aria-live="polite"><div class="speaker-row"><p class="speaker" id="speaker">你 · 新創探險者</p><span class="role-chip" id="role-chip">探索筆記</span></div><h2 id="d-title"></h2><p class="speech" id="d-speech"></p><div class="choices" id="choices"></div></div>
    <aside class="journal"><b>探索足跡</b><ul><li data-clue="shop">聽店家故事</li><li data-clue="house">Irene 整理</li><li data-clue="station">AI 探索站</li></ul><button type="button" class="ui" id="btn-quiz">答三題</button></aside>
   </section>
@@ -59,5 +59,5 @@
 </div>
 </div>
 <script src="config.js"></script>
-<script type="module" src="islands.js?v=20261110-rep"></script>
+<script type="module" src="islands.js?v=20261111-art"></script>
 </body></html>

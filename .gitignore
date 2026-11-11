@@ -7,3 +7,5 @@ node_modules/
 
 # 學生個資（姓名＋學號）不進公開 repo
 docs/private/
+# 美術原檔（大檔，只留在本機）
+materials/islands/_source/

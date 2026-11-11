@@ -1,4 +1,4 @@
-import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261110-rep';
+import {DIRECTIONS,ISLANDS,COMPANIES,islandById,dirById,companyById,scoreFor,boxScore,isUrl,cardText,EST_BONUS} from './islands-data.mjs?v=20261111-art';
 // AI 新創群島・尋寶版（學生端）。流程：寶箱清單 → 找島 → 島上（店家／Irene／探索站）→ 三題 → 開箱。
 // 進度：localStorage 當快取（依學號分開），登入的學生每次存檔同步到 Supabase（islands_save，伺服器為準）；老師頁只看紀錄，不投影。沒登入只能逛島，不能開箱。
 const root=document.getElementById('harbor'),$=s=>root.querySelector(s);
@@ -36,8 +36,11 @@ let busy=false,mode='hub',timer,walkingToken=0;
 // 我的方向：從建組資料來（team.js 存的 sjl-team-dir，沒有就讓學生點）
 let myDir=Number(store.dir)||Number(localStorage.getItem('sjl-team-dir'))||0;
 // 已有島圖的島；其他島先用島 6 的圖（之後每島一張）
-// 還沒有各島專屬圖，全部先用島 6（餐館島）那張；有圖的島加進 SCENES
-const SCENES=new Set([]);const sceneSrc=id=>`materials/islands/scene_island${String(SCENES.has(Number(id))?id:6).padStart(2,'0')}.jpg`;
+// 美術素材（2026-11-11 接入）：每島一張島景、一位職人 NPC（店家）、一隻夥伴（Lv1 開箱、Lv2 探索站／找碴後）。
+// 原檔在 materials/islands/_source（不進 repo），repo 放縮小版：scene 1200×675 jpg、npc ≤440×640 png、pet ≤320 png。
+const ART='materials/islands/';const pad2=id=>String(id).padStart(2,'0');
+const sceneSrc=id=>`${ART}scene_island${pad2(id)}.jpg`;const npcSrc=id=>`${ART}npc_island${pad2(id)}.png`;const petSrc=(id,lv)=>`${ART}pet_island${pad2(id)}_lv${lv===2?2:1}.png`;
+function setPet(img,islandId,evolved){img.src=petSrc(islandId,evolved?2:1);img.closest('.pet-art')?.classList.add('real');}
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?' primary':''));b.type='button';b.disabled=busy;b.addEventListener('click',fn);return b;}
@@ -116,7 +119,7 @@ function renderBrowse(){
 function browseIsland(id){
  const i=islandById(id),cs=COMPANIES.filter(c=>c.island===id);
  $('#chapter-small').textContent='CHAPTER '+String(id).padStart(2,'0');$('#chapter-title').textContent=i.name.replace(/^島 \d+ /,'');
- $('#scenery').src=sceneSrc(id);
+ $('#scenery').src=sceneSrc(id);$('#owner-art').src=npcSrc(id);$('#owner-art').alt=i.name+'的店家';
  $('#mission').textContent=`候選 ${store.candidates.length}／${CAND_MAX}`;
  const d=dirById(i.dir),mine=i.dir===myDir;
  say('teacher','Irene 老師 · 島長介紹',i.name+'：'+i.hint,`這座島屬於${d.name}（${d.short}：${d.blurb}）。島上 ${cs.length} 家公司如下${mine?'，是你的方向，可以圈候選。':'，不是你的方向：可以看、可以開箱，但不能圈候選。'}`,[['回海圖',renderBrowse,false],['回港口',renderHub,false]]);
@@ -174,11 +177,11 @@ const person=()=>$('#player'),teacher=()=>$('#npc-teacher');
 function put(e,p){e.style.left=p[0]+'%';e.style.top=p[1]+'%';}
 function route(to){const q=[[location]],seen=new Set([location]);while(q.length){const p=q.shift(),last=p[p.length-1];if(last===to)return p;for(const [a,b2] of links){const n=a===last?b2:b2===last?a:null;if(n&&!seen.has(n)){seen.add(n);q.push([...p,n]);}}}return [location,to];}
 function animate(e,a,b2,dur){return new Promise(res=>{if(reduced()){put(e,b2);res();return;}const s=performance.now(),tok=walkingToken;function f(t){if(tok!==walkingToken){res();return;}const k=Math.min(1,(t-s)/dur);put(e,[a[0]+(b2[0]-a[0])*k,a[1]+(b2[1]-a[1])*k]);if(k<1)requestAnimationFrame(f);else res();}requestAnimationFrame(f);});}
-function say(role,name,title,body,actions=[]){root.dataset.speaker=role;$('#role-chip').textContent={student:'探索筆記',owner:'店家故事',teacher:'Irene 老師',robot:'AI 探索站'}[role];$('#portrait').className='sprite '+role;$('#speaker').textContent=name;$('#d-title').textContent=title;$('#d-speech').textContent=body;$('#choices').replaceChildren(...actions.map(a=>btn(...a)));}
+function say(role,name,title,body,actions=[]){root.dataset.speaker=role;$('#role-chip').textContent={student:'探索筆記',owner:'店家故事',teacher:'Irene 老師',robot:'AI 探索站'}[role];$('#portrait').className='sprite '+role;const pi=$('#portrait-img');const useArt=role==='owner'&&current;if(useArt){pi.src=npcSrc(company().island);pi.alt=name;}pi.hidden=!useArt;$('#portrait').hidden=!!useArt;$('#speaker').textContent=name;$('#d-title').textContent=title;$('#d-speech').textContent=body;$('#choices').replaceChildren(...actions.map(a=>btn(...a)));}
 function refreshIsland(){
  const c=company(),b=box();
  $('#chapter-small').textContent='CHAPTER '+String(c.island).padStart(2,'0')+' · '+islandById(c.island).name.replace(/^島 \d+ /,'');$('#chapter-title').textContent=c.name;
- $('#scenery').src=sceneSrc(c.island);
+ $('#scenery').src=sceneSrc(c.island);$('#owner-art').src=npcSrc(c.island);$('#owner-art').alt=c.story.speaker;
  root.querySelectorAll('[data-clue]').forEach(x=>x.classList.toggle('done',b.clues.includes(x.dataset.clue)));
  root.querySelectorAll('[data-destination]').forEach(x=>{x.classList.toggle('visited',b.clues.includes(x.dataset.destination));x.disabled=busy;});
  ['#btn-quiz','#chest','#btn-reset'].forEach(id=>$(id).disabled=busy);
@@ -186,7 +189,7 @@ function refreshIsland(){
  $('#chest-label').textContent=b.opened?'已開箱':b.passed===3?'可以開箱！':'寶箱';
  $('#owner-marker').textContent=b.clues.includes('shop')?'✓':'!';$('#robot-marker').textContent=b.deep?'★':'?';
  $('#mission').textContent=b.opened?'已開箱 '+boxScore(b.scores)+'/30'+bonus(b):'三題 '+b.passed+'/3';
- $('#island-pet').hidden=!b.opened;$('#island-pet').classList.toggle('evolved',b.deep);$('#pet-name').textContent=c.pet.name+(b.deep?' · 研究員':'');
+ $('#island-pet').hidden=!b.opened;$('#island-pet').classList.toggle('evolved',b.deep);setPet($('#island-pet img'),c.island,b.deep);$('#pet-name').textContent=c.pet.name+(b.deep?' · 研究員':'');
  refreshTop();
 }
 function enterIsland(fresh=false){
@@ -268,7 +271,7 @@ function showReward(){const c=company(),b=box();const ov=overlay('開箱！');
  const card=el('article','',ov,'reward-card');const h=el('div','',card,'reward-heading');el('span','✦',h,'reward-emblem');const t=el('div','',h);el('small','TREASURE · '+islandById(c.island).name,t);el('h3',c.name+'：'+c.tagline,t);
  const w=el('div','',card,'wow');el('span',c.wow.label,w,'fine').style.padding='0';el('b',c.wow.value,w);el('span',c.wow.note,w,'fine').style.padding='0';
  const dl=el('dl','',card,'facts');c.card.forEach(([k,v],i)=>{el('dt',k,dl);el('dd',v+(i===1&&b.est?'｜我的估價：'+b.est+(b.estOk?'（+'+EST_BONUS+'）':''):''),dl);});
- const pet=el('div','',card,'companion-card');pet.innerHTML=`<div class="pet-art ${b.deep?'evolved':''}"><span class="pet-cape"></span><img src="materials/islands/pet.svg" alt=""><span class="pet-star">✦</span></div><div><p class="eyebrow">夥伴</p><h3 style="font-size:16px">${c.pet.name} · ${c.pet.kind}${b.deep?' · 研究員':''}</h3><p class="fine" style="padding:0">${c.pet.desc}。${b.deep?'探索站做完，披風已解鎖。':'做完探索站或找碴，牠會升級。'}</p></div>`;
+ const pet=el('div','',card,'companion-card');pet.innerHTML=`<div class="pet-art real ${b.deep?'evolved':''}"><span class="pet-cape"></span><img src="${petSrc(c.island,b.deep?2:1)}" alt="${c.pet.name}"><span class="pet-star">✦</span></div><div><p class="eyebrow">夥伴</p><h3 style="font-size:16px">${c.pet.name} · ${c.pet.kind}${b.deep?' · 研究員':''}</h3><p class="fine" style="padding:0">${c.pet.desc}。${b.deep?'探索站做完，夥伴已升級到 Lv.2。':'做完探索站或找碴，牠會升級到 Lv.2。'}</p></div>`;
  const row=el('div','',card,'choices');const st=el('p','',card,'fine');st.style.padding='4px 0 0';
  const n=nextBox();row.append(btn('複製七格，貼進公司卡',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製，到 Week 9 公司卡貼上。':'複製失敗，請手動選取。';}),...(estPending(c,b)?[btn('估價加分 +'+EST_BONUS,estimateForm)]:[]),...(n?[btn('開下一箱：'+n.name,()=>goBox(n),true)]:[]),btn('回寶箱清單',renderHub));
 }
@@ -278,7 +281,7 @@ function overlay(title){const o=$('#overlay');o.replaceChildren();o.hidden=false
 function showBag(){const ov=overlay('情報袋：開過的寶箱');
  const opened=COMPANIES.filter(c=>store.boxes[c.id]?.opened);
  if(!opened.length)el('p','還沒開過寶箱。答對三題，公司的七格卡會收在這裡。',ov,'fine');
- for(const c of opened){const b=store.boxes[c.id];const a=el('article','',ov,'reward-card');a.style.margin='0 0 12px';const h=el('div','',a,'reward-heading');el('span','✦',h,'reward-emblem');const t=el('div','',h);el('small',islandById(c.island).name+' · '+boxScore(b.scores)+'/30'+bonus(b)+(b.deep?' · 探索完成':''),t);el('h3',c.name,t);
+ for(const c of opened){const b=store.boxes[c.id];const a=el('article','',ov,'reward-card');a.style.margin='0 0 12px';const h=el('div','',a,'reward-heading');const pim=el('img','',h,'bag-pet');pim.src=petSrc(c.island,b.deep?2:1);pim.alt=c.pet.name+(b.deep?' Lv.2':' Lv.1');pim.title=c.pet.name+(b.deep?' · Lv.2':' · Lv.1');const t=el('div','',h);el('small',islandById(c.island).name+' · '+boxScore(b.scores)+'/30'+bonus(b)+(b.deep?' · 探索完成 · 夥伴 Lv.2':' · 夥伴 Lv.1'),t);el('h3',c.name,t);
   const dl=el('dl','',a,'facts');c.card.forEach(([k,v],i)=>{el('dt',k,dl);el('dd',v+(i===1&&b.est?'｜我的估價：'+b.est+(b.estOk?'（+'+EST_BONUS+'）':''):''),dl);});
   if(b.argue){el('dt','找碴',dl);el('dd','業務最站不住腳：'+b.argue,dl);}if(b.insight){el('dt','我的理解',dl);el('dd',b.insight,dl);}if(b.url){el('dt','我貼的來源',dl);el('dd',b.url,dl);}
   const row=el('div','',a,'choices');const st=el('span','',row,'fine');row.append(btn('複製七格',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製':'複製失敗';}));
@@ -296,3 +299,5 @@ $('#btn-hub').addEventListener('click',renderHub);$('#btn-bag').addEventListener
 $('#btn-reset').addEventListener('click',()=>{if(!current){toast('先選一個寶箱。');return;}const ov=overlay('重設這一箱？');el('p','會清掉這一箱的找島、三題、探索筆記（其他寶箱不動）。',ov,'fine');el('div','',ov,'choices').append(btn('確定重設',()=>{delete store.boxes[current];save();renderFind();},true),btn('保留',closeOverlay));});
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
 (async()=>{setSync('');await loadRemote();renderHub();})();
+// 測試用：?debug=1 時把跳島函式掛到 window（截圖檢查按鈕對位）
+if(new URLSearchParams(window.location.search).get('debug'))window.__sjl={goBox,companyById,enterIsland,say,store:()=>store,save};

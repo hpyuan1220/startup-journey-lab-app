@@ -74,3 +74,12 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 .who{margin-left:auto;font-size:12px;opacity:.8}.who.warn{color:#8a3b2a;opacity:1;font-weight:600}
 
 .rep-btn.is-rep{background:#2f6f86;color:#fff;border-color:#2f6f86}.rep-summary{font-weight:600;color:#3a2b1a}
+
+/* 2026-11-11 美術接入：NPC 站立圖、對話頭像、夥伴 Lv1/Lv2 */
+.npc-owner{width:clamp(44px,8.2%,92px)}.npc-art{display:block;width:100%;height:auto;position:relative;filter:drop-shadow(0 2px 2px #223f3d55)}
+.portrait #portrait-img{position:absolute;width:150%;height:auto;left:-25%;top:-5%}
+.pet-art.real{aspect-ratio:1}.pet-art.real img{object-fit:contain;filter:drop-shadow(0 2px 2px #223f3d55)}.pet-art.real .pet-cape{display:none}.pet-art.real.evolved .pet-star{display:block;font-size:22px;top:-6px;right:-4px}
+#island-pet{width:clamp(48px,7.5%,84px)}
+.bag-pet{width:52px;height:52px;object-fit:contain;flex-shrink:0;background:var(--wash);border-radius:12px;padding:3px}
+@media(max-width:650px){.npc-owner{width:clamp(40px,9%,70px)}#island-pet{width:clamp(44px,9%,64px)}}
+@media(max-width:390px){.portrait #portrait-img{width:170%;left:-35%;top:-4%}}

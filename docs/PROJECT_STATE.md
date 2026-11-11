@@ -2010,3 +2010,6 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - company-card.js 新（Week 9 頁 `#company-card`）：每個代表一張公司卡 v1——七格（含估價）、探索／找碴、來源①＝第三題網址＋補兩個（網址驗證）、一句話「為什麼是好新創」、複製整張；存 islands_progress.data.cards[公司]（先 islands_load 再 save，不蓋遊戲進度）；三個來源＋一句話＝完成。
   - teacher-islands.js：統計多「三家到齊的組」、檢查塊 ④ 代表三家還沒到齊、每列多「代表／公司卡」欄（來源 n/3、一句話）、CSV 多代表欄。
   - 測試：islands-api.test.mjs（core 一致性、team_rep 流程）218 ✅；islands-student.mjs 46 ✅。
+- 2026-11-11 23:50：**群島美術接入**（純前端，不用 Deploy）。老師用 ChatGPT 生的 40 張素材（10 島景、10 店家 NPC、20 夥伴 Lv1/Lv2）依 `ISLAND_ASSETS_MAP.json` 接入：原檔（1–2 MB／張，共 45 MB）＋zip＋對照表移到 `materials/islands/_source/`（gitignore），repo 放縮小版共 6.2 MB（島景 1200×675 q82、NPC ≤440×640、夥伴 ≤320）。檔名統一 `scene_islandNN.jpg`／`npc_islandNN.png`／`pet_islandNN_lv1|lv2.png`；島 6 島景＝客服島（原 `scene_island06_messages.jpg`），舊餐館圖存 `_source/scene_island06.jpg`，餐館＝島 5。
+  - islands.js：`sceneSrc／npcSrc／petSrc`，`SCENES` 移除（十島都有圖）；店家 NPC 站立改用 `<img class="npc-art">`；店家說話時對話頭像用 NPC 圖上半身（`#portrait-img`，150% 寬、負位移）；夥伴依 `box.deep` 切 Lv1／Lv2（島上、開箱卡、情報袋縮圖）；`?debug=1` 掛 `window.__sjl` 供截圖測試。islands-data.mjs 夥伴的 kind／desc 改成跟圖一致（松鼠、貓頭鷹、海狸、變色龍、水獺、青鳥、刺蝟、載載龜、水豚、機器貓）。
+  - 檢查：Playwright 桌機 1000px／手機 390px 各 10 島截圖，三個按鈕都落在對應建築、NPC 在店家旁、夥伴與寶箱在廣場，無重疊遮擋；頭像裁切為頭到腰。tests/islands-student.mjs 加 2 條（40 檔存在＋可抓）：48 ✅。materials/islands/README.md 說明用途與重做縮圖方式。

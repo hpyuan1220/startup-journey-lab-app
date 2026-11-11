@@ -115,5 +115,11 @@ const tv=await tp.evaluate((sid)=>{const s=document.querySelector('#teacher-isla
 ok('老師頁群島區：四個檢查塊、統計列（含三家到齊的組）',tv.has&&tv.checks===4&&/三家到齊的組/.test(tv.stats),tv.stats);
 ok('這個學生那一列：方向二、候選 Owner、Palona、Owner 27/30、Palona 30/30 +5、網址、估價 ✓',/方向二/.test(tv.cells[4])&&/Owner、Palona/.test(tv.cells[5])&&/Owner 27\/30/.test(tv.cells[6])&&/Palona 30\/30 \+5/.test(tv.cells[6])&&/方向二＝Owner（來源 3\/3、一句話 ✓）/.test(tv.cells[7])&&/Owner/.test(tv.cells[8])&&/Palona：3,000–1.5 萬 ✓/.test(tv.cells[10]),tv.cells);
 import fs from 'node:fs';ok('老師頁建組表欄名改成方向一／二／三（來源檔）',/\['組員','方向一','方向二','方向三','Week 4 產業',''\]/.test(fs.readFileSync(new URL('../teacher-team.js',import.meta.url),'utf8')));await tp.close();
+// 美術素材：每島島景、NPC、夥伴 Lv1/Lv2 檔案都在、對話頭像用 NPC 圖
+import fsA from 'node:fs';const artDir=new URL('../materials/islands/',import.meta.url);const missing=[];for(let i=1;i<=10;i++){const n=String(i).padStart(2,'0');for(const f of [`scene_island${n}.jpg`,`npc_island${n}.png`,`pet_island${n}_lv1.png`,`pet_island${n}_lv2.png`])if(!fsA.existsSync(new URL(f,artDir)))missing.push(f);}
+ok('40 張美術檔都在 materials/islands',missing.length===0,missing);
+const art=await b.newPage();await art.goto(`${BASE}/islands.html`);await art.waitForTimeout(1000);
+const artChecks=await art.evaluate(async()=>{const urls=[];for(let i=1;i<=10;i++){const n=String(i).padStart(2,'0');urls.push(`materials/islands/scene_island${n}.jpg`,`materials/islands/npc_island${n}.png`,`materials/islands/pet_island${n}_lv1.png`,`materials/islands/pet_island${n}_lv2.png`);}const bad=[];for(const u of urls){const r=await fetch(u);if(!r.ok)bad.push(u);}return bad;});
+ok('40 張美術檔伺服器都抓得到',artChecks.length===0,artChecks);await art.close();
 ok('沒有 JS 錯誤',errs.length===0,errs);
 await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);

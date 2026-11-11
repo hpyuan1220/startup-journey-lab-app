@@ -1,4 +1,4 @@
-import {COMPANIES,islandById,companyById,boxScore,EST_BONUS} from './islands-data.mjs?v=20261110-rep';
+import {COMPANIES,islandById,companyById,boxScore,EST_BONUS} from './islands-data.mjs?v=20261111-art';
 import {DIRECTIONS} from './team-core.mjs?v=20261106-tm';
 // Week 9 頁：公司卡 v1。你在群島情報袋「設為我的代表」的那家（一個方向一家），七格卡＋你答的三題分數＋你貼的來源＋探索／找碴＋估價，自動填好；
 // 你只補兩個來源和一句「為什麼它是好新創」。存在 islands_progress.data.cards[公司]（跟遊戲進度同一包，islands_save）。
