@@ -44,10 +44,10 @@ function render(){
   block('① 還沒登入過（'+notLogged.length+'）',notLogged.map(r=>r.id+' '+r.name),'全班都進來過。');
   block('② 登入了、沒有組（'+noTeam.length+'）',noTeam.map(r=>r.id+' '+r.name),'有登入的人都有組。');
   block('③ 三個方向沒認滿（'+gaps.length+' 組）',gaps.map(x=>x.t.name+'：'+x.sm.missing.join('；')),'每組三個方向都有人。');
-  const noRep=repTeams.filter(x=>!(x.r[1]&&x.r[2]&&x.r[3]));block('④ 代表三家還沒到齊（'+noRep.length+' 組）',noRep.map(x=>x.t.name+'：'+[1,2,3].map(d=>dirShort(d)+(x.r[d]?'＝'+(COMPANY_NAME[x.r[d].company]||x.r[d].company):' 缺')).join('、')),'每組三家都設好了。');
+  const noRep=repTeams.filter(x=>!(x.r[1]&&x.r[2]&&x.r[3]));block('④ 推薦三家還沒到齊（'+noRep.length+' 組）',noRep.map(x=>x.t.name+'：'+[1,2,3].map(d=>dirShort(d)+(x.r[d]?'＝'+(COMPANY_NAME[x.r[d].company]||x.r[d].company):' 缺')).join('、')),'每組三家都設好了。');
   // 每人一列
   const wrap=el('div','',sec,'tw4-wrap');const table=el('table','',wrap,'tm-table ti-table');const tr=el('tr','',el('thead','',table));
-  for(const x of ['學號','姓名','組','認的方向','遊戲方向','候選','開過的箱（分數）','代表／公司卡','第三題網址','探索／找碴','估價','最後存檔'])el('th',x,tr);
+  for(const x of ['學號','姓名','組','認的方向','遊戲方向','候選','開過的箱（分數）','推薦（代表）／理由卡','第三題網址','探索／找碴','估價','最後存檔'])el('th',x,tr);
   const tb=el('tbody','',table);
   for(const r of R){
    const row=el('tr','',tb);if(!r.logged)row.classList.add('ti-dim');
@@ -55,7 +55,7 @@ function render(){
    el('td',r.dirs.map(dirShort).join('、'),row);el('td',r.gameDir?dirShort(r.gameDir)+(r.dirs.length&&!r.dirs.includes(r.gameDir)?'（≠認領）':''):'',row,r.gameDir&&r.dirs.length&&!r.dirs.includes(r.gameDir)?'ti-warn':'');
    el('td',r.cands.map(c=>c.name).join('、'),row);
    const bt=el('td','',row);for(const {c,b} of r.boxes){const s=el('span',c.name+(b.opened?' '+boxScore(b.scores)+'/30'+(b.estOk?' +'+EST_BONUS:''):b.passed>0?' 三題 '+b.passed+'/3':b.found?' 找到島':''),bt,'ti-box'+(b.opened?' ti-open':''));s.title=islandById(c.island)?.name||'';}
-   const rt=el('td','',row);for(const d of r.dirs){const cid=r.reps[d];if(!cid){el('div',dirShort(d)+'：還沒設',rt,'w4-hint');continue;}const cd=r.cards[cid]||{};const n=[r.boxes.find(x=>x.c.id===cid)?.b.url,...(cd.sources||[])].filter(Boolean).length;el('div',dirShort(d)+'＝'+(COMPANY_NAME[cid]||cid)+'（來源 '+n+'/3'+(cd.why?'、一句話 ✓':'、一句話 缺')+'）',rt,n>=3&&cd.why?'ti-box ti-open':'ti-box');}
+   const rt=el('td','',row);for(const d of r.dirs){const cid=r.reps[d];if(!cid){el('div',dirShort(d)+'：還沒推薦',rt,'w4-hint');continue;}const cd=r.cards[cid]||{};const n=[r.boxes.find(x=>x.c.id===cid)?.b.url,...(cd.sources||[])].filter(Boolean).length;el('div',dirShort(d)+'＝'+(COMPANY_NAME[cid]||cid)+'（來源 '+n+'/3'+(cd.why?'、一句話 ✓':'、一句話 缺')+'）',rt,n>=3&&cd.why?'ti-box ti-open':'ti-box');}
    const ut=el('td','',row);for(const {c,b} of r.boxes){if(!b.url)continue;const a=el('a',c.name,ut,'ui');a.href=b.url;a.target='_blank';a.rel='noopener noreferrer';a.title=b.url;}
    el('td',r.boxes.filter(x=>x.b.deep).map(x=>x.c.name+(x.b.insight?'：'+x.b.insight.slice(0,40):'')+(x.b.argue?'｜找碴：'+x.b.argue.slice(0,40):'')).join('\n'),row,'ti-pre');
    el('td',r.boxes.filter(x=>x.b.est).map(x=>x.c.name+'：'+x.b.est+(x.b.estOk?' ✓':' ✗')).join('\n'),row,'ti-pre');

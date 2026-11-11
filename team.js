@@ -27,6 +27,7 @@ function render(){
  if(!st)return;
  const {team,members,me,locked,names,week4}=st;
  if(!team){
+  if(W9){const go=el('div','',body,'tm-go');const a=el('a','進群島：開始尋寶 →',go,'primary-link');a.href='islands.html';el('p','沒有組也可以先玩：選方向、逛島、開箱都行。要「推薦給我的組」、生理由卡之前，記得回來建組。',go,'w4-hint');}
   if(locked){el('p','建組已鎖定。你還沒有組：請直接找老師。',body,'w4-lock');return;}
   const grid=el('div','',body,'tm-grid');
   const c1=el('div','',grid,'tm-card');el('h3','我是組長：建一組',c1);const nameIn=el('input','',c1);nameIn.type='text';nameIn.maxLength=30;nameIn.placeholder='組名（例：火鍋隊）';nameIn.setAttribute('aria-label','組名');
@@ -74,17 +75,17 @@ function render(){
  }
  const legend=el('ul','',mBox,'w4-hint');for(const [,n,desc] of DIRECTIONS)el('li',`${n}：${desc}`,legend);
  // 組卡三格：每個方向的代表（在群島情報袋「設為我的代表」設的）
- if(W9){const rBox=el('div','',body,'tm-block tm-reps');el('h3','組的三家：方向代表（期末從這三家選一家上台）',rBox);
+ if(W9){const rBox=el('div','',body,'tm-block tm-reps');el('h3','我們組要比的三家（每人推薦一家，12/4 比一比，期末選一家上台）',rBox);
   const reps=teamReps(members);const grid=el('div','',rBox,'tm-rep-grid');let filled=0;
   for(const [d,n] of DIRECTIONS){const cell=el('div','',grid,'tm-rep');el('small',n.split('｜')[0]+'｜'+n.split('｜')[1],cell);const r=reps[d];const owner=members.find(m=>normalizeDirections(m.directions).includes(d));
    if(r){filled++;el('b',COMPANY_NAME[r.company]||r.company,cell);el('span','由 '+(names[r.student_id]||r.student_id)+' 研究',cell,'w4-hint');cell.dataset.state='done';}
-   else{el('b','還沒設',cell,'tm-rep-empty');el('span',owner?('由 '+(names[owner.student_id]||owner.student_id)+(owner.student_id===session.student_id?'（我）':'')+' 開箱後在情報袋按「設為我的代表」'):'這個方向還沒人認',cell,'w4-hint');cell.dataset.state='todo';}}
-  el('p',filled===3?'✅ 三家都到齊了。12/4 課堂拿這三家做五問比較、選一家。':`${filled}／3 家。三格填滿才拿得到期末框架（PPT 6 頁、講稿）。`,rBox,'w4-hint');}
+   else{el('b','還沒推薦',cell,'tm-rep-empty');el('span',owner?('由 '+(names[owner.student_id]||owner.student_id)+(owner.student_id===session.student_id?'（我）':'')+' 開箱後在群島情報袋按「推薦給我的組」'):'這個方向還沒人認',cell,'w4-hint');cell.dataset.state='todo';}}
+  el('p',filled===3?'✅ 三家都到齊了。12/4 課堂拿這三家做五問比較、選一家。':`${filled}／3 家。三家到齊才拿得到期末框架（PPT 6 頁、講稿）。`,rBox,'w4-hint');}
  // 狀態
  const stBox=el('div','',body,'w4-done');stBox.dataset.state=sm.complete?'done':'todo';
  el('p',sm.complete?'✅ 這一組建好了：三個方向都有人認。':'還沒完成：',stBox,'w4-done-title');
  if(!sm.complete){const ul=el('ul','',stBox);for(const x of sm.missing)el('li',x,ul);}
- if(W9){const go=el('div','',body,'tm-go');const a=el('a','進群島：開始尋寶 →',go,'primary-link');a.href='islands.html';el('p',sm.complete?'組建好了。到群島選你認的方向，逛島圈 2 家候選、開 2 箱。':'可以先進群島；三個方向沒認滿，期末框架會拿不到，記得回來補。',go,'w4-hint');}
+ if(W9){const go=el('div','',body,'tm-go');const a=el('a','進群島：開始尋寶 →',go,'primary-link');a.href='islands.html';el('p',sm.complete?'組建好了。到群島選你認的方向，逛島圈 2 家候選、開 2 箱，把最喜歡的一家推薦給組。':'可以先進群島；三個方向沒認滿，期末框架會拿不到，記得回來補。',go,'w4-hint');}
  if(!locked){const lb=el('button','離開這一組',body,'button-link w4-small');lb.type='button';let armed=false;lb.addEventListener('click',()=>{if(!armed){armed=true;lb.textContent='再按一次確認離開';setTimeout(()=>{armed=false;lb.textContent='離開這一組';},4000);return;}run({action:'team_leave'},'已離開。');});}
 }
 async function load(){if(!session?.token){render();return;}msg.textContent='正在讀取建組…';try{st=await api({action:'team_load'});msg.textContent='';}catch(e){msg.textContent=e.message;}render();}

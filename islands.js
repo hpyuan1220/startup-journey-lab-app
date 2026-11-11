@@ -26,10 +26,10 @@ async function loadRemote(){if(!session?.token)return;try{const r=await api({act
 const loggedIn=()=>!!session?.token;
 // 我在組裡認的方向、我的代表（方向→公司），islands_load 帶回
 let myDirs=[],myReps={},myTeamId=null;
-async function setRep(c,d,on){const ov=overlay(on?'設為我的代表？':'取消代表？');el('p',on?`「${c.name}」會成為你在組裡「${dirShort(d)}」的代表，Week 9 頁的公司卡會用它生成；之後可以換。`:`清掉「${c.name}」的代表身分（公司卡會跟著收起來）。`,ov,'fine');
- el('div','',ov,'choices').append(btn(on?'確定，設為代表':'確定取消',async()=>{try{const r=await api({action:'team_rep',direction:d,company:on?c.id:null});myReps={};for(const m of r.members||[]){if(m.student_id===session.student_id)myReps=m.reps||{};}toast(on?'已設為代表。到 Week 9 頁看公司卡。':'已取消。');showBag();}catch(e){toast(e.message);}},true),btn('先不要',showBag));}
+async function setRep(c,d,on){const ov=overlay(on?'推薦給我的組？':'取消推薦？');el('p',on?`你替組裡挑了「${c.name}」當「${dirShort(d)}」那一家。12/4 課堂你們三個人各帶一家來比，選一家上台。Week 9 頁會自動生出這家的理由卡；之後可以換別家。`:`取消推薦「${c.name}」（理由卡會跟著收起來）。`,ov,'fine');
+ el('div','',ov,'choices').append(btn(on?'確定，推薦這家':'確定取消',async()=>{try{const r=await api({action:'team_rep',direction:d,company:on?c.id:null});myReps={};for(const m of r.members||[]){if(m.student_id===session.student_id)myReps=m.reps||{};}toast(on?'推薦好了。到 Week 9 頁看理由卡。':'已取消。');showBag();}catch(e){toast(e.message);}},true),btn('先不要',showBag));}
 const dirShort=d=>DIRECTIONS.find(x=>x.id===Number(d))?.name.split('｜')[0]||('方向'+d);
-function needLogin(){say('teacher','Irene 老師','開箱要先登入。','沒登入的進度不會存，老師頁也看不到你開了哪一箱。逛島可以，開箱請先回首頁用學號和邀請碼進入，再回來。',[['回首頁登入',()=>{location.href='index.html';},true],['先逛島',renderBrowse,false],['回港口',renderHub,false]]);}
+function needLogin(){say('teacher','Irene 老師','開箱要先登入。','沒登入的進度不會存，老師也看不到你開了哪一箱。逛島可以；開箱請先回首頁用學號和邀請碼進入，再回來。',[['回首頁登入',()=>{location.href='index.html';},true],['先逛島',renderBrowse,false],['回港口',renderHub,false]]);}
 let current=null;const box=()=>store.boxes[current]||(store.boxes[current]=freshBox());
 const company=()=>companyById(current);
 let busy=false,mode='hub',timer,walkingToken=0;
@@ -53,25 +53,43 @@ function refreshTop(){
  root.querySelectorAll('#steps [data-step]').forEach(x=>{const n=Number(x.dataset.step);x.classList.toggle('active',n===Math.min(stage,4));x.classList.toggle('done',n<stage);});
  $('#journey-loc').innerHTML=c?`<b>${dirById(c.dir).name.split('｜')[0]}</b>　${b.found?islandById(c.island).name+' › '+c.name:'線索卡 › 找島'}`:`<b>尋寶</b>　先選一個寶藏`;
  $('#box-score').textContent=(b?boxScore(b.scores):0)+'/30';$('#opened-count').textContent=openedCount();$('#bag-count').textContent=openedCount();
+ const lv2=COMPANIES.filter(x=>store.boxes[x.id]?.opened&&store.boxes[x.id]?.deep).length;$('#pet-count').textContent=openedCount()+(lv2?'（Lv.2 ×'+lv2+'）':'');const repN=Object.keys(myReps||{}).length;$('#rep-count').textContent=myDirs.length?repN+'/'+myDirs.length:String(repN);
  setSync(syncState);
 }
 // 下一箱：先候選、再自己方向、再任何做好的箱
 function nextBox(){const ready=COMPANIES.filter(c=>c.ready!==false&&!store.boxes[c.id]?.opened);const cands=store.candidates.map(companyById).filter(Boolean);return cands.find(c=>ready.includes(c))||ready.find(c=>c.dir===myDir)||ready[0]||null;}
 function goBox(c){if(!loggedIn()){needLogin();return;}current=c.id;if(box().found)enterIsland();else renderFind();}
 // ---------- 視圖 1：寶箱清單 ----------
+// ---------- 開場（第一次進來三張卡；港口「怎麼玩？」隨時再看） ----------
+const INTRO=[
+ ['你是新創探險者',`期末你們一組要上台講「一家值得認識的 AI 新創」。這座群島有 10 座島、15 家 2026 年的 AI 新創——都是真的公司、真的錢。你的任務：替組裡找出你那個方向最值得講的一家。`,'🧭'],
+ ['怎麼玩（四步）',`① 選方向：三個方向，認一個（組裡三個人各認一個）。
+② 逛島、圈候選：到你方向的島看看住哪些公司，圈 2 家。
+③ 開箱：一箱＝一家公司。讀線索找到島 → 聽店家講故事 → Irene 幫你整理 → 答三題 → 寶箱開。
+④ 推薦給組：開完的公司裡挑最喜歡的一家「推薦給我的組」，三個人湊 3 家，12/4 比一比選一家上台。`,'🗺️'],
+ ['你會得到什麼',`每開一箱：一張七格公司卡（誰付錢、怎麼收費、取代誰、為什麼是現在、數字、風險、台灣同層）——期末直接用。
+一隻夥伴（做探索站或找碴會升級 Lv.2）。
+分數只是紀錄，不算成績；答錯不扣，第三次直接給提示。任何島都能開，多開多理解。`,'✦'],
+];
+function showIntro(onDone){let i=0;const render=()=>{closeOverlay();const ov=overlay('怎麼玩？（'+(i+1)+'／'+INTRO.length+'）');const [t,body,icon]=INTRO[i];const card=el('div','',ov,'intro-card');el('div',icon,card,'intro-icon');el('h3',t,card);const p=el('p','',card,'intro-body');p.textContent=body;
+  const dots=el('div','',card,'intro-dots');INTRO.forEach((_,k)=>{const d=el('i','',dots);if(k===i)d.className='on';});
+  const row=el('div','',ov,'choices');if(i>0)row.append(btn('上一張',()=>{i--;render();}));
+  row.append(btn(i<INTRO.length-1?'下一張 →':'開始尋寶 →',()=>{if(i<INTRO.length-1){i++;render();}else{store.intro_seen=true;save();closeOverlay();if(onDone)onDone();}},true));
+  if(i<INTRO.length-1)row.append(btn('跳過',()=>{store.intro_seen=true;save();closeOverlay();if(onDone)onDone();}));};render();}
 function renderHub(){
  show('hub');current=null;refreshTop();closeOverlay();
+ if(!store.intro_seen){showIntro(renderHub);}
  $('#chapter-small').textContent='HARBOR · 群島港口';$('#chapter-title').textContent='AI 新創群島';$('#mission').textContent='已開寶箱 '+openedCount();
  put(person(),[30,72]);put(teacher(),[60,60]);
  const ready=COMPANIES.filter(c=>c.ready!==false);
  const cands=store.candidates.map(companyById).filter(Boolean);
  const next=cands.find(c=>c.ready!==false&&!store.boxes[c.id]?.opened)||ready.find(c=>!store.boxes[c.id]?.opened&&(!myDir||c.dir===myDir))||ready.find(c=>!store.boxes[c.id]?.opened)||ready[0];
  if(!myDir){
-  say('teacher','Irene 老師 · 港口','先告訴我：你在組裡認的是哪個方向？','之後我會優先帶你去你方向的島。還沒建組也沒關係，先選一個，之後可以改。',
+  say('teacher','Irene 老師 · 港口','先告訴我：你在組裡認的是哪個方向？','之後我會優先帶你去你方向的島。還沒建組也沒關係，先選一個，之後可以改。'+(store.intro_seen?'':'\n（右上角「怎麼玩？」隨時可以再看一次說明。）'),
    DIRECTIONS.map(d=>[d.name,()=>{myDir=d.id;store.dir=d.id;save();renderHub();},false]));
  }else{
   const candLine=cands.length?`\n你的候選（${cands.length}／${CAND_MAX}）：${cands.map(c=>c.name).join('、')}。`:'\n你還沒圈候選：先去「逛島」，在自己方向圈 2 家，再開箱。';
-  say('teacher','Irene 老師 · 港口','怎麼玩：先逛島圈候選，再開箱。','① 逛島：到你方向那一區看看每座島住哪些公司，圈 2 家候選。\n② 開箱：一箱＝一家公司，讀線索找島、聽故事、答三題，開箱拿七格卡。\n③ 開完選 1 家當「方向代表」交給組；三個人湊 3 家，期末講 1 家。'+candLine,
+  say('teacher','Irene 老師 · 港口','怎麼玩：先逛島圈候選，再開箱。','① 逛島：到你方向那一區看看每座島住哪些公司，圈 2 家候選。\n② 開箱：一箱＝一家公司，讀線索找島、聽故事、答三題，開箱拿七格卡。\n③ 開完挑 1 家「推薦給我的組」；三個人湊 3 家，12/4 比一比，期末講 1 家。'+candLine,
    [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:'開箱：'+(cands.includes(next)?next.name:'第 '+(COMPANIES.indexOf(next)+1)+' 箱'),()=>goBox(next),!!cands.length]]:[]),
     ['換方向',()=>{myDir=0;store.dir=0;save();renderHub();},false]]);
  }
@@ -257,16 +275,16 @@ function aiBox(ov,prompt,backFn){const ta=el('textarea',null,ov);ta.value=prompt
  const g=el('a','開 ChatGPT',row,'ui');g.href='https://chatgpt.com/';g.target='_blank';g.rel='noopener noreferrer';
  return st;}
 function deepForm(q){const c=company(),b=box();const ov=overlay('AI 深問');el('h3',q,ov);aiBox(ov,c.deepPrompt(q));
- el('label','回來寫：我多理解了什麼？（一句、至少 12 字）',ov).htmlFor='deep-insight';const ta=el('textarea',null,ov);ta.id='deep-insight';ta.value=b.insight||'';ta.rows=3;ta.maxLength=600;
+ el('label','回來寫：我多理解了什麼？（一句話就好，至少 8 字）',ov).htmlFor='deep-insight';const ta=el('textarea',null,ov);ta.id='deep-insight';ta.value=b.insight||'';ta.rows=3;ta.maxLength=600;
  const err=el('p','',ov,'err');const row=el('div','',ov,'choices');
- row.append(btn(b.deep?'更新筆記':'提交，夥伴升級',()=>{if(ta.value.trim().length<12){err.textContent='至少寫 12 字，用自己的話。';return;}b.insight=ta.value.trim();const first=!b.deep;b.deep=true;save();refreshIsland();closeOverlay();if(first)confetti();say('robot','小潮 · 探索筆記',first?'探索完成！夥伴會穿上研究員披風。':'筆記已更新。','筆記留給老師看；理解對不對，Irene 會在老師頁確認。',[['去答三題',quiz,true],['回島上',()=>enterIsland(),false]]);},true),btn('換一題',station),btn('回島上',closeOverlay));}
+ row.append(btn(b.deep?'更新筆記':'提交，夥伴升級',()=>{if(ta.value.trim().length<8){err.textContent='再多寫一點（至少 8 字），用自己的話就好。';return;}b.insight=ta.value.trim();const first=!b.deep;b.deep=true;save();refreshIsland();closeOverlay();if(first)confetti();say('robot','小潮 · 探索筆記',first?'探索完成！夥伴升級到 Lv.2。':'筆記已更新。','筆記留給老師看；理解對不對，Irene 會在老師頁確認。',[['去答三題',quiz,true],['回島上',()=>enterIsland(),false]]);},true),btn('換一題',station),btn('回島上',closeOverlay));}
 function argueForm(){const c=company(),b=box();const ov=overlay('我要找碴：你是不想買的老闆');el('p','Gemini 扮這家公司的業務，你扮不想花錢的老闆，吵三回合。回來只要貼一句：業務最站不住腳的話。',ov,'fine').style.padding='0 0 6px';aiBox(ov,c.argue);
  el('label','業務最站不住腳的一句（貼回來）',ov).htmlFor='argue-line';const ta=el('textarea',null,ov);ta.id='argue-line';ta.value=b.argue||'';ta.rows=2;ta.maxLength=400;
  const err=el('p','',ov,'err');const row=el('div','',ov,'choices');
- row.append(btn('存起來（夥伴升級）',()=>{if(ta.value.trim().length<8){err.textContent='貼一句至少 8 字。';return;}b.argue=ta.value.trim();const first=!b.deep;b.deep=true;save();refreshIsland();closeOverlay();if(first)confetti();say('robot','小潮 · 找碴紀錄','存好了。這一句就是期末「風險與反方」那一頁的材料。','',[['去答三題',quiz,true],['回島上',()=>enterIsland(),false]]);},true),btn('回島上',closeOverlay));}
+ row.append(btn('存起來（夥伴升級）',()=>{if(ta.value.trim().length<6){err.textContent='貼一句（至少 6 字）。';return;}b.argue=ta.value.trim();const first=!b.deep;b.deep=true;save();refreshIsland();closeOverlay();if(first)confetti();say('robot','小潮 · 找碴紀錄','存好了。這一句就是期末「風險與反方」那一頁的材料。','',[['去答三題',quiz,true],['回島上',()=>enterIsland(),false]]);},true),btn('回島上',closeOverlay));}
 // ---------- 開箱 ----------
 function confetti(){if(reduced())return;const burst=el('div','',$('#scene'),'burst');for(let i=0;i<16;i++){const p=el('i','',burst);p.style.setProperty('--dx',(Math.cos(i/16*Math.PI*2)*95)+'px');p.style.setProperty('--dy',(Math.sin(i/16*Math.PI*2)*75-35)+'px');}setTimeout(()=>burst.remove(),1300);}
-function openChest(){const b=box();if(busy)return;if(b.opened){showBag();return;}walk('chest',()=>{if(b.passed<3){say('teacher','Irene 老師','還差 '+(3-b.passed)+' 題。','三題都對，寶箱才會開。',[['去答題',quiz,true]]);return;}b.opened=true;b.at=new Date().toISOString();save();refreshIsland();confetti();const c=company();say('owner',c.story.speaker,'開箱！'+c.pet.name+'加入你的探索隊。','七格卡收進情報袋了，可以一鍵貼進公司卡。'+(b.deep?'探索也做完，披風解鎖。':'去探索站或找碴，牠會升級。'),(()=>{const n=nextBox();return [['看七格卡',showReward,true],...(n?[['開下一箱：'+n.name,()=>goBox(n),false]]:[]),['回寶箱清單',renderHub,false]];})());showReward();});}
+function openChest(){const b=box();if(busy)return;if(b.opened){showBag();return;}walk('chest',()=>{if(b.passed<3){say('teacher','Irene 老師','還差 '+(3-b.passed)+' 題。','三題都對，寶箱才會開。',[['去答題',quiz,true]]);return;}b.opened=true;b.at=new Date().toISOString();save();refreshIsland();confetti();const c=company();say('owner',c.story.speaker,'開箱！'+c.pet.name+'加入你的探索隊。','七格卡收進情報袋了，可以一鍵貼進公司卡。'+(b.deep?'探索也做完，夥伴已經 Lv.2。':'去探索站或找碴，牠會升級到 Lv.2（選填）。'),(()=>{const n=nextBox();return [['看七格卡',showReward,true],...(n?[['開下一箱：'+n.name,()=>goBox(n),false]]:[]),['回寶箱清單',renderHub,false]];})());showReward();});}
 function showReward(){const c=company(),b=box();const ov=overlay('開箱！');
  const card=el('article','',ov,'reward-card');const h=el('div','',card,'reward-heading');el('span','✦',h,'reward-emblem');const t=el('div','',h);el('small','TREASURE · '+islandById(c.island).name,t);el('h3',c.name+'：'+c.tagline,t);
  const w=el('div','',card,'wow');el('span',c.wow.label,w,'fine').style.padding='0';el('b',c.wow.value,w);el('span',c.wow.note,w,'fine').style.padding='0';
@@ -286,16 +304,16 @@ function showBag(){const ov=overlay('情報袋：開過的寶箱');
   if(b.argue){el('dt','找碴',dl);el('dd','業務最站不住腳：'+b.argue,dl);}if(b.insight){el('dt','我的理解',dl);el('dd',b.insight,dl);}if(b.url){el('dt','我貼的來源',dl);el('dd',b.url,dl);}
   const row=el('div','',a,'choices');const st=el('span','',row,'fine');row.append(btn('複製七格',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製':'複製失敗';}));
   // 設為我的代表：只有我認的方向、而且有組才會出現；同方向一次一家
-  const d=islandById(c.island).dir;if(loggedIn()&&myTeamId&&myDirs.includes(d)){const isRep=myReps[d]===c.id;const rb=btn(isRep?'✓ 我的代表（'+dirShort(d)+'）— 取消':'設為我的代表（'+dirShort(d)+'）',()=>setRep(c,d,!isRep),!isRep&&!myReps[d]);rb.classList.add('rep-btn');if(isRep)rb.classList.add('is-rep');row.append(rb);if(!isRep&&myReps[d])el('span','這個方向目前的代表：'+(companyById(myReps[d])?.name||myReps[d]),row,'fine');}
-  else if(loggedIn()&&!myTeamId)el('span','有組之後才能設為代表（Week 9 頁建組）。',row,'fine');
-  else if(loggedIn()&&!myDirs.includes(d))el('span','這家在'+dirShort(d)+'，不是你認的方向；可以學，不能當代表。',row,'fine');}
- if(loggedIn()&&myTeamId&&myDirs.length){const done=myDirs.filter(d=>myReps[d]);el('p','我的代表：'+(done.length?done.map(d=>dirShort(d)+'＝'+(companyById(myReps[d])?.name||'')).join('、'):'還沒設')+(myDirs.length>done.length?'（'+myDirs.filter(d=>!myReps[d]).map(dirShort).join('、')+' 還缺）':'　✓ 都設好了，到 Week 9 頁看公司卡'),ov,'fine rep-summary');}
+  const d=islandById(c.island).dir;if(loggedIn()&&myTeamId&&myDirs.includes(d)){const isRep=myReps[d]===c.id;const rb=btn(isRep?'✓ 我推薦的（'+dirShort(d)+'）— 取消':'推薦給我的組（'+dirShort(d)+'）',()=>setRep(c,d,!isRep),!isRep&&!myReps[d]);rb.classList.add('rep-btn');if(isRep)rb.classList.add('is-rep');row.append(rb);if(!isRep&&myReps[d])el('span','這個方向你已推薦：'+(companyById(myReps[d])?.name||myReps[d])+'（可以換成這家）',row,'fine');}
+  else if(loggedIn()&&!myTeamId)el('span','有組之後才能推薦給組（Week 9 頁建組）。',row,'fine');
+  else if(loggedIn()&&!myDirs.includes(d))el('span','這家在'+dirShort(d)+'，不是你認的方向；可以學，推薦要選自己方向的。',row,'fine');}
+ if(loggedIn()&&myTeamId&&myDirs.length){const done=myDirs.filter(d=>myReps[d]);el('p','我推薦給組的：'+(done.length?done.map(d=>dirShort(d)+'＝'+(companyById(myReps[d])?.name||'')).join('、'):'還沒推薦')+(myDirs.length>done.length?'（'+myDirs.filter(d=>!myReps[d]).map(dirShort).join('、')+' 還缺一家）':'　✓ 推薦好了，到 Week 9 頁看理由卡'),ov,'fine rep-summary');}
  el('div','',ov,'choices').append(btn('回寶箱清單',renderHub,true));
 }
 // ---------- 事件 ----------
 root.querySelectorAll('[data-destination]').forEach(b=>b.addEventListener('click',()=>visit(b.dataset.destination)));
 $('#btn-quiz').addEventListener('click',quiz);$('#chest').addEventListener('click',openChest);$('#island-pet').addEventListener('click',showBag);
-$('#btn-hub').addEventListener('click',renderHub);$('#btn-bag').addEventListener('click',showBag);
+$('#btn-hub').addEventListener('click',renderHub);$('#btn-intro').addEventListener('click',()=>showIntro());$('#btn-bag').addEventListener('click',showBag);
 $('#btn-reset').addEventListener('click',()=>{if(!current){toast('先選一個寶箱。');return;}const ov=overlay('重設這一箱？');el('p','會清掉這一箱的找島、三題、探索筆記（其他寶箱不動）。',ov,'fine');el('div','',ov,'choices').append(btn('確定重設',()=>{delete store.boxes[current];save();renderFind();},true),btn('保留',closeOverlay));});
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeOverlay();});
 (async()=>{setSync('');await loadRemote();renderHub();})();

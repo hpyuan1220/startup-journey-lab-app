@@ -47,6 +47,8 @@ await p.goto(`${BASE}/week.html?week=9`);await p.waitForTimeout(1500);
 ok('Week 9 頁：Week 9 教材顯示、Week 7 教材藏、「我的組」顯示同一組、有「進群島」連結',await p.evaluate(()=>!document.querySelector('#week-nine-materials').hidden&&document.querySelector('#week-seven-materials').hidden&&/火鍋隊/.test(document.querySelector('#team9 .tm-team-head b')?.textContent||'')&&/islands\.html/.test(document.querySelector('#team9 .tm-go a')?.getAttribute('href')||'')&&/先確認我的組/.test(document.querySelector('#team9 .eyebrow').textContent)));
 const p0=await b.newPage();await p0.goto(`${BASE}/week.html?week=9`);await p0.waitForTimeout(1200);
 ok('Week 9 沒登入：提示先進入、沒有進群島',await p0.evaluate(()=>/先用學號和邀請碼進入/.test(document.querySelector('#team9').innerText)&&!document.querySelector('#team9 .tm-go')));await p0.close();
+const TN=(await post('Student-api',{action:'login',student_id:'A113990061',invite_code:'GOOD-CODE',confirm_new:true})).token;const c9=await b.newContext();await c9.addInitScript(t=>localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:'A113990061'})),TN);const p9=await c9.newPage();await p9.goto(`${BASE}/week.html?week=9`);await p9.waitForTimeout(1500);
+ok('Week 9 登入沒組：也有「進群島」＋提示沒組可先玩，建組卡片仍在',await p9.evaluate(()=>!!document.querySelector('#team9 .tm-go a')&&/沒有組也可以先玩/.test(document.querySelector('#team9 .tm-go').textContent)&&!!document.querySelector('#team9 .tm-grid')));await c9.close();
 // ---- 學生 3、4 ----
 const j3=await post('week2-api',{action:'team_join',code,token:T[S3]});
 const j4=await post('week2-api',{action:'team_join',code,token:T[S4]});

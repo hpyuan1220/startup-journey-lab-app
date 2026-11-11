@@ -8,6 +8,13 @@ const ctx=await b.newContext({viewport:{width:900,height:1200}});await ctx.addIn
 const p=await ctx.newPage();p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push('C:'+m.text());});
 const R=[];const ok=(n,c,d)=>R.push((c?'✅ ':'❌ ')+n+(d?' '+JSON.stringify(d).slice(0,200):''));
 await p.goto(`${BASE}/islands.html`);await p.waitForTimeout(1200);
+ok('第一次進來：開場三張卡（1／3）',await p.evaluate(()=>/怎麼玩？（1／3）/.test(document.querySelector('#overlay .overlay-head h2')?.textContent||'')&&document.querySelectorAll('#overlay .intro-dots i').length===3));
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/下一張/.test(b.textContent)).click());await p.waitForTimeout(150);await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/下一張/.test(b.textContent)).click());await p.waitForTimeout(150);
+ok('第三張：開始尋寶按鈕',await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].some(b=>/開始尋寶/.test(b.textContent))));
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/開始尋寶/.test(b.textContent)).click());await p.waitForTimeout(300);
+ok('開場後：Irene 問方向、overlay 關了',await p.evaluate(()=>document.querySelector('#overlay').hidden&&/哪個方向/.test(document.querySelector('#d-title').textContent)));
+await p.evaluate(()=>document.querySelector('#btn-intro').click());await p.waitForTimeout(150);ok('「怎麼玩？」可再開',await p.evaluate(()=>!document.querySelector('#overlay').hidden&&document.querySelectorAll('#overlay .intro-dots i').length===3));
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/跳過/.test(b.textContent)).click());await p.waitForTimeout(150);
 ok('港口第一次：Irene 先問方向，三個選項',await p.evaluate(()=>/哪個方向/.test(document.querySelector('#d-title').textContent)&&document.querySelectorAll('#choices .ui').length===3));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方向二/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、清單 15 箱按三個方向分段',await p.evaluate(()=>/先逛島圈候選/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/逛島/.test(b.textContent))&&document.querySelectorAll('.treasure').length===15&&document.querySelectorAll('.t-section').length===3));
@@ -71,7 +78,7 @@ ok('頁首顯示學號＋已存雲端',await p.evaluate(()=>/已存雲端/.test(
 const ctx2=await b.newContext();await ctx2.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));},[TOKEN,SID]);const q=await ctx2.newPage();await q.goto(`${BASE}/islands.html`);await q.waitForTimeout(1500);
 ok('另一台電腦登入：清單顯示 Owner 已開箱、情報袋 1',await q.evaluate(()=>/已開箱 27\/30/.test(document.querySelector('.treasure.opened')?.textContent||'')&&document.querySelector('#bag-count').textContent==='1'));await ctx2.close();
 // 沒登入：可逛島，不能開箱
-const g=await b.newPage();await g.goto(`${BASE}/islands.html`);await g.waitForTimeout(1000);
+const g=await b.newPage();await g.goto(`${BASE}/islands.html`);await g.waitForTimeout(1000);await g.evaluate(()=>{const b=[...document.querySelectorAll('#overlay .ui')].find(x=>/跳過/.test(x.textContent));if(b)b.click();});await g.waitForTimeout(200);
 await g.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方向一/.test(b.textContent)).click());await g.waitForTimeout(300);
 ok('沒登入：頁首警示、港口可逛島',await g.evaluate(()=>/未登入/.test(document.querySelector('#who').textContent)&&[...document.querySelectorAll('#choices .ui')].some(b=>/逛島/.test(b.textContent))));
 await g.evaluate(()=>[...document.querySelectorAll('.treasure .ui')].find(b=>/出發找島/.test(b.textContent)).click());await g.waitForTimeout(300);
@@ -90,22 +97,22 @@ ok('Palona 開箱：怎麼收費帶「我的估價」與 +5、任務列顯示 +5
 ok('Owner 公開價格：沒有估價題',await p.evaluate(()=>!document.querySelector('#overlay').textContent.includes('估價加分')));
 // 設為我的代表：沒組→提示；建組認方向二→情報袋 Owner 有按鈕→按→確認→✓；Week 9 頁組卡三格＋公司卡 v1
 await p.goto(`${BASE}/islands.html`);await p.waitForTimeout(1200);await p.evaluate(()=>document.querySelector('#btn-bag').click());await p.waitForTimeout(300);
-ok('沒組：情報袋提示有組之後才能設代表',await p.evaluate(()=>/有組之後才能設為代表/.test(document.querySelector('#overlay').innerText)&&!document.querySelector('#overlay .rep-btn')));
+ok('沒組：情報袋提示有組之後才能設代表',await p.evaluate(()=>/有組之後才能推薦給組/.test(document.querySelector('#overlay').innerText)&&!document.querySelector('#overlay .rep-btn')));
 await post('week2-api',{action:'team_create',token:TOKEN,name:'島隊'});await post('week2-api',{action:'team_claim',token:TOKEN,directions:[2]});
 await p.reload();await p.waitForTimeout(1200);await p.evaluate(()=>document.querySelector('#btn-bag').click());await p.waitForTimeout(300);
-ok('認方向二後：Owner、Palona 都有「設為我的代表（方向二）」、摘要寫還沒設',await p.evaluate(()=>document.querySelectorAll('#overlay .rep-btn').length===2&&/方向二 還缺|還沒設/.test(document.querySelector('#overlay .rep-summary').textContent)));
+ok('認方向二後：Owner、Palona 都有「設為我的代表（方向二）」、摘要寫還沒設',await p.evaluate(()=>document.querySelectorAll('#overlay .rep-btn').length===2&&/方向二 還缺一家|還沒推薦/.test(document.querySelector('#overlay .rep-summary').textContent)));
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .rep-btn')].find(b=>b.closest('.reward-card').querySelector('h3').textContent==='Owner').click());await p.waitForTimeout(200);
-await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/確定，設為代表/.test(b.textContent)).click());await p.waitForTimeout(1200);
-ok('設 Owner 為代表：按鈕變 ✓、Palona 顯示目前代表是 Owner、摘要「都設好了」',await p.evaluate(()=>{const cards=[...document.querySelectorAll('#overlay .reward-card')];const o=cards.find(c=>c.querySelector('h3').textContent==='Owner'),pa=cards.find(c=>c.querySelector('h3').textContent==='Palona');return /✓ 我的代表/.test(o.querySelector('.rep-btn').textContent)&&/目前的代表：Owner/.test(pa.innerText)&&/都設好了/.test(document.querySelector('#overlay .rep-summary').textContent);}));
+await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/確定，推薦這家/.test(b.textContent)).click());await p.waitForTimeout(1200);
+ok('設 Owner 為代表：按鈕變 ✓、Palona 顯示目前代表是 Owner、摘要「都設好了」',await p.evaluate(()=>{const cards=[...document.querySelectorAll('#overlay .reward-card')];const o=cards.find(c=>c.querySelector('h3').textContent==='Owner'),pa=cards.find(c=>c.querySelector('h3').textContent==='Palona');return /✓ 我推薦的/.test(o.querySelector('.rep-btn').textContent)&&/已推薦：Owner/.test(pa.innerText)&&/推薦好了/.test(document.querySelector('#overlay .rep-summary').textContent);}));
 const rep=await post('week2-api',{action:'team_load',token:TOKEN});ok('team_load：我的 reps {2:owner}',JSON.stringify(rep.members?.[0]?.reps)==='{"2":"owner"}',rep.members?.[0]?.reps);
 await p.goto(`${BASE}/week.html?week=9`);await p.waitForTimeout(2000);
 ok('Week 9 組卡三格：方向二＝Owner、方向一／三還沒設、1／3 家',await p.evaluate(()=>{const g=[...document.querySelectorAll('#team9 .tm-rep')];return g.length===3&&g[1].dataset.state==='done'&&/Owner/.test(g[1].textContent)&&g[0].dataset.state==='todo'&&/1／3 家/.test(document.querySelector('#team9 .tm-reps').textContent);}));
 ok('公司卡 v1：Owner 一張、七格、來源①是第三題網址、還差來源 2 個＋一句話',await p.evaluate(()=>{const c=document.querySelector('#company-card .cc-card[data-company=owner]');return !!c&&c.querySelectorAll('.cc-facts dt').length>=7&&/owner\.com/.test(c.querySelector('.cc-src a')?.href||'')&&/來源 2 個/.test(c.querySelector('.cc-done').textContent)&&/一句話/.test(c.querySelector('.cc-done').textContent);}));
 await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 2"]','https://www.owner.com/pricing');await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 3"]','not a url');
-await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存公司卡/.test(b.textContent)).click());await p.waitForTimeout(300);
+await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存理由卡/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('來源不是網址被擋',await p.evaluate(()=>/完整網址/.test(document.querySelector('#company-card .w4-row .w4-hint').textContent)));
 await p.fill('#company-card .cc-card[data-company=owner] input[aria-label="Owner 來源 3"]','https://techcrunch.com/owner');await p.fill('#company-card textarea','接電話的錢比請人便宜。');
-await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存公司卡/.test(b.textContent)).click());await p.waitForTimeout(1500);await p.reload();await p.waitForTimeout(2000);
+await p.evaluate(()=>[...document.querySelectorAll('#company-card button')].find(b=>/存理由卡/.test(b.textContent)).click());await p.waitForTimeout(1500);await p.reload();await p.waitForTimeout(2000);
 ok('存公司卡後重整：三個來源＋一句話都在、顯示完成 ✅',await p.evaluate(()=>{const c=document.querySelector('#company-card .cc-card[data-company=owner]');return c.dataset.done==='true'&&c.querySelector('input[aria-label="Owner 來源 3"]').value==='https://techcrunch.com/owner'&&/便宜/.test(c.querySelector('textarea').value);}));
 const cl=await post('week2-api',{action:'islands_load',token:TOKEN});ok('公司卡存在 islands_progress.data.cards.owner，遊戲進度沒被蓋掉',cl.row.data.cards?.owner?.sources?.length===2&&cl.row.data.boxes.palona.opened===true);
 // 老師頁群島區：三個檢查塊、每人一列（這個學生：Owner 27/30、Palona 30/30 +5、候選、網址、估價）
