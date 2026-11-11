@@ -1,6 +1,6 @@
 import {COMPANIES,ISLANDS,DIRECTIONS,companyById,islandById,boxScore,EST_BONUS} from './islands-data.mjs?v=20261111-art';
 import {normalizeDirections,teamSummary} from './team-core.mjs?v=20261106-tm';
-import {normalizeReps,teamReps,COMPANY_NAME} from './islands-core.mjs?v=20261110-rep';
+import {normalizeReps,teamReps,COMPANY_NAME} from './islands-core.mjs?v=20261112-w10';
 // 教師洞察 · Week 9 群島尋寶：誰還沒進來、誰沒組、各組方向缺口；每人圈了哪些候選、開了哪些箱（分數、第三題網址、探索／找碴、估價）。
 // 只讀。分數不進成績（記錄用）。資料來源：teacher_load 的 islands（islands_progress）、teams／team_members、roster／week1。
 const dashboard=document.getElementById('teacher-dashboard');

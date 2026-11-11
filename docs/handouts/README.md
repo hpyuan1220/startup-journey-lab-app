@@ -12,9 +12,13 @@ node -e "const {chromium}=require('playwright');(async()=>{const b=await chromiu
 | WEEK5_HANDOUT.html | materials/Week5_講義.pdf（4 頁，2026/11/5 依原 PDF 重做） |
 | WEEK6_HANDOUT.html | materials/Week6_講義.pdf |
 | WEEK8_HANDOUT.html | materials/Week8_講義.pdf |
+| WEEK9_HANDOUT.html | materials/Week9_講義.pdf（4 頁：三把尺、一箱怎麼開、推薦給組） |
+| WEEK10_HANDOUT.html | materials/Week10_講義.pdf（4 頁：五問公司版、比較表、反方、期末六頁） |
+| ISLANDS_INTRO.html | docs/handouts/ISLANDS_INTRO.pdf（群島怎麼玩，A4 橫式 4 頁投影） |
+| MIDTERM_STATUS_NOTICE_1112.md | （純文字，貼 TronClass／LINE） |
 | WEEK8_SPEAKER_BRIEF.html | 116/Week8/Week8_給講師的課程說明.pdf |
 | WEEK4_SUMMARY_GROUP.html | 116/Week4/Week4_進度總結_20261104.pdf（群組版，無名單） |
 | WEEK4_ONEPAGE_MISMATCH.html | 116/Week4/Week4_痛對不上產業線怎麼辦_一頁.pdf |
 
 有學生姓名學號的版本（Week 4 全班名單）原始檔在 `docs/private/`，不進 git。
-Week 4、Week 5 講義的原始檔當初沒有存進專案（只有 PDF）。簡報的原始檔是 `docs/WEEK*_SLIDES_SOURCE.json`，用 `scripts/build-slides.py` 產生。
+Week 4、Week 5 講義的原始檔當初沒有存進專案（只有 PDF）。簡報的原始檔是 `docs/WEEK*_SLIDES_SOURCE.json`，用 `scripts/build-slides.py` 產生（`python3 scripts/build-slides.py --source docs/WEEK9_SLIDES_SOURCE.json --out materials/Week9_教學簡報.pptx`），再用 `soffice --headless --convert-to pdf` 轉 PDF。Week 9、10 都有原始檔。

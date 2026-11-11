@@ -49,11 +49,12 @@ const w6m=document.querySelector("#week-six-materials"); if(w6m) w6m.hidden=n!==
 const w7m=document.querySelector("#week-seven-materials"); if(w7m) w7m.hidden=n!==7;
 const w8m=document.querySelector("#week-eight-materials"); if(w8m) w8m.hidden=n!==8;
 const w9m=document.querySelector("#week-nine-materials"); if(w9m) w9m.hidden=n!==9;
+const w10m=document.querySelector("#week-ten-materials"); if(w10m) w10m.hidden=n!==10;
 // Week 6（11/5 起）有自己的課堂兩題頁（classq.js），跟 Week 2–5 一樣走下面的「學習藍圖／作答頁」切換。
 
 // Switch views without rebuilding the form: unsaved answers remain in memory.
-if(n===2||n===3||n===4||n===5||n===6||n===8){
- const ids={2:['#week-two-navigation','#week-two-materials','#week-two'],3:['#week-three-navigation','#week-three-materials','#week-three'],4:['#week-four-navigation','#week-four-materials','#week-four'],5:['#week-five-navigation','#week-five-materials','#week-five'],6:['#week-six-navigation','#week-six-materials','#week-six'],8:['#week-eight-navigation','#week-eight-materials','#week-eight']}[n];
+if(n===2||n===3||n===4||n===5||n===6||n===8||n===9||n===10){
+ const ids={2:['#week-two-navigation','#week-two-materials','#week-two'],3:['#week-three-navigation','#week-three-materials','#week-three'],4:['#week-four-navigation','#week-four-materials','#week-four'],5:['#week-five-navigation','#week-five-materials','#week-five'],6:['#week-six-navigation','#week-six-materials','#week-six'],8:['#week-eight-navigation','#week-eight-materials','#week-eight'],9:['#week-nine-navigation','#week-nine-materials','#week-nine'],10:['#week-ten-navigation','#week-ten-materials','#week-ten']}[n];
  const navigation=document.querySelector(ids[0]);
  const materials=document.querySelector(ids[1]);
  const cardSection=document.querySelector(ids[2]);
@@ -69,7 +70,7 @@ if(n===2||n===3||n===4||n===5||n===6||n===8){
   moved=true;loadVideo();});
  function loadVideo(){if(!pre||!moved||document.querySelector('#week-blueprint').hidden)return;pre.querySelectorAll('iframe[data-src]').forEach(f=>{f.src=f.dataset.src;delete f.dataset.src;});}
  function showWeekView(){
-  const cardView=['#card','#week-two','#week-three','#week-four','#week-five','#week-six','#week-eight'].includes(location.hash);
+  const cardView=['#card','#week-two','#week-three','#week-four','#week-five','#week-six','#week-eight','#week-nine','#week-ten'].includes(location.hash);
   document.querySelector('#week-blueprint').hidden=cardView;
   materials.hidden=cardView;
   cardSection.hidden=!cardView;

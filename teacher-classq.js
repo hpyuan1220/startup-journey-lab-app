@@ -1,4 +1,4 @@
-import {resolveQuestions,attendance,stampLabel,classDate,classWindow,CLASS_SCHEDULE,DEFAULT_QUESTIONS,CLASSQ_WEEKS,normalizeClassQ} from './week4-core.mjs?v=20261105-cq';
+import {resolveQuestions,attendance,stampLabel,classDate,classWindow,CLASS_SCHEDULE,DEFAULT_QUESTIONS,CLASSQ_WEEKS,normalizeClassQ} from './week4-core.mjs?v=20261112-w9';
 import {remarkEditor,findRemark,mergeRemarks,listenRemarks,suggestTagResearch,freezeSuggestions} from './teacher-remarks.mjs?v=20261025-w5';
 // 教師洞察 · 只有課堂兩題的週（Week 6 起；例如 11/6 跟 Week 5 同一天上）
 // 每週一塊：改兩題（留白用預設）＋一人一列（出席、Q1／Q2 存檔時間、備註；點代號看全文與 AI 評語）。出席跟 Week 5 分開算。

@@ -1,6 +1,6 @@
 import {INDUSTRY_CARDS} from './week4-core.mjs?v=20261106-tm';
 import {DIRECTIONS,directionName,industryLabel,teamSummary,industryOptions,normalizeDirections,TEAM_LOCK_LABEL,TEAM_MAX,TEAM_MIN} from './team-core.mjs?v=20261106-tm';
-import {teamReps,COMPANY_NAME} from './islands-core.mjs?v=20261110-rep';
+import {teamReps,COMPANY_NAME} from './islands-core.mjs?v=20261112-w10';
 // Week 7 建組（學生端）：掛在 Week 7 期中報告頁最下面（#team）。
 // 沒有組：建組（拿四碼組碼）／輸入組碼加入／按「想請老師分組」。有組：組名與組碼、組員與各自認的方向、組的產業線（從組員 Week 4 選的產業挑）、離開。
 // 12/19（期末後）才自動鎖；老師在老師頁鎖住的組也不能改。資料存 teams／team_members；每個動作都是一次 API，不用另外按存。

@@ -355,6 +355,8 @@ const DEFAULT_QUESTIONS={
  4:{q1:'Bhidé 訪談 Inc. 500 創辦人發現大多數點子從哪來？一句話說這跟你 Week 1 的起點卡有什麼關係。',q2:'你今天選了哪一條產業線？為什麼你的痛屬於這一行？一句話。',points:'Bhidé 1994：約七成點子來自親身工作經驗、個位數來自系統性研究；新事業通常解創辦人自己身為顧客或員工碰到的問題。Q2 看兩件事：說出一條產業線（九張產業卡之一或自填）；用一句話說這個痛翻到業者那一面是什麼（誰為它花錢、花時間、受損失）。'},
  6:{q1:'AI 新創地圖用「發電廠、引擎、零件、汽車」四層來比喻。為什麼錢先流到最底層，小團隊的機會卻在最上層？一句話。',q2:'你的產業線，在群島地圖上最接近哪一座島？舉一家島上的公司，說它跟你這一行有什麼關係。一句話。',points:'四層由下往上：發電廠＝算力（機房）、引擎＝基礎模型、零件與道路＝基礎設施（資料、agent 工具）、汽車＝應用。越底層單筆投資越大、家數越少（大模型、機房動輒數十億美元）；越往上單筆越小、家數越多。小團隊用現成的引擎和零件，把 AI 做成某一行的服務（島 6 垂直 Agent：Owner 餐廳、Gorgias 網店客服、EliseAI 租屋、Skello 排班）。10 座島：1 基礎模型、2 算力、3 資料平台、4 AI 寫程式、5 Agent 基礎設施、6 垂直 Agent、7 消費創意、8 實體 AI、9 世界模型、10 AI for Science。'},
  8:{q1:'課堂用「廚房裡的鍋具演進史」比喻三代工具。「第一代 AI（早期的聊天機器人）」對應的是哪一種？(A) 傳統鐵鍋加瓦斯爐 (B) 語音食譜機 (C) 全自動智慧料理機加自動買菜車 (D) 中央廚房的水電錶。寫選項＋一句為什麼。',q2:'講「人在迴路裡的現場調度」時，舉了半夜車子拋錨的例子。AI 聽完引擎聲、看完儀表板照片後，做了什麼判斷與調度？(A) 判斷引擎故障，派拖吊車 (B) 判斷電瓶沒電，派最近、有跨接電源、現在有空的技師 (C) 無法判斷，轉真人客服 (D) 判斷爆胎，請車主自己換。寫選項＋一句為什麼。',points:'Q1 答案 B：語音食譜機只出嘴不出手；A 是傳統軟體（Excel、ERP），C 是 AI Agent（自己查冰箱、下單、控溫）。Q2 答案 B：感測輸入（聲音、照片）→ AI 判斷（電瓶沒電，不用拖吊）→ 實體調度（派最近、有設備、有空的技師）；只有判斷錯誤成本高（疑似事故）才轉真人，C 是干擾項。評語請說學生選對或選錯、理由有沒有講到「只出嘴不出手」或「感測→判斷→調度」。'},
+ 9:{q1:'你開的第一箱：用一句話講出「誰付錢、怎麼收費、取代誰」（三個都要有；公開的寫數字，不公開的寫你的估價）。',q2:'它取代的是人、軟體、還是平台？這三種裡哪一種的風險最大、為什麼？用七格卡「風險」那一格的內容回答。',points:'Q1 看三把尺有沒有都到：付錢的人有名字或型態（「一到幾家店的餐廳老闆」）、收費有方式有數字或估價區間、取代的對象清楚（外送抽成 15–30%／調度員／Zendesk）。Q2 沒有標準答案，看有沒有用七格卡的風險那一格：取代人→大廠加功能或語音 AI 降價；取代軟體→既有軟體商內建；取代平台→平台自己做（Shopify 做客服 AI、外送平台推自有網站）。只寫「競爭很激烈」算 0。'},
+ 10:{q1:'你們組選了哪一家？用一句話說它贏在五問的哪一題（要有數字：客戶數、收費、省多少小時）。',q2:'反方最狠的一刀是哪一種（大廠／客戶／技術）？你們打算怎麼回？或老實說沒證據、要查什麼。',points:'Q1 看三件事：有選定（一家公司名）、指到五問之一、有數字（引理由卡或比較表）。Q2 看有沒有分清三種反方、回法是證據不是形容詞（「大廠為什麼不做」「它省的比它收的多」「它賣的不是模型」），或老實寫沒證據＋下一步查什麼；只寫「我們更專注」算 0。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
 function resolveQuestions(week,row){
@@ -418,7 +420,7 @@ function buildPrompt(kind,d,q){
 }
 
 // ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
-const CLASSQ_WEEKS=[6,8];
+const CLASSQ_WEEKS=[6,8,9,10];
 const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
 function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
 function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
@@ -623,6 +625,77 @@ const companyDir=id=>ISLAND_DIR[COMPANY_ISLAND[String(id||'')]]||0;
 function normalizeReps(v){const out={};if(!v||typeof v!=='object'||Array.isArray(v))return out;for(const [k,c] of Object.entries(v)){const d=Number(k);if(![1,2,3].includes(d))continue;const id=String(c||'').toLowerCase();if(companyDir(id)===d)out[d]=id;}return out;}
 // 組的三格：每個方向由認領的人的 reps 填；回 {1:{student_id,company}|null,...}
 function teamReps(members){const out={1:null,2:null,3:null};for(const m of members||[]){const reps=normalizeReps(m.reps);for(const d of [1,2,3])if(reps[d]&&!out[d])out[d]={student_id:m.student_id,company:reps[d]};}return out;}
+
+// Week 10 比較頁的規則（前端 compare.js、teacher-compare.js 與 Edge week2-api 共用）。
+// 一組一份 teams.compare：{scores:{[company]:{q1..q5:{score:0|1|2|null,evidence}}}, counters:{big,customer,tech,chosen}, pick:{company,reason,at}, notes}
+
+const COMPARE_QUESTIONS=[
+ {key:'q1',title:'有人正在為它付錢嗎',hint:'誰付錢、付多少、客戶數（七格卡第 1＋5 格）',rubric:'0：只有免費用戶或 demo｜1：有付費客戶但說不出數字｜2：有客戶數或營收數字'},
+ {key:'q2',title:'多久一次、一次多少',hint:'收費方式與單價；一個客戶一年付多少（第 2 格＋估價）',rubric:'0：不知道怎麼收費｜1：知道方式，金額不公開也沒估｜2：有數字或有估價'},
+ {key:'q3',title:'為什麼是現在',hint:'近三年哪一個改變讓它可做（第 4 格）',rubric:'0：「AI 很強」｜1：有變化但關係弱｜2：說得出具體的那一個改變'},
+ {key:'q4',title:'為什麼還沒被解好',hint:'取代誰、大廠為什麼不做（第 3＋6 格）',rubric:'0：大廠已經做得不錯｜1：取代了人或軟體，但大廠一加功能就沒了｜2：取代對象清楚＋說得出大廠為什麼不做'},
+ {key:'q5',title:'台灣做得到嗎',hint:'台灣同層有沒有人、差在哪（第 7 格，你們查的）',rubric:'0：查不到也想不出為什麼｜1：有人做，說不出差在哪｜2：查到 1–2 家、比得出差在哪（或說得出台灣為什麼沒人做）'},
+];
+const COUNTER_KINDS=[['big','大廠那一刀','「我加一個功能就把你做掉了」——平台／既有軟體商'],['customer','客戶那一刀','「旺季變貴」「我的人就會了」「出錯誰負責」'],['tech','技術那一刀','「模型降價，你的毛利沒了」「模型公司直接做」']];
+const MAX_COMPARE=COMPARE_QUESTIONS.length*2;
+const PAGES=[
+ ['這家公司一句話','誰付錢、買什麼、怎麼收（理由卡第 1、2 格＋一句話）。開場 10 秒內讓台下知道它賣什麼給誰。'],
+ ['錢流與收費、以前誰在做','收費方式＋數字（公開的引官網；不公開的講估價與怎麼估）；取代誰、省多少。'],
+ ['為什麼是現在','近三年那一個改變＋募資／客戶數當「有人押注」的證據（募資不等於賺錢）。'],
+ ['為什麼不是另外兩家','比較表（五問 0／1／2 三家並排）；研究那兩家的人各講 30 秒「我這家輸在哪一問」。'],
+ ['風險與反方最狠的一刀','三種反方選一刀＋你們的回法（或老實說沒證據、下一步查什麼）。'],
+ ['台灣同層／我們學到什麼','台灣有沒有同一層的業者、收費差在哪（第 7 格）；一句「這家公司教我們的一件事」。'],
+];
+const cut=(v,n)=>String(v??'').replace(/\r/g,'').slice(0,n);
+const sc=v=>(v===0||v===1||v===2)?v:(v==='0'||v==='1'||v==='2')?Number(v):null;
+function emptyCompare(){return {scores:{},counters:{big:'',customer:'',tech:'',chosen:''},pick:{company:'',reason:'',at:''},notes:''};}
+// allowed：這組三個人推薦的公司 id；不在裡面的分數直接丟掉
+function normalizeCompare(input,allowed){
+ const i=input&&typeof input==='object'&&!Array.isArray(input)?input:{};const d=emptyCompare();const ok=new Set((allowed||[]).map(x=>String(x).toLowerCase()));
+ const scores=i.scores&&typeof i.scores==='object'?i.scores:{};
+ for(const [cid,qs] of Object.entries(scores)){const id=String(cid).toLowerCase();if(!ok.has(id)||!qs||typeof qs!=='object')continue;d.scores[id]={};for(const q of COMPARE_QUESTIONS){const c=qs[q.key]&&typeof qs[q.key]==='object'?qs[q.key]:{};d.scores[id][q.key]={score:sc(c.score),evidence:cut(c.evidence,300)};}}
+ const c=i.counters&&typeof i.counters==='object'?i.counters:{};for(const [k] of COUNTER_KINDS)d.counters[k]=cut(c[k],300);d.counters.chosen=COUNTER_KINDS.some(([k])=>k===c.chosen)?c.chosen:'';
+ const p=i.pick&&typeof i.pick==='object'?i.pick:{};const pc=String(p.company||'').toLowerCase();d.pick={company:ok.has(pc)?pc:'',reason:cut(p.reason,600),at:pc&&ok.has(pc)?cut(p.at,40):''};
+ d.notes=cut(i.notes,1000);return d;
+}
+function totals(d){const out={};for(const [cid,qs] of Object.entries(d.scores||{})){let sum=0,n=0,withEv=0;for(const q of COMPARE_QUESTIONS){const c=qs[q.key]||{};if(c.score!=null){sum+=c.score;n++;if(c.evidence)withEv++;}}out[cid]={sum,n,withEv,complete:n===COMPARE_QUESTIONS.length};}return out;}
+function topCompany(d){const t=totals(d);let best='',bs=-1;for(const [cid,x] of Object.entries(t)){if(x.complete&&x.sum>bs){bs=x.sum;best=cid;}}return best;}
+function pickNeedsReason(d){const top=topCompany(d);return !!(d.pick.company&&top&&d.pick.company!==top);}
+function pickOk(d){if(!d.pick.company)return false;return !pickNeedsReason(d)||d.pick.reason.length>=20;}
+function compareProgress(d,allowed){
+ const t=totals(d);const ids=(allowed||[]).map(x=>String(x).toLowerCase());const scored=ids.filter(id=>t[id]?.complete).length;
+ const missing=[];
+ if(ids.length<3)missing.push(`三家還沒到齊（${ids.length}／3）`);
+ if(scored<ids.length)missing.push(`比較表還有 ${ids.length-scored} 家沒打完五格`);
+ if(!d.pick.company)missing.push('還沒選定一家');else if(!pickOk(d))missing.push('選了不是最高分的，要寫理由（至少 20 字）');
+ const cn=COUNTER_KINDS.filter(([k])=>d.counters[k]).length;if(cn<3)missing.push(`反方三格還有 ${3-cn} 格空的`);
+ if(!d.counters.chosen)missing.push('還沒選最狠的一刀');
+ return {scored,ids,totals:t,top:topCompany(d),pick:d.pick.company,pickOk:pickOk(d),counters:cn,missing,done:missing.length===0};
+}
+// 期末框架：六頁＋每人講稿草稿。members：[{student_id,directions,reps}]；cards：{[student_id]:{[company]:{why,sources,url,est,estOk,insight,argue}}}；names：{[student_id]:name}
+// companyInfo(cid)：{name,tagline,card:[[k,v]...]}（前端用 islands-data；Edge 不產框架，所以可以不給）
+function buildFramework(d,members,names,cards,companyInfo){
+ const pick=d.pick.company;if(!pick)return null;
+ const owner=(members||[]).find(m=>Object.values(m.reps||{}).includes(pick));
+ const others=(members||[]).filter(m=>m.student_id!==owner?.student_id);
+ const nm=id=>names?.[id]||id;const info=companyInfo?companyInfo(pick):null;const name=info?.name||COMPANY_NAME[pick]||pick;
+ const grid=k=>info?.card?.find(([kk])=>kk===k)?.[1]||'';
+ const myCard=owner?cards?.[owner.student_id]?.[pick]||{}:{};
+ const t=totals(d);const losers=Object.keys(d.scores).filter(c=>c!==pick);
+ const loseLine=c=>{const qs=d.scores[c]||{};const weakest=COMPARE_QUESTIONS.map(q=>[q,qs[q.key]?.score]).filter(([,s])=>s!=null).sort((a,b)=>a[1]-b[1])[0];const who=(members||[]).find(m=>Object.values(m.reps||{}).includes(c));return `${COMPANY_NAME[c]||c}（${nm(who?.student_id||'')}）：總分 ${t[c]?.sum??'—'}／${MAX_COMPARE}${weakest?`，最弱在「${weakest[0].title}」${weakest[1]} 分：${qs[weakest[0].key]?.evidence||'（證據待補）'}`:''}`;};
+ const chosenKind=COUNTER_KINDS.find(([k])=>k===d.counters.chosen);
+ const pages=[
+  {n:1,title:PAGES[0][0],speaker:owner?.student_id||'',body:[`${name}：${info?.tagline||''}`,myCard.why?`為什麼是好新創：${myCard.why}`:'為什麼是好新創：（理由卡還沒寫一句話）',`誰付錢：${grid('誰付錢')}`,`怎麼收費：${grid('怎麼收費')}${myCard.est?`｜我們的估價：${myCard.est}`:''}`].filter(Boolean).join('\n')},
+  {n:2,title:PAGES[1][0],speaker:owner?.student_id||'',body:[`怎麼收費：${grid('怎麼收費')}`,`以前誰在做：${grid('以前誰在做')}`,`五問第 2 題證據：${d.scores[pick]?.q2?.evidence||'（待補）'}`].join('\n')},
+  {n:3,title:PAGES[2][0],speaker:owner?.student_id||others[0]?.student_id||'',body:[`為什麼是現在：${grid('為什麼是現在')}`,`數字（有人押注的證據，不等於賺錢）：${grid('數字')}`,`五問第 3 題證據：${d.scores[pick]?.q3?.evidence||'（待補）'}`].join('\n')},
+  {n:4,title:PAGES[3][0],speaker:others.map(m=>m.student_id).join('、'),body:[`比較表總分：${Object.entries(t).map(([c,x])=>`${COMPANY_NAME[c]||c} ${x.sum}／${MAX_COMPARE}`).join('、')}`,...losers.map(loseLine),pickNeedsReason(d)?`選非最高分的理由：${d.pick.reason}`:''].filter(Boolean).join('\n')},
+  {n:5,title:PAGES[4][0],speaker:others[0]?.student_id||owner?.student_id||'',body:[chosenKind?`最狠的一刀（${chosenKind[1]}）：${d.counters[chosenKind[0]]}`:'最狠的一刀：（還沒選）',`七格卡的風險：${grid('風險')}`,myCard.argue?`找碴紀錄：${myCard.argue}`:'',`我們的回法：（用證據回，或老實說沒證據、下一步查什麼）`].filter(Boolean).join('\n')},
+  {n:6,title:PAGES[5][0],speaker:others[1]?.student_id||others[0]?.student_id||owner?.student_id||'',body:[`台灣同層：${grid('台灣同層')}`,`五問第 5 題證據：${d.scores[pick]?.q5?.evidence||'（待查）'}`,'我們學到的一件事：（一句）'].join('\n')},
+ ];
+ const scripts={};for(const m of members||[]){const mine=pages.filter(p=>String(p.speaker).split('、').includes(m.student_id));scripts[m.student_id]=mine.map(p=>`【第 ${p.n} 頁 ${p.title}｜60 秒】\n${p.body}`).join('\n\n')||'（還沒分到頁：到比較表下面的分工改）';}
+ const pdf=[`一、三張理由卡（個人分）：${(members||[]).map(m=>`${nm(m.student_id)}＝${Object.values(m.reps||{}).map(c=>COMPANY_NAME[c]||c).join('、')||'（未推薦）'}`).join('；')}`,`二、比較表：${Object.entries(t).map(([c,x])=>`${COMPANY_NAME[c]||c} ${x.sum}／${MAX_COMPARE}`).join('、')}`,`三、選定 ${name} 為什麼是好新創（組分）：用六頁的講稿改。`];
+ return {company:pick,name,pages,scripts,pdf,owner:owner?.student_id||''};
+}
 
 // 「我的進度」：學生端（課程地圖最上面一條）和老師端（之後的全班總表）共用同一套判定。
 // 輸入是各週那一列（可為 null）；輸出每週 {week, state, label, detail, next, href}。
@@ -904,17 +977,28 @@ Deno.serve(async req=>{
    const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
    let team=null,members:any[]=[];
    if(me?.team_id){team=must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle());members=must(await db.from('team_members').select('*').match({class_id:s.class_id,team_id:me.team_id}));}
-   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={};
+   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={},cards:Record<string,unknown>={};
    if(ids.length){
     for(const r of must(await db.from('week4_research').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids)))week4[r.student_id]=normalizeWeek4(r.data).industry;
     for(const r of must(await db.from('class_roster').select('student_id,student_name').eq('class_id',s.class_id).in('student_id',ids)))names[r.student_id]=r.student_name;
+    // 每個組員推薦的公司的理由卡摘要（來源、一句話、估價、網址、探索／找碴），比較頁拉證據用
+    for(const r of must(await db.from('islands_progress').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids))){const m=members.find((x:any)=>x.student_id===r.student_id);const reps=normalizeReps(m?.reps);const out:Record<string,unknown>={};for(const cid of Object.values(reps)){const bx=r.data?.boxes?.[cid]||{};const cd=r.data?.cards?.[cid]||{};out[cid]={why:cd.why||'',sources:Array.isArray(cd.sources)?cd.sources:[],url:bx.url||'',est:bx.est||'',estOk:!!bx.estOk,insight:bx.insight||'',argue:bx.argue||'',opened:!!bx.opened};}cards[r.student_id]=out;}
    }
-   return {me,team,members,week4,names,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+   return {me,team,members,week4,names,cards,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
   };
   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
   const touch={updated_at:new Date().toISOString()};
   if(b.action==='team_load')return reply(await loadTeam());
+  // Week 10 比較表：任一組員可存，鎖定建組不影響（鎖的是組員名單）。只收這組三個人推薦的公司。
+  if(b.action==='team_compare_save'){
+   if(!myTeam)return reply({error:'你還沒有組。'},409);
+   const ms=must(await db.from('team_members').select('reps').match({class_id:s.class_id,team_id:myTeam.id}));
+   const allowed=[...new Set(ms.flatMap((m:any)=>Object.values(normalizeReps(m.reps))))];
+   const compare=normalizeCompare(b.compare,allowed);
+   if(compare.pick.company&&!compare.pick.at)compare.pick.at=new Date().toISOString();
+   must(await db.from('teams').update({compare}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());
+  }
   if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}），要改請找老師。`},423);
   if(b.action==='team_create'){
    if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);

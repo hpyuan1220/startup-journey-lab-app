@@ -1,4 +1,4 @@
-import {CLASSQ_WEEKS,emptyClassQ,normalizeClassQ,labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,CLASS_Q_AI_LIMIT} from './week4-core.mjs?v=20261105-cq';
+import {CLASSQ_WEEKS,emptyClassQ,normalizeClassQ,labelText,classDate,CLASS_SCHEDULE,WRITE_OPEN_LABEL,CLASS_Q_AI_LIMIT} from './week4-core.mjs?v=20261112-w9';
 import {buildPrompt5} from './week5-core.mjs?v=20261104-rb';
 import {showRelogin} from './relogin.mjs?v=20261106-ms';
 // 只有課堂兩題的週（Week 6 起）：一頁只有兩題＋AI 評語。跟 Week 4／5 的課堂兩題同一套規則：

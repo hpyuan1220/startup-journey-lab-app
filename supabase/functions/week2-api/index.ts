@@ -5,6 +5,7 @@ import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommend
 import {normalizeWeek5,applyStamps5,OPP_KEYS,buildPrompt5,rebuttalNext,buildRebuttalTurn,appendRebuttal,REBUTTAL_AI_LIMIT} from '../../../week5-core.mjs';
 import {TEAM_MAX,TEAM_MIN,TEAM_LOCK_AT,makeCode,normalizeCode,normalizeTeamName,normalizeIndustry,normalizeDirections,teamLocked,directionName,TEAM_LOCK_LABEL} from '../../../team-core.mjs';
 import {companyDir,normalizeReps} from '../../../islands-core.mjs';
+import {normalizeCompare} from '../../../compare-core.mjs';
 import {studentProgress} from '../../../progress-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
@@ -239,17 +240,28 @@ Deno.serve(async req=>{
    const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
    let team=null,members:any[]=[];
    if(me?.team_id){team=must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle());members=must(await db.from('team_members').select('*').match({class_id:s.class_id,team_id:me.team_id}));}
-   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={};
+   const ids=members.map((m:any)=>m.student_id);const week4:Record<string,unknown>={},names:Record<string,string>={},cards:Record<string,unknown>={};
    if(ids.length){
     for(const r of must(await db.from('week4_research').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids)))week4[r.student_id]=normalizeWeek4(r.data).industry;
     for(const r of must(await db.from('class_roster').select('student_id,student_name').eq('class_id',s.class_id).in('student_id',ids)))names[r.student_id]=r.student_name;
+    // 每個組員推薦的公司的理由卡摘要（來源、一句話、估價、網址、探索／找碴），比較頁拉證據用
+    for(const r of must(await db.from('islands_progress').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids))){const m=members.find((x:any)=>x.student_id===r.student_id);const reps=normalizeReps(m?.reps);const out:Record<string,unknown>={};for(const cid of Object.values(reps)){const bx=r.data?.boxes?.[cid]||{};const cd=r.data?.cards?.[cid]||{};out[cid]={why:cd.why||'',sources:Array.isArray(cd.sources)?cd.sources:[],url:bx.url||'',est:bx.est||'',estOk:!!bx.estOk,insight:bx.insight||'',argue:bx.argue||'',opened:!!bx.opened};}cards[r.student_id]=out;}
    }
-   return {me,team,members,week4,names,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+   return {me,team,members,week4,names,cards,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
   };
   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;
   const touch={updated_at:new Date().toISOString()};
   if(b.action==='team_load')return reply(await loadTeam());
+  // Week 10 比較表：任一組員可存，鎖定建組不影響（鎖的是組員名單）。只收這組三個人推薦的公司。
+  if(b.action==='team_compare_save'){
+   if(!myTeam)return reply({error:'你還沒有組。'},409);
+   const ms=must(await db.from('team_members').select('reps').match({class_id:s.class_id,team_id:myTeam.id}));
+   const allowed=[...new Set(ms.flatMap((m:any)=>Object.values(normalizeReps(m.reps))))];
+   const compare=normalizeCompare(b.compare,allowed);
+   if(compare.pick.company&&!compare.pick.at)compare.pick.at=new Date().toISOString();
+   must(await db.from('teams').update({compare}).match({class_id:s.class_id,id:myTeam.id}));return reply(await loadTeam());
+  }
   if(teamLocked(myTeam,nowT))return reply({error:`建組已經鎖定（${myTeam?.locked?'老師鎖住了這一組':TEAM_LOCK_LABEL+' 後'}），要改請找老師。`},423);
   if(b.action==='team_create'){
    if(myTeam)return reply({error:'你已經在一組裡了；要換組先離開。'},409);
