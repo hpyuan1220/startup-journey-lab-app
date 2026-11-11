@@ -1,6 +1,15 @@
 # 群島尋寶：10 座島的島圖提示詞（給 ChatGPT 生圖）
 
-現在 10 座島共用 `materials/islands/scene_island06.jpg`（餐館島）。要各島不同圖，請在 ChatGPT 用下面的提示詞一座一座生，存成 `materials/islands/scene_island01.jpg` … `scene_island10.jpg`（**1200×675，JPG**），放進專案資料夾後告訴 Claude，Claude 把島號加進 `islands.js` 的 `SCENES` 就會換圖。
+現在 10 座島共用 `materials/islands/scene_island06.jpg`（餐館島）。要各島不同圖，請在 ChatGPT 用下面的提示詞一座一座生。
+
+## 存檔位置（每一張都存這裡）
+
+```
+/Users/ireneyuan/Desktop/2026 class/116 AI start up class/Startup Journey Lab Project/materials/islands/
+```
+
+檔名照島號：`scene_island01.jpg`、`scene_island02.jpg` … `scene_island10.jpg`（島 5 可沿用現有的 `scene_island06.jpg`，不用生）。
+ChatGPT 下載下來通常是 PNG、尺寸也不一定是 1200×675——沒關係，改名丟進去就好，Claude 收到後統一轉 JPG、裁成 1200×675。放好（或先放幾張）跟 Claude 說「島圖放好了」，Claude 把島號加進 `islands.js` 的 `SCENES` 就會換圖。
 
 ## 為什麼構圖要一樣
 
@@ -73,8 +82,8 @@ Theme: "robot lab". The shop is a sleek metallic garage with a robot-arm sculptu
 ```
 
 ## 生完之後
-1. 存成 `scene_island01.jpg` … `scene_island10.jpg`，1200×675。
-2. 放到 `Startup Journey Lab Project/materials/islands/`。
-3. 跟 Claude 說「島圖放好了」，Claude 會把島號加進 `SCENES`、檢查三個按鈕有沒有蓋到建築、再 commit。
+1. 改名成 `scene_island0N.jpg`（N＝島號）。
+2. 放到 `/Users/ireneyuan/Desktop/2026 class/116 AI start up class/Startup Journey Lab Project/materials/islands/`。
+3. 跟 Claude 說「島圖放好了」，Claude 會轉檔、把島號加進 `SCENES`、檢查三個按鈕有沒有蓋到建築、再 commit。
 
 小技巧：先生島 5（參考島）確認風格，再用「same style and layout as the previous image, but …」接著生其他島，一致性最好。
