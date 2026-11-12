@@ -3,9 +3,9 @@ import {normalizeWeek5,totals,topChoice,parseRebuttal,OPP_KEYS,MAX_SCORE,FIVE_QU
 import {findRemark,mergeRemarks,listenRemarks} from './teacher-remarks.mjs?v=20261025-w5';
 import {paySentence,fitSentence} from './note-v2.mjs?v=20261105-mt5';
 // 教師洞察 · Week 7 期中報告評分表（11/13 上台；規格 docs/AI_GRADING_SPEC.md）
-// 總分 100＝A 內容七項×10（老師點 0／5／10）＋B 完成度 10（電腦算）＋C 上台 0–20（老師打）。依學號＝上台順序。
-// 分數存在 teacher_remarks 的 week 7 note（學生看不到），格式「MT1|a=10,5,,0,5,10,5|c=18」；舊格式（只有一個數字）當作上台分數。
-// 之後加 AI 建議時，AI 只填建議，老師點過的才算（同一張表）。
+// 2026-11-12 老師定：總分 100＝B 完成度 30（app Week 4 五項＋Week 5 五項各 3 分，電腦算）＋P PDF 20（TronClass Week 4、Week 5 研究報告各 10，老師勾）＋C 上台 0–50（老師打）。依學號＝上台順序。
+// 分數存在 teacher_remarks 的 week 7 note（學生看不到），格式「MT2|p=1,0|c=42」。舊格式 MT1（a 七項＋c 0–20）仍可讀：a 只保留不計分，c 照原值。
+// A 內容七項 0／5／10 的判準留著當展開時的參考（RUBRIC），不進總分。
 const WEEK=7;
 export const RUBRIC=[
  ['產業與痛','0：沒寫，或看不出痛跟產業的關係｜5：有產業線，沒說痛落在哪一段｜10：說出痛落在這一行哪一段；對不上的老實說比較像哪一行也算'],
@@ -16,12 +16,15 @@ export const RUBRIC=[
  ['選擇與一頁','0：沒選或一頁空白｜5：有選、一頁寫一半，或非最高分沒理由｜10：選定有理由，一頁六段都有主張＋證據'],
  ['反方','0：沒做｜5：一兩回合、回應空泛｜10：三回合，至少一回合用證據回應，或老實寫輸在哪、下一步補什麼'],
 ];
+export const C_MAX=50,P_EACH=10,B_EACH=3;
 export function parseScore(note){
- const s=String(note||'').trim();const out={a:Array(7).fill(null),c:null};if(!s)return out;
+ const s=String(note||'').trim();const out={a:Array(7).fill(null),p:[false,false],c:null};if(!s)return out;
+ if(/^MT2\|/.test(s)){for(const part of s.split('|').slice(1)){const [k,v]=part.split('=');if(k==='p'){const q=(v||'').split(',');out.p=[q[0]==='1',q[1]==='1'];}if(k==='c'){const n=Number(v);out.c=v!==''&&Number.isInteger(n)&&n>=0&&n<=C_MAX?n:null;}}return out;}
  if(/^MT1\|/.test(s)){for(const part of s.split('|').slice(1)){const [k,v]=part.split('=');if(k==='a')(v||'').split(',').slice(0,7).forEach((x,i)=>{out.a[i]=x===''?null:[0,5,10].includes(Number(x))?Number(x):null;});if(k==='c'){const n=Number(v);out.c=v!==''&&Number.isFinite(n)&&n>=0&&n<=20?n:null;}}return out;}
  const n=Number(s);if(Number.isFinite(n)&&n>=0&&n<=20)out.c=n;return out;
 }
-export const formatScore=sc=>`MT1|a=${sc.a.map(x=>x===null?'':x).join(',')}|c=${sc.c===null?'':sc.c}`;
+export const formatScore=sc=>`MT2|p=${sc.p[0]?1:0},${sc.p[1]?1:0}|c=${sc.c===null?'':sc.c}`;
+export const scoreTotal=(comp,sc)=>comp.total*B_EACH+(sc.p[0]?P_EACH:0)+(sc.p[1]?P_EACH:0)+(sc.c||0);
 // B 完成度 10：Week 4 五項、Week 5 五項，各 1 分。
 export function completion(d4,st4,d5,st5){
  const w4=[!!(d4&&(d4.industry.card)),!!st4?.card1,!!st4?.card2,!!st4?.card3,!!(st4?.q1&&st4?.q2)];
@@ -33,15 +36,23 @@ const dashboard=typeof document!=='undefined'?document.getElementById('teacher-d
 if(dashboard){
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;parent.append(e);return e;};
 const root=document.createElement('section');root.id='teacher-week7';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
-el('h2','Week 7 期中報告評分表（總分 100）',root);
-el('p','依學號＝11/13 上台順序。A 內容七項各 0／5／10（共 70），點學號展開，看學生的內容再點分數；B 完成度 10 分由電腦照 Week 4／5 有沒有做算；C 上台 0–20 你現場打。點了就存，學生看不到。PDF 交在 TronClass，這裡評的是 app 裡的 Week 4＋5 內容；PDF 寫得比 app 好可以加在 A。',root,'tw2-intro');
-const legend=el('details','',root,'tw4-detail');el('summary','評分標準（A 七項 0／5／10）',legend);
+el('h2','Week 7 期中報告評分表（總分 100＝完成度 30＋PDF 20＋上台 50）',root);
+el('p','依學號＝11/13 上台順序。B 完成度 30：app Week 4 五項＋Week 5 五項各 3 分，電腦算；P PDF 20：TronClass「Week 4 研究報告」「Week 5 研究報告」各 10，勾選（可用下面「貼上已交學號」一次勾完）；C 上台 0–50 你現場打。點了就存，學生看不到。點學號展開可看七項內容與判準（參考，不計分）。PDF 交在 TronClass，這裡評的是 app 裡的 Week 4＋5 內容；PDF 寫得比 app 好可以加在 A。',root,'tw2-intro');
+const legend=el('details','',root,'tw4-detail');el('summary','內容七項判準（參考用，不計分）',legend);
 for(const [i,[h,t]] of RUBRIC.entries())el('p',`${i+1}. ${h}　${t}`,legend);
-el('p','B 完成度（各 1 分）：Week 4 產業線、卡 1、卡 2、卡 3、課堂兩題；Week 5 計分表、選一個、反方 ≥1 回合、一頁六段、課堂兩題。　C 上台：2 分鐘內講完四段，0–20。',legend);
+el('p','B 完成度（各 3 分）：Week 4 產業線、卡 1、卡 2、卡 3、課堂兩題；Week 5 計分表、選一個、反方 ≥1 回合、一頁六段、課堂兩題。　P PDF：Week 4、Week 5 研究報告各 10。　C 上台：2 分鐘內講完四段，0–50。',legend);
 const status=el('p','',root);status.setAttribute('role','status');
 const bar=el('div','',root,'w4-row');
 const reloadBtn=el('button','重新載入評分表',bar,'quiet');reloadBtn.type='button';
 const csvBtn=el('button','匯出期中成績 CSV',bar,'quiet');csvBtn.type='button';
+const paste=el('details','',root,'tw4-detail');el('summary','貼上 TronClass 已交學號，一次勾 PDF',paste);
+el('p','從 TronClass 作業頁複製「已繳」的學號（整頁貼上也行，會自動抓 A 開頭的學號）。沒在名單裡的會被取消勾選，所以要貼完整名單。',paste,'w4-hint');
+const pRow=el('div','',paste,'w4-row');const pSel=el('select','',pRow);for(const [v,t] of [['0','Week 4 研究報告'],['1','Week 5 研究報告']]){const o=el('option',t,pSel);o.value=v;}
+const pTa=el('textarea','',paste);pTa.rows=3;pTa.style.width='100%';pTa.placeholder='A113270004 吳宗誠 已繳 … 或一行一個學號';pTa.setAttribute('aria-label','已交學號');
+const pBtn=el('button','套用到這一欄',pRow,'primary');pBtn.type='button';const pSt=el('span','',pRow,'w4-hint');
+pBtn.addEventListener('click',async()=>{if(!data)return;const ids=new Set((pTa.value.match(/A\d{8,10}/g)||[]).map(x=>x.toUpperCase()));if(!ids.size){pSt.textContent='沒抓到學號。';return;}const col=Number(pSel.value);let n=0,changed=0;pBtn.disabled=true;
+ for(const c of data.classes)for(const x of rowsFor(c)){const want=ids.has(x.id);if(x.sc.p[col]!==want){x.sc.p[col]=want;await saveScore(c,x,pSt);changed++;}if(want)n++;}
+ pBtn.disabled=false;pSt.textContent=`已套用：${n} 人已交，改了 ${changed} 列。`;render();});
 const body=el('div','',root);
 let data=null;const open=new Set();
 async function call(b,retry=true){let token=sessionStorage.getItem('sjl-teacher-token');const cfg=window.STARTUP_JOURNEY_CONFIG;const r=await fetch(cfg.supabaseUrl+'/functions/v1/week2-api',{method:'POST',headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json();if(r.status===401&&retry&&typeof window.refreshTeacherToken==='function'&&await window.refreshTeacherToken())return call(b,false);if(!r.ok)throw Error(j.error||'請重新登入教師帳號。');return j;}
@@ -50,7 +61,8 @@ reloadBtn.addEventListener('click',load);
 listenRemarks(()=>data,()=>load());
 function rowsFor(c){
  const roster=(data.roster||[]).filter(r=>r.class_id===c.id),w1=(data.week1||[]).filter(r=>r.class_id===c.id),w4=(data.week4||[]).filter(r=>r.class_id===c.id),w5=(data.week5||[]).filter(r=>r.class_id===c.id);
- const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(r=>r.student_id),...w4.map(r=>r.student_id),...w5.map(r=>r.student_id)])].sort();
+ const tm=(data.team_members||[]).filter(r=>r.class_id===c.id);
+ const ids=[...new Set([...roster.map(r=>r.student_id),...w1.map(r=>r.student_id),...w4.map(r=>r.student_id),...w5.map(r=>r.student_id),...tm.map(r=>r.student_id)])].sort();
  const nameOf=id=>roster.find(r=>r.student_id===id)?.student_name||w1.find(r=>r.student_id===id)?.student_name||'';
  return ids.map((id,i)=>{
   const r4=w4.find(x=>x.student_id===id),r5=w5.find(x=>x.student_id===id);
@@ -60,7 +72,7 @@ function rowsFor(c){
   const rm=findRemark(data.remarks,c.id,id,WEEK);const sc=parseScore(rm?.note);
   const comp=completion(d4,r4?.stamps,d5,r5?.stamps);
   const aSum=sc.a.reduce((s,x)=>s+(x||0),0),aDone=sc.a.filter(x=>x!==null).length;
-  const total=aSum+comp.total+(sc.c||0);
+  const total=scoreTotal(comp,sc);
   return {n:i+1,id,name:nameOf(id),d4,d5,ind:d4?industryName(d4):'',key,opp,sum:key&&t?t[key].sum:null,nonTop:!!(key&&top&&key!==top),rm,sc,comp,aSum,aDone,total};
  });
 }
@@ -86,10 +98,10 @@ function render(){
   const sec=el('section','',body,'tw2-class');el('h3',c.name,sec);
   const rows=rowsFor(c);
   const live=el('div','',sec,'tw4-live');const stat=(n,label)=>{const b=el('div','',live);el('b',String(n),b);el('span',label,b);};
-  stat(rows.length,'上台人數');stat(rows.filter(x=>x.aDone===7).length,'A 七項評完');stat(rows.filter(x=>x.sc.c!==null).length,'上台已打分');
-  const done=rows.filter(x=>x.aDone===7&&x.sc.c!==null);stat(done.length?Math.round(done.reduce((s,x)=>s+x.total,0)/done.length):'—','評完的平均');
+  stat(rows.length,'上台人數');stat(rows.filter(x=>x.sc.p[0]).length,'W4 PDF 已交');stat(rows.filter(x=>x.sc.p[1]).length,'W5 PDF 已交');stat(rows.filter(x=>x.sc.c!==null).length,'上台已打分');
+  const done=rows.filter(x=>x.sc.c!==null);stat(done.length?Math.round(done.reduce((s,x)=>s+x.total,0)/done.length):'—','已打分的平均');
   const wrap=el('div','',sec,'tw4-wrap');const table=el('table','',wrap);const tr=el('tr','',el('thead','',table));
-  for(const h of ['順序','學生','產業線','選定的機會','A 內容 /70','B 完成 /10','C 上台 /20','總分 /100'])el('th',h,tr);
+  for(const h of ['順序','學生','產業線','選定的機會','B 完成 /30','P PDF /20','C 上台 /50','總分 /100'])el('th',h,tr);
   const tbody=el('tbody','',table);
   for(const x of rows){
    const r=el('tr','',tbody);
@@ -98,37 +110,37 @@ function render(){
    btn.addEventListener('click',()=>{if(open.has(x.id))open.delete(x.id);else open.add(x.id);render();});
    const ti=el('td',x.ind||'—',r);if(!x.ind)ti.className='tw4-no';
    const to=el('td','',r);if(x.key){to.textContent=`${x.key}　${(x.opp||'').slice(0,40)}`;if(x.nonTop)el('span',' 非最高分',to,'tw4-out');}else{to.textContent='還沒選';to.className='tw4-no';}
-   el('td',`${x.aSum}${x.aDone<7?`（${x.aDone}/7 項）`:''}`,r);
-   el('td',String(x.comp.total),r);
-   const cTd=el('td','',r);const cIn=el('input','',cTd);cIn.type='number';cIn.min='0';cIn.max='20';cIn.step='1';cIn.style.width='4.5em';cIn.value=x.sc.c===null?'':String(x.sc.c);cIn.setAttribute('aria-label',`${x.id} 上台分數（0–20）`);
+   el('td',`${x.comp.total*B_EACH}（${x.comp.total}/10 項）`,r);
+   const pTd=el('td','',r);for(const [i,lab] of [[0,'W4'],[1,'W5']]){const l=el('label','',pTd);l.style.marginRight='8px';const cb=el('input','',l);cb.type='checkbox';cb.checked=x.sc.p[i];cb.setAttribute('aria-label',`${x.id} ${lab} PDF 已交`);l.append(' '+lab);cb.addEventListener('change',()=>{x.sc.p[i]=cb.checked;saveScore(c,x,pSt2).then(()=>render());});}
+   const pSt2=el('span','',pTd,'w4-hint');
+   const cTd=el('td','',r);const cIn=el('input','',cTd);cIn.type='number';cIn.min='0';cIn.max=String(C_MAX);cIn.step='1';cIn.style.width='4.5em';cIn.value=x.sc.c===null?'':String(x.sc.c);cIn.setAttribute('aria-label',`${x.id} 上台分數（0–${C_MAX}）`);
    const cSt=el('span','',cTd,'w4-hint');
-   cIn.addEventListener('change',()=>{const v=cIn.value.trim();const n=Number(v);if(v!==''&&!(Number.isInteger(n)&&n>=0&&n<=20)){cSt.textContent=' 0–20';return;}x.sc.c=v===''?null:n;saveScore(c,x,cSt).then(()=>render());});
+   cIn.addEventListener('change',()=>{const v=cIn.value.trim();const n=Number(v);if(v!==''&&!(Number.isInteger(n)&&n>=0&&n<=C_MAX)){cSt.textContent=' 0–'+C_MAX;return;}x.sc.c=v===''?null:n;saveScore(c,x,cSt).then(()=>render());});
    cIn.addEventListener('keydown',e=>{if(e.key==='Enter')cIn.blur();});
-   el('td',x.aDone===7&&x.sc.c!==null?String(x.total):`${x.total}（未完）`,r);
+   el('td',x.sc.c!==null?String(x.total):`${x.total}（上台未打）`,r);
    if(open.has(x.id)){
     const dr=el('tr','',tbody);const td=el('td','',dr);td.colSpan=8;const box=el('div','',td,'tw4-detail');
     const st=el('span','',box,'w4-hint');
     RUBRIC.forEach(([h,desc],i)=>{
      const item=el('div','',box);item.style.borderTop='1px solid #e6dfcf';item.style.padding='6px 0';
      const head=el('div','',item);el('b',`${i+1}. ${h}　`,head);
-     for(const v of [0,5,10]){const b=el('button',String(v),head,'trk-tag');b.type='button';b.setAttribute('aria-pressed',String(x.sc.a[i]===v));if(x.sc.a[i]===v){b.style.background='#2f6f86';b.style.color='#fff';}
-      b.addEventListener('click',()=>{x.sc.a[i]=x.sc.a[i]===v?null:v;saveScore(c,x,st).then(()=>render());});}
+
      el('p',desc,item,'w4-hint');
      const ev=el('p',evidence(x,i),item);ev.style.whiteSpace='pre-wrap';ev.style.background='#fff';ev.style.padding='6px 8px';ev.style.borderRadius='6px';
     });
-    el('p',`B 完成度：Week 4 ${x.comp.w4.filter(Boolean).length}/5（產業線、卡 1、卡 2、卡 3、兩題）・Week 5 ${x.comp.w5.filter(Boolean).length}/5（計分、選、反方、一頁、兩題）`,box);
+    el('p',`B 完成度：Week 4 ${x.comp.w4.filter(Boolean).length}/5（產業線、卡 1、卡 2、卡 3、兩題）・Week 5 ${x.comp.w5.filter(Boolean).length}/5（計分、選、反方、一頁、兩題）＝${x.comp.total*B_EACH} 分`,box);
    }
   }
   if(!rows.length)el('p','這個班還沒有名單。',sec);
  }
- status.textContent=`${data.classes.length} 個授權班級 · 依學號排序＝上台順序。點學號展開評 A 七項。`;
+ status.textContent=`${data.classes.length} 個授權班級 · 依學號排序＝上台順序。完成度電腦算、PDF 勾、上台打分。`;
 }
 csvBtn.addEventListener('click',()=>{
  if(!data){status.textContent='先載入評分表。';return;}
  const q=v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
- const head=['班級','順序','學號','姓名','產業線','選定的機會','機會一句話',...RUBRIC.map(([h],i)=>`A${i+1} ${h}`),'A 小計','B 完成度','C 上台','總分','A 已評項數'];
+ const head=['班級','順序','學號','姓名','產業線','選定的機會','機會一句話','B 完成度 /30','完成項數 /10','W4 PDF','W5 PDF','P PDF /20','C 上台 /50','總分 /100'];
  const lines=[head.join(',')];
- for(const c of data.classes)for(const x of rowsFor(c))lines.push([c.name,x.n,x.id,x.name,x.ind,x.key,x.opp,...x.sc.a.map(v=>v===null?'':v),x.aSum,x.comp.total,x.sc.c??'',x.total,x.aDone].map(q).join(','));
+ for(const c of data.classes)for(const x of rowsFor(c))lines.push([c.name,x.n,x.id,x.name,x.ind,x.key,x.opp,x.comp.total*B_EACH,x.comp.total,x.sc.p[0]?1:0,x.sc.p[1]?1:0,(x.sc.p[0]?P_EACH:0)+(x.sc.p[1]?P_EACH:0),x.sc.c??'',x.total].map(q).join(','));
  const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Week7_期中成績.csv';document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
 });
 const obs=new MutationObserver(()=>{if(!dashboard.hidden&&!data)load();});obs.observe(dashboard,{attributes:true,attributeFilter:['hidden']});
