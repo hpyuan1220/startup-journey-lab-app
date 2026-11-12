@@ -2023,3 +2023,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - 老師頁 teacher-compare.js（最上面）：每組三家、總分、選定（非最高分的理由）、反方三格★、缺什麼；哪家被幾組選；CSV。teacher-fold ORDER：compare → week10 → week9 → islands → week8 → …
   - 測試：tests/compare.test.mjs（core＋Edge）、tests/week10-student.mjs 11 ✅、islands 52 ✅、week8 23 ✅、單元 221 ✅。
 - 2026-11-12 02:40：交接文件 `docs/HANDOVER.md`（東西在哪、規則、改程式流程、程式地圖含「Week 8 內容改哪裡」、下半學期每週老師要看什麼、待辦、常見狀況）；舊 `docs/HANDOFF.md` 開頭指向新檔。
+- 2026-11-12 09:50：**線上事故**：bundle 77020055 Deploy 後 week2-api 全部 503（OPTIONS 也 503＝開機失敗）。原因：compare-core.mjs 與 week5-core.mjs 都有頂層 `totals`，併成一個模組後 Deno SyntaxError（Node 測試沒抓到是因為 harness 用 vm 分開載入）。修：compare 的改名 `compareTotals`；build script 加檢查「頂層名稱重複就不產 bundle」。新 bundle sha 97790706ce60d507，請立刻 Deploy（期間學生端所有 week2-api 功能不可用，約 10 分鐘）。

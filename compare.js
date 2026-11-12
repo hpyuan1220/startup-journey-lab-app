@@ -1,4 +1,4 @@
-import {COMPARE_QUESTIONS,COUNTER_KINDS,MAX_COMPARE,PAGES,emptyCompare,normalizeCompare,totals,topCompany,pickNeedsReason,pickOk,compareProgress,buildFramework} from './compare-core.mjs?v=20261112-w10';
+import {COMPARE_QUESTIONS,COUNTER_KINDS,MAX_COMPARE,PAGES,emptyCompare,normalizeCompare,compareTotals,topCompany,pickNeedsReason,pickOk,compareProgress,buildFramework} from './compare-core.mjs?v=20261112-fix';
 import {COMPANY_NAME,normalizeReps,teamReps,companyDir} from './islands-core.mjs?v=20261112-w10';
 import {DIRECTIONS,normalizeDirections} from './team-core.mjs?v=20261106-tm';
 import {COMPANIES,companyById} from './islands-data.mjs?v=20261111-art';
@@ -41,7 +41,7 @@ function render(){body.replaceChildren();
    const seedText=(()=>{if(!c)return '';const g=k=>c.card.find(([kk])=>kk===k)?.[1]||'';switch(q.key){case 'q1':return g('誰付錢')+(g('數字')?'；'+g('數字'):'');case 'q2':return g('怎麼收費')+(card?.est?'｜我們的估價：'+card.est:'');case 'q3':return g('為什麼是現在');case 'q4':return g('以前誰在做')+'；風險：'+g('風險');case 'q5':return g('台灣同層');}return '';})();
    if(seedText&&!cell.evidence){const sb=el('button','從理由卡帶入',td,'button-link w4-small');sb.type='button';sb.addEventListener('click',()=>{cell.evidence=seedText.slice(0,300);render();queue();});}
   }}
- const t=totals(d);const tr=el('tr','',tbody,'cmp-total');el('td','總分（參考）',tr);const topId=topCompany(d);for(const cid of allowed){const td=el('td',`${t[cid]?.sum??0}／${MAX_COMPARE}${t[cid]?.complete?'':'（還沒打滿）'}`,tr);if(cid===topId)td.classList.add('cmp-top-cell');}
+ const t=compareTotals(d);const tr=el('tr','',tbody,'cmp-total');el('td','總分（參考）',tr);const topId=topCompany(d);for(const cid of allowed){const td=el('td',`${t[cid]?.sum??0}／${MAX_COMPARE}${t[cid]?.complete?'':'（還沒打滿）'}`,tr);if(cid===topId)td.classList.add('cmp-top-cell');}
  // 選定
  const pk=el('div','',body,'cmp-block');el('h3','② 選定一家上台（另外兩家變成第 4 頁「為什麼不是它們」）',pk);
  const opts=el('div','',pk,'cmp-pick');for(const cid of allowed){const b=el('button',(d.pick.company===cid?'✓ ':'')+(COMPANY_NAME[cid]||cid)+(cid===topId?'（最高分）':''),opts,'cmp-s');b.type='button';b.setAttribute('aria-pressed',String(d.pick.company===cid));b.addEventListener('click',()=>{d.pick.company=d.pick.company===cid?'':cid;d.pick.at='';render();queue();});}

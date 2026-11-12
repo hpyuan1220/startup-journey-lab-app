@@ -658,19 +658,19 @@ function normalizeCompare(input,allowed){
  const p=i.pick&&typeof i.pick==='object'?i.pick:{};const pc=String(p.company||'').toLowerCase();d.pick={company:ok.has(pc)?pc:'',reason:cut(p.reason,600),at:pc&&ok.has(pc)?cut(p.at,40):''};
  d.notes=cut(i.notes,1000);return d;
 }
-function totals(d){const out={};for(const [cid,qs] of Object.entries(d.scores||{})){let sum=0,n=0,withEv=0;for(const q of COMPARE_QUESTIONS){const c=qs[q.key]||{};if(c.score!=null){sum+=c.score;n++;if(c.evidence)withEv++;}}out[cid]={sum,n,withEv,complete:n===COMPARE_QUESTIONS.length};}return out;}
-function topCompany(d){const t=totals(d);let best='',bs=-1;for(const [cid,x] of Object.entries(t)){if(x.complete&&x.sum>bs){bs=x.sum;best=cid;}}return best;}
+function compareTotals(d){const out={};for(const [cid,qs] of Object.entries(d.scores||{})){let sum=0,n=0,withEv=0;for(const q of COMPARE_QUESTIONS){const c=qs[q.key]||{};if(c.score!=null){sum+=c.score;n++;if(c.evidence)withEv++;}}out[cid]={sum,n,withEv,complete:n===COMPARE_QUESTIONS.length};}return out;}
+function topCompany(d){const t=compareTotals(d);let best='',bs=-1;for(const [cid,x] of Object.entries(t)){if(x.complete&&x.sum>bs){bs=x.sum;best=cid;}}return best;}
 function pickNeedsReason(d){const top=topCompany(d);return !!(d.pick.company&&top&&d.pick.company!==top);}
 function pickOk(d){if(!d.pick.company)return false;return !pickNeedsReason(d)||d.pick.reason.length>=20;}
 function compareProgress(d,allowed){
- const t=totals(d);const ids=(allowed||[]).map(x=>String(x).toLowerCase());const scored=ids.filter(id=>t[id]?.complete).length;
+ const t=compareTotals(d);const ids=(allowed||[]).map(x=>String(x).toLowerCase());const scored=ids.filter(id=>t[id]?.complete).length;
  const missing=[];
  if(ids.length<3)missing.push(`三家還沒到齊（${ids.length}／3）`);
  if(scored<ids.length)missing.push(`比較表還有 ${ids.length-scored} 家沒打完五格`);
  if(!d.pick.company)missing.push('還沒選定一家');else if(!pickOk(d))missing.push('選了不是最高分的，要寫理由（至少 20 字）');
  const cn=COUNTER_KINDS.filter(([k])=>d.counters[k]).length;if(cn<3)missing.push(`反方三格還有 ${3-cn} 格空的`);
  if(!d.counters.chosen)missing.push('還沒選最狠的一刀');
- return {scored,ids,totals:t,top:topCompany(d),pick:d.pick.company,pickOk:pickOk(d),counters:cn,missing,done:missing.length===0};
+ return {scored,ids,compareTotals:t,top:topCompany(d),pick:d.pick.company,pickOk:pickOk(d),counters:cn,missing,done:missing.length===0};
 }
 // 期末框架：六頁＋每人講稿草稿。members：[{student_id,directions,reps}]；cards：{[student_id]:{[company]:{why,sources,url,est,estOk,insight,argue}}}；names：{[student_id]:name}
 // companyInfo(cid)：{name,tagline,card:[[k,v]...]}（前端用 islands-data；Edge 不產框架，所以可以不給）
@@ -681,7 +681,7 @@ function buildFramework(d,members,names,cards,companyInfo){
  const nm=id=>names?.[id]||id;const info=companyInfo?companyInfo(pick):null;const name=info?.name||COMPANY_NAME[pick]||pick;
  const grid=k=>info?.card?.find(([kk])=>kk===k)?.[1]||'';
  const myCard=owner?cards?.[owner.student_id]?.[pick]||{}:{};
- const t=totals(d);const losers=Object.keys(d.scores).filter(c=>c!==pick);
+ const t=compareTotals(d);const losers=Object.keys(d.scores).filter(c=>c!==pick);
  const loseLine=c=>{const qs=d.scores[c]||{};const weakest=COMPARE_QUESTIONS.map(q=>[q,qs[q.key]?.score]).filter(([,s])=>s!=null).sort((a,b)=>a[1]-b[1])[0];const who=(members||[]).find(m=>Object.values(m.reps||{}).includes(c));return `${COMPANY_NAME[c]||c}（${nm(who?.student_id||'')}）：總分 ${t[c]?.sum??'—'}／${MAX_COMPARE}${weakest?`，最弱在「${weakest[0].title}」${weakest[1]} 分：${qs[weakest[0].key]?.evidence||'（證據待補）'}`:''}`;};
  const chosenKind=COUNTER_KINDS.find(([k])=>k===d.counters.chosen);
  const pages=[

@@ -1,15 +1,15 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {harness} from './support/week2-harness.mjs';
-import {normalizeCompare,totals,topCompany,pickOk,compareProgress,buildFramework,COMPARE_QUESTIONS,MAX_COMPARE} from '../compare-core.mjs';
+import {normalizeCompare,compareTotals,topCompany,pickOk,compareProgress,buildFramework,COMPARE_QUESTIONS,MAX_COMPARE} from '../compare-core.mjs';
 
-test('compare-core：normalize 只收允許的公司、分數 0/1/2、反方三格、選定；totals／top／pickOk／progress',()=>{
+test('compare-core：normalize 只收允許的公司、分數 0/1/2、反方三格、選定；compareTotals／top／pickOk／progress',()=>{
  const d=normalizeCompare({scores:{OWNER:{q1:{score:'2',evidence:'15,000 家'},q2:{score:9},q3:{score:1},q4:{score:2},q5:{score:0}},sage:{q1:{score:2}},nope:{q1:{score:2}}},counters:{big:'Shopify 做客服 AI',chosen:'big',tech:'x'.repeat(400)},pick:{company:'Owner',reason:'短'}},['owner','sage','arcade']);
  assert.deepEqual(Object.keys(d.scores),['owner','sage']);assert.equal(d.scores.owner.q1.score,2);assert.equal(d.scores.owner.q2.score,null);assert.equal(d.counters.tech.length,300);assert.equal(d.pick.company,'owner');
- const t=totals(d);assert.equal(t.owner.sum,5);assert.equal(t.owner.complete,false);assert.equal(t.sage.n,1);
+ const t=compareTotals(d);assert.equal(t.owner.sum,5);assert.equal(t.owner.complete,false);assert.equal(t.sage.n,1);
  assert.equal(topCompany(d),'');// 沒一家打滿五格
  for(const q of COMPARE_QUESTIONS)d.scores.owner[q.key]={score:2,evidence:'e'};d.scores.sage={};for(const q of COMPARE_QUESTIONS)d.scores.sage[q.key]={score:1,evidence:''};
- assert.equal(topCompany(d),'owner');assert.equal(totals(d).owner.sum,MAX_COMPARE);
+ assert.equal(topCompany(d),'owner');assert.equal(compareTotals(d).owner.sum,MAX_COMPARE);
  assert.equal(pickOk(d),true);d.pick.company='sage';assert.equal(pickOk(d),false);d.pick.reason='我們組有人家裡做長照，接觸得到真人可以訪談';assert.equal(pickOk(d),true);
  const p=compareProgress(d,['owner','sage','arcade']);assert.equal(p.scored,2);assert.ok(p.missing.some(m=>/沒打完/.test(m)));assert.ok(p.missing.some(m=>/反方三格/.test(m)));
 });

@@ -1,4 +1,4 @@
-import {COMPARE_QUESTIONS,MAX_COMPARE,COUNTER_KINDS,normalizeCompare,totals,compareProgress} from './compare-core.mjs?v=20261112-w10';
+import {COMPARE_QUESTIONS,MAX_COMPARE,COUNTER_KINDS,normalizeCompare,compareTotals,compareProgress} from './compare-core.mjs?v=20261112-fix';
 import {COMPANY_NAME,normalizeReps,teamReps} from './islands-core.mjs?v=20261112-w10';
 // 教師洞察 · Week 10 比較與選定：每組三家、比較表總分、選定哪一家（非最高分的理由）、反方三格、完成度；哪家被幾組選。只讀。
 const dashboard=document.getElementById('teacher-dashboard');
@@ -14,7 +14,7 @@ async function call(b){const token=sessionStorage.getItem('sjl-teacher-token');c
 async function load(){status.textContent='正在載入…';try{data=await call({action:'teacher_load'});render();status.textContent='';}catch(e){status.textContent=e.message;if(!data&&tries++<2)setTimeout(load,2500);}}
 reloadBtn.addEventListener('click',load);
 function rows(c){const teams=(data.teams||[]).filter(t=>t.class_id===c.id),members=(data.team_members||[]).filter(m=>m.class_id===c.id),roster=(data.roster||[]).filter(r=>r.class_id===c.id);const nm=id=>roster.find(r=>r.student_id===id)?.student_name||id;
- return teams.map(t=>{const ms=members.filter(m=>m.team_id===t.id);const reps=teamReps(ms);const allowed=[1,2,3].map(k=>reps[k]?.company).filter(Boolean);const d=normalizeCompare(t.compare||{},allowed);const p=compareProgress(d,allowed);const tt=totals(d);
+ return teams.map(t=>{const ms=members.filter(m=>m.team_id===t.id);const reps=teamReps(ms);const allowed=[1,2,3].map(k=>reps[k]?.company).filter(Boolean);const d=normalizeCompare(t.compare||{},allowed);const p=compareProgress(d,allowed);const tt=compareTotals(d);
   return {t,ms,reps,allowed,d,p,tt,names:Object.fromEntries(ms.map(m=>[m.student_id,nm(m.student_id)]))};});}
 function render(){body.replaceChildren();
  for(const c of data.classes){const sec=el('section','',body,'tw2-class');el('h3',c.name,sec);const R=rows(c);
