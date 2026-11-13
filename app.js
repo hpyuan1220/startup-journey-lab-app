@@ -285,10 +285,11 @@ $('export-text').onclick=()=>{
 };
 // 閒置逾時：老師離開電腦但沒登出時的第二道防線。
 // 只要有點擊、按鍵或捲動就重新計時，所以改作業中途不會被踢出去。
-const TEACHER_IDLE_MINUTES = 30;
+// 2026-11-13 老師要求：上課評分時常切去 TronClass，5 分鐘／30 分鐘就被登出很煩。改成 8 小時（一整天的課）；離開教師頁也用同一個數字。
+const TEACHER_IDLE_MINUTES = 480;
 // 離開教師頁之後，沒有任何操作會重設計時器（學生在學生頁的動作不算）。
 // 那段期間的暴露時間不需要是 30 分鐘 —— 老師多半是切走就不回來了。
-const TEACHER_AWAY_MINUTES = 5;
+const TEACHER_AWAY_MINUTES = TEACHER_IDLE_MINUTES;
 let teacherIdleTimer = null;
 let teacherIdleMinutes = TEACHER_IDLE_MINUTES;
 function touchTeacherActivity(minutes=TEACHER_IDLE_MINUTES){
@@ -356,7 +357,7 @@ $('teacher-logout').onclick=()=>{storeTeacherSession(null);teacherRows=[];$('tea
 // 下一個人至少看得到這裡有人登入著。
 function markTeacherSignedIn(){
  const label=$('teacher-name');
- if(label)label.textContent=`目前以教師身分登入中 · 閒置 ${TEACHER_IDLE_MINUTES} 分鐘會自動登出`;
+ if(label)label.textContent=`目前以教師身分登入中 · 閒置 ${TEACHER_IDLE_MINUTES/60} 小時會自動登出`;
 }
 function escapeHTML(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderTeacher(){

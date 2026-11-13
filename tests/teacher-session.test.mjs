@@ -47,7 +47,9 @@ test('D2：背景重畫不可以把名單塞回 DOM', () => {
 // 老師還登入著，名單就會重畫。真正的防線是閒置登出真的會觸發。
 // 既然離開教師頁之後沒有任何操作會重設計時器，那段暴露時間就不需要是 30 分鐘。
 test('D2：離開教師頁後改用較短的倒數', () => {
-  assert.match(app, /const TEACHER_AWAY_MINUTES = 5;/);
+  // 2026-11-13 老師要求：上課評分常切去 TronClass，不要被登出 → 兩個計時都是 480 分鐘（機制保留，數字可調）。
+  assert.match(app, /const TEACHER_IDLE_MINUTES = 480;/);
+  assert.match(app, /const TEACHER_AWAY_MINUTES = TEACHER_IDLE_MINUTES;/);
   assert.match(app, /if\(teacherToken\)touchTeacherActivity\(TEACHER_AWAY_MINUTES\)/,
     '切走時要用短計時重新起算');
   assert.match(app, /function touchTeacherActivity\(minutes=TEACHER_IDLE_MINUTES\)/,
