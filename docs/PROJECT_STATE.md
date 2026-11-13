@@ -2043,3 +2043,9 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-13 09:16：**Deploy 完成**（commit ab03bda，bundle ddcf1dee69a33054，M=0）。線上驗：teacher_load 200、教師洞察 Week 12／11／compare／10 四區都出現、Week 9 區有 Q3–Q5 欄；存第 3 題回 409「先跑 migration」並自動只存兩題（符合預期），清空後列已刪、零殘留。migration 20261113_week_questions_extra.sql 尚未跑（選配）。
 - 2026-11-13 16:05：**教師閒置登出改 8 小時**（純前端，app.js；老師要求：期中評分時切去 TronClass 5 分鐘就被登出、30 分鐘閒置也被登出，分數打了存不進去）。`TEACHER_IDLE_MINUTES=480`、`TEACHER_AWAY_MINUTES=TEACHER_IDLE_MINUTES`；狀態列顯示「閒置 8 小時」。機制保留，要改回只改這兩個數字。tests/teacher-session D2 同步。index.html app.js?v=20261113-idle。
   - 同日期中現場紀錄：TronClass W4 PDF 31、W5 PDF 27 已同步到評分表；31 筆上台分數確認在雲端。三位學生「打了沒存」皆為學生登入失效（14 天／第二裝置），非系統故障。
+- 2026-11-14 00:30：**Week 9／10 改成理論講義＋課前影片（老師要求：學生聽不了 YC 英文影片，改成像 Week 4／5 的理論）**（純前端＋教材，不用 Deploy）
+  - 理論：Week 9 ＝ Thiel《從 0 到 1》七個問題（對到七格卡每一格、Owner 範例）＋ Maples《Pattern Breakers》轉折點（2026 三個轉折、檢驗題「2022 年成立做得出來嗎」）；Week 10 ＝ Helmer《7 Powers》七力對照表（對五問與反方三刀）＋「2026 共識：護城河不在模型」（資料／通路／定價，AI 包裝）。
+  - 講義：WEEK9_HANDOUT、WEEK10_HANDOUT 各插入新「二、理論」一頁（原二～四變三～五），PDF 重做（各 5 頁）。簡報：各插 2 頁理論（第 7、8 頁），後面「講義第 N 頁」引用 +1，重建 pptx／pdf（W9 15 頁、W10 16 頁）。
+  - week.html：Week 9／10 的「本週影片：YC…」整段換成「課前預習影片（準備中）」卡（含三題 `PRECLASS_QUIZ[9]`、`[10]`，data-preclass 掛載）＋「本週理論」導讀五重點（理論怎麼說／白話／群島例子／應用）；YC 影片降成一行「延伸（選看，英文）」。week.js 藍圖影片標題改「課前影片：準備中」。?v 全部 20261114。
+  - 課前影片來源（NotebookLM「說明影片」格式，9–11 分鐘）：Mac `116/Week9/Week9_課前影片_本週摘要_來源.md`、`116/Week10/Week10_課前影片_本週摘要_來源.md`（也在 docs/private/）。老師生完上傳 YouTube 不公開 → 給我 ID → 我嵌進「課前預習影片」卡（同 Week 4／5 做法）。
+  - 測試：單元 228 ✅；week10-student 21 ✅；week8 23 ✅；兩週頁手機寬度目視（三題、導讀可展開）。
