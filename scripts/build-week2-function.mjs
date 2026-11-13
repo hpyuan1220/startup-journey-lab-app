@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 // progress-core 排最後：它 import 其他 core；bundle 內 import 行要拿掉（下面一起 strip）。
-const core=['week2-core.mjs','week3-core.mjs','week4-core.mjs','week5-core.mjs','team-core.mjs','islands-core.mjs','compare-core.mjs','progress-core.mjs'].map(f=>fs.readFileSync(f,'utf8').replace(/^export /gm,'').replace(/^import .* from '\.\/(week[345]|team|islands)-core\.mjs';\n/gm,'')).join('\n');
+const core=['week2-core.mjs','week3-core.mjs','week4-core.mjs','week5-core.mjs','team-core.mjs','islands-core.mjs','compare-core.mjs','final-core.mjs','progress-core.mjs'].map(f=>fs.readFileSync(f,'utf8').replace(/^export /gm,'').replace(/^import .* from '\.\/(week[345]|team|islands)-core\.mjs';\n/gm,'')).join('\n');
 const source=fs.readFileSync('supabase/functions/week2-api/index.ts','utf8');
-const stripped=source.replace(/^import .* from '\.\.\/\.\.\/\.\.\/(week[2345]|progress|team|islands|compare)-core\.mjs';\n/gm,'');
+const stripped=source.replace(/^import .* from '\.\.\/\.\.\/\.\.\/(week[2345]|progress|team|islands|compare|final)-core\.mjs';\n/gm,'');
 if(source===stripped)throw Error('Missing shared module import');
 // 各 core 併成同一個模組作用域：頂層名稱重複會讓 Deno 開機 SyntaxError（線上 503）。2026-11-12 compare-core 與 week5-core 都有 totals 踩過。
 {const names=[...(core+'\n'+stripped).matchAll(/^(?:const|let|function|class|async function)\s+([A-Za-z_$][\w$]*)/gm)].map(m=>m[1]);const dup=names.filter((n,i)=>names.indexOf(n)!==i);if(dup.length)throw Error('Duplicate top-level names in bundle: '+[...new Set(dup)].join(', '));}

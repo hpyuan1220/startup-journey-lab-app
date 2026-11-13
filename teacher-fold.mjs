@@ -11,7 +11,7 @@ if(dash){
   b.addEventListener('click',()=>{const s=state();const f=!s[sec.id];s[sec.id]=f;save(s);apply(sec,f);if(f)sec.scrollIntoView({block:'start'});});
   apply(sec,!!state()[sec.id]);}
  // 區塊順序固定：最新的週在上（各模組載入先後不影響）。建組與群島也可收合。
- const ORDER=['teacher-compare','teacher-week10','teacher-week9','teacher-islands','teacher-week8','teacher-week7','teacher-team','teacher-week6','teacher-week5','teacher-week4','teacher-week2','teacher-week1'];
+ const ORDER=['teacher-week12','teacher-week11','teacher-compare','teacher-week10','teacher-week9','teacher-islands','teacher-week8','teacher-week7','teacher-team','teacher-week6','teacher-week5','teacher-week4','teacher-week2','teacher-week1'];
  let ordering=false;
  function reorder(){if(ordering)return;ordering=true;try{const anchor=dash.querySelector('.statusbar');const secs=[...dash.querySelectorAll(':scope > section')].filter(s=>ORDER.includes(s.id)).sort((a,b)=>ORDER.indexOf(a.id)-ORDER.indexOf(b.id));
   let prev=anchor;for(const s of secs){if(anchor){if(prev.nextElementSibling!==s)prev.after(s);prev=s;}}}finally{ordering=false;}}

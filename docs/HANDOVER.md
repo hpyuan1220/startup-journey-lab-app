@@ -46,7 +46,7 @@ node tests/week8-student.mjs; node tests/islands-student.mjs; node tests/week10-
 
 **學生端**
 - `index.html`＋`app.js`：首頁、學生起點卡（登入：學號＋邀請碼）、教師洞察入口。
-- `week.html`＋`week.js`：所有週的頁；每週一個 `<section id="week-N-materials">`（教材與說明）＋作答區。切換在 `week.js` 的 `ids` 對照表；**Week 8 的內容就在 `week.html` 的 `#week-eight-materials` 這一段（講座說明、教材連結）**，課堂兩題題目在 `week4-core.mjs` 的 `DEFAULT_QUESTIONS[8]`。
+- `week.html`＋`week.js`：所有週的頁；每週一個 `<section id="week-N-materials">`（教材與說明）＋作答區。切換在 `week.js` 的 `ids` 對照表；**Week 8 的內容就在 `week.html` 的 `#week-eight-materials` 這一段（講座說明、教材連結）**，課堂兩題題目在 `week4-core.mjs` 的 `DEFAULT_QUESTIONS[8]`。**題數可以是 2–5**：在 `DEFAULT_QUESTIONS[8]` 加 `q3`、`q4`、`q5`（字串，留白＝沒有這題）就多題，學生頁、老師頁、出席（全答在課中）自動跟著；改了 core 要重跑 `node scripts/build-week2-function.mjs` 並 Deploy。老師也能不改程式，在教師洞察 Week 8 區的 Q3–Q5 欄位填（要先在 Supabase 跑 `supabase/migrations/20261113_week_questions_extra.sql`）。
 - 作答模組：`week2.js`～`week5.js`、`classq.js`（Week 6/8/9/10 課堂兩題）、`team.js`（Week 7 建組、Week 9「我的組」）、`company-card.js`（Week 9 理由卡）、`compare.js`（Week 10 比較表＋期末框架）。
 - 群島：`islands.html`／`islands.js`／`islands.css`／`islands-data.mjs`（15 家公司的題庫、七格卡、故事、估價題）／`islands-core.mjs`（公司→島→方向）／`materials/islands/`（圖）。
 - 共用規則（前端與後端同一份）：`week2-core.mjs`…`week5-core.mjs`、`team-core.mjs`、`islands-core.mjs`、`compare-core.mjs`、`progress-core.mjs`。**改規則只改這裡**，bundle 會包進 Edge。

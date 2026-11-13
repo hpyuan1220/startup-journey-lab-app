@@ -214,7 +214,7 @@ test('課堂兩題週：Week 6 跟 Week 5 同一天，各算各的出席；課�
  assert.equal(attendance({q1:'2026-11-06T05:10:00Z'},6),false);
  const q=resolveQuestions(6,null);assert.match(q.q1,/發電廠/);assert.match(q.q2,/群島地圖/);assert.ok(q.points.length>20);
  assert.match(resolveQuestions(5,null).q2,/為什麼是現在/,'Week 5 預設 Q2 不再是群島題');
- assert.deepEqual(normalizeClassQ({q1:' a ',q2:'x'.repeat(700),evil:1}),{q1:'a',q2:'x'.repeat(600),q1_ai:'',q2_ai:''});
+ {const n=normalizeClassQ({q1:' a ',q2:'x'.repeat(700),evil:1});assert.equal(n.q1,'a');assert.equal(n.q2,'x'.repeat(600));assert.equal(n.q1_ai,'');assert.equal(n.evil,undefined);assert.equal(n.q3,'','q3–q5 也在（題數 2–5）');}
  const st=applyStampsClassQ(null,normalizeClassQ({q1:'a'}),{},'T1');assert.deepEqual(st,{q1:'T1'});
  assert.deepEqual(applyStampsClassQ(normalizeClassQ({q1:'a'}),normalizeClassQ({q1:'a',q2:'b'}),st,'T2'),{q1:'T1',q2:'T2'},'沒改的不重蓋章');
 });

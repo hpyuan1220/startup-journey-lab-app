@@ -109,11 +109,10 @@ export function stampLabel(iso){
  return {kind:'after'};
 }
 /** 出席：該週的 q1、q2 都在那一週的上課時段內存檔 */
-export function attendance(stamps,week){
- // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。
+export function attendance(stamps,week,keys=['q1','q2']){
+ // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。題數不固定的週傳 questionKeys(q)。
  const date=classDate(week);if(!date)return false;const [a,b]=classWindow(date);
- const t1=Date.parse(stamps?.q1||''),t2=Date.parse(stamps?.q2||'');
- return t1>=a&&t1<=b&&t2>=a&&t2<=b;
+ return keys.length>0&&keys.every(k=>{const t=Date.parse(stamps?.[k]||'');return t>=a&&t<=b;});
 }
 export const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'課中':'課後'):'';};
 
@@ -127,11 +126,24 @@ export const DEFAULT_QUESTIONS={
  10:{q1:'你們組選了哪一家？用一句話說它贏在五問的哪一題（要有數字：客戶數、收費、省多少小時）。',q2:'反方最狠的一刀是哪一種（大廠／客戶／技術）？你們打算怎麼回？或老實說沒證據、要查什麼。',points:'Q1 看三件事：有選定（一家公司名）、指到五問之一、有數字（引理由卡或比較表）。Q2 看有沒有分清三種反方、回法是證據不是形容詞（「大廠為什麼不做」「它省的比它收的多」「它賣的不是模型」），或老實寫沒證據＋下一步查什麼；只寫「我們更專注」算 0。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
+// 課堂題數 2–5：Q1、Q2 一定有；Q3–Q5 由 DEFAULT_QUESTIONS[week].q3… 或老師在 week_questions.extra（jsonb 陣列，migration 20261113）填。
+export const CLASSQ_MAX=5;
+export const QKEYS=['q1','q2','q3','q4','q5'];
+const EXTRA_KEYS=QKEYS.slice(2);
+export function questionKeys(q){return QKEYS.filter((k,i)=>i<2||String(q?.[k]||'').trim());}
 export function resolveQuestions(week,row){
  const d=DEFAULT_QUESTIONS[Number(week)]||GENERIC_QUESTIONS;
- return {q1:w4cut(row?.q1,300)||d.q1,q2:w4cut(row?.q2,300)||d.q2,points:w4cut(row?.points,600)||d.points||''};
+ const extra=Array.isArray(row?.extra)?row.extra:[];
+ const out={q1:w4cut(row?.q1,300)||d.q1,q2:w4cut(row?.q2,300)||d.q2,points:w4cut(row?.points,600)||d.points||''};
+ EXTRA_KEYS.forEach((k,i)=>{const v=w4cut(extra[i],300)||d[k]||'';if(v)out[k]=v;});
+ return out;
 }
-export function normalizeQuestions(input){return {q1:w4cut(input?.q1,300),q2:w4cut(input?.q2,300),points:w4cut(input?.points,600)};}
+export function normalizeQuestions(input){
+ const out={q1:w4cut(input?.q1,300),q2:w4cut(input?.q2,300),points:w4cut(input?.points,600)};
+ const extra=EXTRA_KEYS.map(k=>w4cut(input?.[k],300));while(extra.length&&!extra[extra.length-1])extra.pop();
+ if(extra.length)out.extra=extra;
+ return out;
+}
 
 // ---- 學生資料 ----
 export const SOURCES=['','gemini','gpt','claude','copilot','notebooklm'];
@@ -189,9 +201,9 @@ export function buildPrompt(kind,d,q){
 
 // ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
 export const CLASSQ_WEEKS=[6,8,9,10];
-const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
-export function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
-export function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
+const CLASSQ_FIELDS=QKEYS.flatMap(k=>[k,k+'_ai']);
+export function emptyClassQ(){const o={};for(const k of QKEYS){o[k]='';o[k+'_ai']='';}return o;}
+export function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};const o={};for(const k of QKEYS){o[k]=w4cut(i[k],600);o[k+'_ai']=w4cut(i[k+'_ai'],400);}return o;}
 export function applyStampsClassQ(prev,next,prevStamps,nowIso){
  const stamps={...(prevStamps||{})};
  for(const k of CLASSQ_FIELDS){if(!next[k])continue;const changed=!prev||prev[k]!==next[k];if(changed||!stamps[k])stamps[k]=nowIso;}

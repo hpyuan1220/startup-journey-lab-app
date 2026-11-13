@@ -341,11 +341,10 @@ function stampLabel(iso){
  return {kind:'after'};
 }
 /** 出席：該週的 q1、q2 都在那一週的上課時段內存檔 */
-function attendance(stamps,week){
- // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。
+function attendance(stamps,week,keys=['q1','q2']){
+ // 用「那一週的上課日」判斷（同一天可以有兩週：11/6＝Week 5＋Week 6，各算各的）。題數不固定的週傳 questionKeys(q)。
  const date=classDate(week);if(!date)return false;const [a,b]=classWindow(date);
- const t1=Date.parse(stamps?.q1||''),t2=Date.parse(stamps?.q2||'');
- return t1>=a&&t1<=b&&t2>=a&&t2<=b;
+ return keys.length>0&&keys.every(k=>{const t=Date.parse(stamps?.[k]||'');return t>=a&&t<=b;});
 }
 const labelText=iso=>{const l=stampLabel(iso);return l?(l.kind==='in'?'課中':'課後'):'';};
 
@@ -359,11 +358,24 @@ const DEFAULT_QUESTIONS={
  10:{q1:'你們組選了哪一家？用一句話說它贏在五問的哪一題（要有數字：客戶數、收費、省多少小時）。',q2:'反方最狠的一刀是哪一種（大廠／客戶／技術）？你們打算怎麼回？或老實說沒證據、要查什麼。',points:'Q1 看三件事：有選定（一家公司名）、指到五問之一、有數字（引理由卡或比較表）。Q2 看有沒有分清三種反方、回法是證據不是形容詞（「大廠為什麼不做」「它省的比它收的多」「它賣的不是模型」），或老實寫沒證據＋下一步查什麼；只寫「我們更專注」算 0。'},
  5:{q1:'Blank 說的 earlyvangelist 有五個特徵，寫出其中兩個。',q2:'你的三個機會裡，哪一個最可能被「為什麼是現在」這一問刷掉？為什麼？',points:'earlyvangelist：有問題、知道自己有問題、正在找解法、已經自己拼湊了臨時解法、有或能拿到預算。'},
 };
+// 課堂題數 2–5：Q1、Q2 一定有；Q3–Q5 由 DEFAULT_QUESTIONS[week].q3… 或老師在 week_questions.extra（jsonb 陣列，migration 20261113）填。
+const CLASSQ_MAX=5;
+const QKEYS=['q1','q2','q3','q4','q5'];
+const EXTRA_KEYS=QKEYS.slice(2);
+function questionKeys(q){return QKEYS.filter((k,i)=>i<2||String(q?.[k]||'').trim());}
 function resolveQuestions(week,row){
  const d=DEFAULT_QUESTIONS[Number(week)]||GENERIC_QUESTIONS;
- return {q1:w4cut(row?.q1,300)||d.q1,q2:w4cut(row?.q2,300)||d.q2,points:w4cut(row?.points,600)||d.points||''};
+ const extra=Array.isArray(row?.extra)?row.extra:[];
+ const out={q1:w4cut(row?.q1,300)||d.q1,q2:w4cut(row?.q2,300)||d.q2,points:w4cut(row?.points,600)||d.points||''};
+ EXTRA_KEYS.forEach((k,i)=>{const v=w4cut(extra[i],300)||d[k]||'';if(v)out[k]=v;});
+ return out;
 }
-function normalizeQuestions(input){return {q1:w4cut(input?.q1,300),q2:w4cut(input?.q2,300),points:w4cut(input?.points,600)};}
+function normalizeQuestions(input){
+ const out={q1:w4cut(input?.q1,300),q2:w4cut(input?.q2,300),points:w4cut(input?.points,600)};
+ const extra=EXTRA_KEYS.map(k=>w4cut(input?.[k],300));while(extra.length&&!extra[extra.length-1])extra.pop();
+ if(extra.length)out.extra=extra;
+ return out;
+}
 
 // ---- 學生資料 ----
 const SOURCES=['','gemini','gpt','claude','copilot','notebooklm'];
@@ -421,9 +433,9 @@ function buildPrompt(kind,d,q){
 
 // ---- 只有課堂兩題的週（沒有自己的作答頁，例如 Week 6 跟 Week 5 同一天上）：一張通用表 week_class_answers（class_id, student_id, week）----
 const CLASSQ_WEEKS=[6,8,9,10];
-const CLASSQ_FIELDS=['q1','q2','q1_ai','q2_ai'];
-function emptyClassQ(){return {q1:'',q2:'',q1_ai:'',q2_ai:''};}
-function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};return {q1:w4cut(i.q1,600),q2:w4cut(i.q2,600),q1_ai:w4cut(i.q1_ai,400),q2_ai:w4cut(i.q2_ai,400)};}
+const CLASSQ_FIELDS=QKEYS.flatMap(k=>[k,k+'_ai']);
+function emptyClassQ(){const o={};for(const k of QKEYS){o[k]='';o[k+'_ai']='';}return o;}
+function normalizeClassQ(input){const i=input&&typeof input==='object'?input:{};const o={};for(const k of QKEYS){o[k]=w4cut(i[k],600);o[k+'_ai']=w4cut(i[k+'_ai'],400);}return o;}
 function applyStampsClassQ(prev,next,prevStamps,nowIso){
  const stamps={...(prevStamps||{})};
  for(const k of CLASSQ_FIELDS){if(!next[k])continue;const changed=!prev||prev[k]!==next[k];if(changed||!stamps[k])stamps[k]=nowIso;}
@@ -527,7 +539,7 @@ function buildPrompt5(kind,d,q){
   const key=d.choice.key||topChoice(d)||'A';const opp=d.opps[OPP_KEYS.indexOf(key)]||'〔機會一句話〕';
   return `（這是大學創業課的作業：練習用證據回應反對意見。）你現在扮演一位在台灣做這一行撐了十年的老闆，生意還過得去、不想多花一毛錢、對學生的點子很懷疑。我是學生，我選的機會是：${opp}\n我對它的五問評分和證據：\n${evidenceLines(d,key)}\n\n規則：我們來三回合。每一回合你只用「【拒絕 n】」開頭給我一個具體的拒絕理由（像老闆真的會說的話，兩三句，針對我證據最弱的地方），然後停下來等我回應，不要替我回答。我回應後，你判斷我有沒有用證據說服你，再給下一個拒絕理由。三回合結束後，用「【反方紀錄】」開頭，照這個格式整理：\n拒絕 1：…\n我的回應 1：…（原文照抄）\n拒絕 2：…\n我的回應 2：…\n拒絕 3：…\n我的回應 3：…\n總結：哪一回合我有說服你、哪一回合沒有、我最該去補的一個證據是什麼。\n繁體中文。現在請給【拒絕 1】。`;
  }
- if(kind==='q1'||kind==='q2'){
+ if(/^q[1-5]$/.test(kind)){
   const question=q?.[kind]||'',answer=d[kind]||'',points=q?.points||'';
   const task=points?`用繁體中文、兩句以內告訴學生：他答對了講義裡的哪一點、漏了什麼或哪裡講得不精確。不要打分數，不要重寫他的答案。`:`用繁體中文、兩句以內判斷：這個回答有沒有具體提到一個今天課堂講的例子或觀念。不要打分數，不要重寫他的答案。`;
   return `你是一門大學創業課的助教。下面是老師的問題${points?'、講義重點':''}、學生的回答。${task}\n【老師的問題】${question}\n${points?`【講義重點】${points}\n`:''}【學生的回答】${answer}`;
@@ -697,6 +709,46 @@ function buildFramework(d,members,names,cards,companyInfo){
  return {company:pick,name,pages,scripts,pdf,owner:owner?.student_id||''};
 }
 
+// 期末（Week 12）與預演（Week 11）的規則：前端 teacher-final.js／teacher-rehearsal.js／week.html Week 11 用；Edge 只把預演講評轉給學生（team_load）。
+// 2026-11-12 草案（待老師確認；改數字只改這裡）：總分 100 ＝ 組分 50 ＋ 個人分 50。
+//  組分 50：五項各 0／5／10（老師打）。
+//  個人分 50：上台自己那幾頁 0–30（老師打）＋ 個人完成度 20（電腦算：開 ≥2 箱 5、推薦 1 家 5、理由卡完成 5、Week 9＋10 課堂兩題 5）。
+//  PDF 五段：只記「已交／遲交」，不另計分（遲交記在備註）。
+// 分數存 teacher_remarks：組分存 week 12、student_id＝'TEAM'＋組碼，note 'FG1|g=10,5,10,0,5|pdf=1'；個人存 week 12、本人學號，note 'FG1|c=25'。
+// 預演（Week 11）：student_id＝'TEAM'＋組碼、week 11，note 'RH1|t=1|n=第1頁講評;第2頁講評;…'（六句，分號分隔，分號換成全形）。
+const GROUP_ITEMS=[
+ ['① 一句話＋錢流','第 1–2 頁：10 秒內聽得出誰付錢給誰；收費有數字或估價；取代誰。0：沒有誰付錢給誰｜5：有，沒數字｜10：有名字、有數字、有取代誰'],
+ ['② 為什麼是現在','第 3 頁：具體的那一個改變；募資／客戶數當押注證據，分清不是賺錢。0：「AI 很強」｜5：有變化但關係弱｜10：具體、有來源'],
+ ['③ 為什麼不是另外兩家','第 4 頁：比較表三家同一把尺；落選兩家各 30 秒說輸在哪一問。0：各講各的｜5：有比較表沒講輸在哪｜10：同一把尺＋每家一句'],
+ ['④ 風險與反方','第 5 頁：三種反方選最狠一刀；用證據回或老實說沒證據。0：沒反方｜5：有反方、回應是形容詞｜10：證據回或老實＋下一步'],
+ ['⑤ 台灣同層＋整體','第 6 頁：台灣有沒有同一層、差在哪；一句學到什麼。整體：6 分鐘內、每個數字有來源標籤。0：空白｜5：一半｜10：都有'],
+];
+const C_MAX=30;
+const PERSONAL_ITEMS=[['開 ≥2 箱',5],['推薦 1 家給組',5],['理由卡完成（3 來源＋一句話）',5],['Week 9＋10 課堂兩題',5]];
+const FINAL_PAGE_TITLES=['這家公司一句話','錢流與收費、以前誰在做','為什麼是現在','為什麼不是另外兩家','風險與反方最狠的一刀','台灣同層／我們學到什麼'];
+const teamKey=code=>'TEAM'+String(code||'').toUpperCase();
+const scF=v=>[0,5,10].includes(Number(v))&&v!==''?Number(v):null;
+function parseGroup(note){const out={g:Array(GROUP_ITEMS.length).fill(null),pdf:false};const s=String(note||'').trim();if(!/^FG1\|/.test(s))return out;
+ for(const part of s.split('|').slice(1)){const [k,v]=part.split('=');if(k==='g')(v||'').split(',').slice(0,GROUP_ITEMS.length).forEach((x,i)=>{out.g[i]=scF(x);});if(k==='pdf')out.pdf=v==='1';}return out;}
+const formatGroup=o=>`FG1|g=${o.g.map(x=>x===null?'':x).join(',')}|pdf=${o.pdf?1:0}`;
+function parsePersonal(note){const s=String(note||'').trim();const out={c:null};if(!/^FG1\|/.test(s))return out;for(const part of s.split('|').slice(1)){const [k,v]=part.split('=');if(k==='c'){const n=Number(v);out.c=v!==''&&Number.isInteger(n)&&n>=0&&n<=C_MAX?n:null;}}return out;}
+const formatPersonal=o=>`FG1|c=${o.c===null?'':o.c}`;
+const groupSum=o=>o.g.reduce((s,x)=>s+(x||0),0);
+// 個人完成度（電腦算）：prog＝islands_progress.data；reps＝team_members.reps；classq9／classq10＝week_class_answers 有沒有兩題
+function personalCompletion({prog,reps,classq9,classq10}){
+ const boxes=Object.values(prog?.boxes||{}).filter(b=>b?.opened).length;
+ const repIds=Object.values(reps||{});const cardOk=repIds.some(cid=>{const cd=prog?.cards?.[cid];const url=prog?.boxes?.[cid]?.url;const n=[url,...(cd?.sources||[])].filter(Boolean).length;return n>=3&&!!cd?.why;});
+ const items=[boxes>=2,repIds.length>=1,cardOk,!!(classq9&&classq10)];
+ return {items,total:items.reduce((s,ok,i)=>s+(ok?PERSONAL_ITEMS[i][1]:0),0),boxes};
+}
+const finalTotal=(group,personalC,completion)=>groupSum(group)+(personalC||0)+completion;
+// 預演講評
+function parseRehearsal(note){const s=String(note||'').trim();const out={onTime:null,notes:Array(6).fill(''),general:''};if(!/^RH1\|/.test(s))return out;
+ for(const part of s.split('|').slice(1)){const i=part.indexOf('=');const k=part.slice(0,i),v=part.slice(i+1);if(k==='t')out.onTime=v===''?null:v==='1';if(k==='n')v.split(';').slice(0,6).forEach((x,j)=>{out.notes[j]=x.replace(/／／/g,'|');});if(k==='x')out.general=v.replace(/／／/g,'|');}return out;}
+const clean=s=>String(s||'').replace(/\r?\n/g,' ').replace(/[|]/g,'／／').replace(/;/g,'；').trim();
+const formatRehearsal=o=>`RH1|t=${o.onTime===null?'':o.onTime?1:0}|n=${o.notes.map(clean).join(';')}|x=${clean(o.general)}`;
+const rehearsalFilled=o=>o.notes.filter(Boolean).length;
+
 // 「我的進度」：學生端（課程地圖最上面一條）和老師端（之後的全班總表）共用同一套判定。
 // 輸入是各週那一列（可為 null）；輸出每週 {week, state, label, detail, next, href}。
 // state：done（做完）／partial（做了一部分）／revise（老師退回）／none（沒開始）。
@@ -814,8 +866,15 @@ Deno.serve(async req=>{
    // 每週課堂兩題：老師隨時可改，學生畫面下次載入就換題。三欄都留白＝刪掉這列、回到預設。
    const week=Number(b.week);if(!Number.isInteger(week)||week<1||week>12)return reply({error:'週數不正確。'},422);
    const q=normalizeQuestions(b.questions);
-   if(!q.q1&&!q.q2&&!q.points)must(await db.from('week_questions').delete().match({class_id:b.class_id,week}));
-   else must(await db.from('week_questions').upsert({class_id:b.class_id,week,...q,updated_at:new Date().toISOString()},{onConflict:'class_id,week'}));
+   if(!q.q1&&!q.q2&&!q.points&&!q.extra)must(await db.from('week_questions').delete().match({class_id:b.class_id,week}));
+   else{
+    // extra（第 3–5 題）要有 migration 20261113_week_questions_extra.sql 的欄位；沒有那個欄位時只存兩題＋重點，並告訴老師。
+    const rowQ:any={class_id:b.class_id,week,q1:q.q1,q2:q.q2,points:q.points,updated_at:new Date().toISOString()};
+    const up=await db.from('week_questions').upsert({...rowQ,extra:q.extra||[]},{onConflict:'class_id,week'});
+    if(up.error){const missing=/extra/.test(up.error.message||'')&&(up.error.code==='PGRST204'||up.error.code==='42703');if(!missing)must(up);
+     must(await db.from('week_questions').upsert(rowQ,{onConflict:'class_id,week'}));
+     if(q.extra)return reply({error:'第 3 題以後要先在 Supabase 跑 migration 20261113_week_questions_extra.sql 才能存；Q1、Q2、重點已存。'},409);}
+   }
    const rows=must(await db.from('week_questions').select('*').eq('class_id',b.class_id));
    return reply({week_questions:rows,resolved:resolveQuestions(week,rows.find((r:any)=>r.week===week))});
   }
@@ -910,7 +969,10 @@ Deno.serve(async req=>{
  if(b.action==='class_q_ai'){
   const week=Number(b.week),k=String(b.q||'');
   const generic=CLASSQ_WEEKS.includes(week);
-  if((![4,5].includes(week)&&!generic)||!['q1','q2'].includes(k))return reply({error:'未知題目。'},400);
+  if((![4,5].includes(week)&&!generic)||!(generic?/^q[1-5]$/:/^q[12]$/).test(k))return reply({error:'未知題目。'},400);
+  const qrowQ=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week}).maybeSingle());
+  const questionsQ=resolveQuestions(week,qrowQ);
+  if(generic&&!questionKeys(questionsQ).includes(k))return reply({error:'未知題目。'},400);
   const envOpenQ=Deno.env.get('SJL_WRITE_OPEN_AT'),openAtQ=envOpenQ&&Number.isFinite(Date.parse(envOpenQ))?envOpenQ:WRITE_OPEN_AT;
   if(!writeOpen(s.student_id,Date.now(),openAtQ))return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再問。`},423);
   const table=generic?'week_class_answers':week===4?'week4_research':'week5_compare',rowScope=generic?{...scope,week}:scope;
@@ -922,8 +984,6 @@ Deno.serve(async req=>{
   const qai=(r.stamps&&typeof r.stamps.qai==='object'&&r.stamps.qai)||{},used=Number(qai[k]?.n)||0;
   if(used>=CLASS_Q_AI_LIMIT)return reply({error:`這一題的 AI 評語已經用了 ${CLASS_Q_AI_LIMIT} 次（不計分）。可以改好答案直接存，或按「自己用 Gemini 問」。`,used,limit:CLASS_Q_AI_LIMIT},429);
   const key=Deno.env.get('OPENAI_API_KEY');if(!key)return reply({error:'AI 暫時無法使用；答案已存，不影響出席。'},503);
-  const qrowQ=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week}).maybeSingle());
-  const questionsQ=resolveQuestions(week,qrowQ);
   const userText=week===4?buildPrompt(k,d,questionsQ):buildPrompt5(k,d,questionsQ);
   const modelQ=Deno.env.get('WEEK2_OPENAI_MODEL')||Deno.env.get('OPENAI_MODEL')||'gpt-4o-mini';
   let text='';
@@ -984,7 +1044,9 @@ Deno.serve(async req=>{
     // 每個組員推薦的公司的理由卡摘要（來源、一句話、估價、網址、探索／找碴），比較頁拉證據用
     for(const r of must(await db.from('islands_progress').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids))){const m=members.find((x:any)=>x.student_id===r.student_id);const reps=normalizeReps(m?.reps);const out:Record<string,unknown>={};for(const cid of Object.values(reps)){const bx=r.data?.boxes?.[cid]||{};const cd=r.data?.cards?.[cid]||{};out[cid]={why:cd.why||'',sources:Array.isArray(cd.sources)?cd.sources:[],url:bx.url||'',est:bx.est||'',estOk:!!bx.estOk,insight:bx.insight||'',argue:bx.argue||'',opened:!!bx.opened};}cards[r.student_id]=out;}
    }
-   return {me,team,members,week4,names,cards,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+   // Week 11 預演講評（老師寫在 teacher_remarks 的 'TEAM'+組碼、week 11）：只轉這一格給學生，其他備註學生永遠看不到
+   let rehearsal=null;if(team){const rh=must(await db.from('teacher_remarks').select('note').match({class_id:s.class_id,student_id:teamKey(team.code),week:11}).maybeSingle());if(rh?.note)rehearsal=parseRehearsal(rh.note);}
+   return {me,team,members,week4,names,cards,rehearsal,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
   };
   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;

@@ -2,6 +2,7 @@ import {COMPARE_QUESTIONS,COUNTER_KINDS,MAX_COMPARE,PAGES,emptyCompare,normalize
 import {COMPANY_NAME,normalizeReps,teamReps,companyDir} from './islands-core.mjs?v=20261112-w10';
 import {DIRECTIONS,normalizeDirections} from './team-core.mjs?v=20261106-tm';
 import {COMPANIES,companyById} from './islands-data.mjs?v=20261111-art';
+import {buildDeckSpec,makePptx} from './final-pptx.mjs?v=20261113-ppt';
 // Week 10 頁：比較表（三家 × 五問，每格 0／1／2＋一句證據）→ 選定一家 → 反方三格 → 期末框架（六頁＋每人講稿）。
 // 一組一份，存 teams.compare（team_compare_save）；任一組員可改，存檔後全組看到同一份。證據可以從理由卡一鍵帶入。
 const WEEK=new URLSearchParams(location.search).get('week');
@@ -62,6 +63,7 @@ function render(){body.replaceChildren();
   const me=session.student_id;const mine=f.scripts[me];const scb=el('div','',fw,'cmp-script');el('h4','我的講稿草稿（'+(names[me]||me)+'）',scb);const pre=el('pre',mine||'（還沒分到頁）',scb);
   const row=el('div','',fw,'w4-row');const msg=el('span','',row,'w4-hint');
   const cp=el('button','複製我的講稿',row,'primary');cp.type='button';cp.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(mine||'');msg.textContent='已複製。';}catch{msg.textContent='複製失敗，請手動選取。';}});
+  const ppt=el('button','下載六頁 PPT 初稿（講稿在備忘稿）',row,'quiet');ppt.type='button';ppt.addEventListener('click',async()=>{if(ppt.disabled)return;ppt.disabled=true;msg.textContent='正在做 PPT…';try{const file=await makePptx(buildDeckSpec(f,T.team,T.members,names));msg.textContent=`已下載 ${file}：先改成自己的話，再補數字與來源。`;}catch(e){msg.textContent='PPT 元件載不進來（網路或被擋）：改按「複製整份框架」貼進 PowerPoint／Google 簡報。';}finally{ppt.disabled=false;}});
   const all=el('button','複製整份框架（六頁＋三人講稿＋PDF 五段）',row,'quiet');all.type='button';all.addEventListener('click',async()=>{const txt=[`${T.team.name}｜期末：${f.name}`,'',...f.pages.map(p=>`第 ${p.n} 頁 ${p.title}（講：${String(p.speaker).split('、').map(s=>names[s]||s).join('、')}）\n${p.body}`),'','— 每人講稿 —',...T.members.map(m=>`【${names[m.student_id]||m.student_id}】\n${f.scripts[m.student_id]}`),'','— PDF 五段 —',...f.pdf].join('\n\n');try{await navigator.clipboard.writeText(txt);msg.textContent='已複製整份。';}catch{msg.textContent='複製失敗。';}});
  }
 }

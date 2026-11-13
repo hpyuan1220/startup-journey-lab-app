@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {normalize,check,aiInput,validFeedback,privacyRisk,RULES_VERSION} from '../../../week2-core.mjs';
 import {normalizeRecord,checkRecord,WEEK3_RULES,normalizeTopics,normalizeSurvey,checkSurvey,surveySummary} from '../../../week3-core.mjs';
-import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,recommendCards,writeOpen,WRITE_OPEN_AT,WRITE_OPEN_LABEL,buildPrompt,CLASS_Q_AI_LIMIT,CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ} from '../../../week4-core.mjs';
+import {normalizeWeek4,applyStamps,normalizeQuestions,resolveQuestions,questionKeys,recommendCards,writeOpen,WRITE_OPEN_AT,WRITE_OPEN_LABEL,buildPrompt,CLASS_Q_AI_LIMIT,CLASSQ_WEEKS,normalizeClassQ,applyStampsClassQ} from '../../../week4-core.mjs';
 import {normalizeWeek5,applyStamps5,OPP_KEYS,buildPrompt5,rebuttalNext,buildRebuttalTurn,appendRebuttal,REBUTTAL_AI_LIMIT} from '../../../week5-core.mjs';
 import {TEAM_MAX,TEAM_MIN,TEAM_LOCK_AT,makeCode,normalizeCode,normalizeTeamName,normalizeIndustry,normalizeDirections,teamLocked,directionName,TEAM_LOCK_LABEL} from '../../../team-core.mjs';
 import {companyDir,normalizeReps} from '../../../islands-core.mjs';
 import {normalizeCompare} from '../../../compare-core.mjs';
+import {parseRehearsal,teamKey} from '../../../final-core.mjs';
 import {studentProgress} from '../../../progress-core.mjs';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, apikey, content-type','Content-Type':'application/json'};
 const reply=(x:unknown,status=200)=>new Response(JSON.stringify(x),{status,headers});
@@ -77,8 +78,15 @@ Deno.serve(async req=>{
    // 每週課堂兩題：老師隨時可改，學生畫面下次載入就換題。三欄都留白＝刪掉這列、回到預設。
    const week=Number(b.week);if(!Number.isInteger(week)||week<1||week>12)return reply({error:'週數不正確。'},422);
    const q=normalizeQuestions(b.questions);
-   if(!q.q1&&!q.q2&&!q.points)must(await db.from('week_questions').delete().match({class_id:b.class_id,week}));
-   else must(await db.from('week_questions').upsert({class_id:b.class_id,week,...q,updated_at:new Date().toISOString()},{onConflict:'class_id,week'}));
+   if(!q.q1&&!q.q2&&!q.points&&!q.extra)must(await db.from('week_questions').delete().match({class_id:b.class_id,week}));
+   else{
+    // extra（第 3–5 題）要有 migration 20261113_week_questions_extra.sql 的欄位；沒有那個欄位時只存兩題＋重點，並告訴老師。
+    const rowQ:any={class_id:b.class_id,week,q1:q.q1,q2:q.q2,points:q.points,updated_at:new Date().toISOString()};
+    const up=await db.from('week_questions').upsert({...rowQ,extra:q.extra||[]},{onConflict:'class_id,week'});
+    if(up.error){const missing=/extra/.test(up.error.message||'')&&(up.error.code==='PGRST204'||up.error.code==='42703');if(!missing)must(up);
+     must(await db.from('week_questions').upsert(rowQ,{onConflict:'class_id,week'}));
+     if(q.extra)return reply({error:'第 3 題以後要先在 Supabase 跑 migration 20261113_week_questions_extra.sql 才能存；Q1、Q2、重點已存。'},409);}
+   }
    const rows=must(await db.from('week_questions').select('*').eq('class_id',b.class_id));
    return reply({week_questions:rows,resolved:resolveQuestions(week,rows.find((r:any)=>r.week===week))});
   }
@@ -173,7 +181,10 @@ Deno.serve(async req=>{
  if(b.action==='class_q_ai'){
   const week=Number(b.week),k=String(b.q||'');
   const generic=CLASSQ_WEEKS.includes(week);
-  if((![4,5].includes(week)&&!generic)||!['q1','q2'].includes(k))return reply({error:'未知題目。'},400);
+  if((![4,5].includes(week)&&!generic)||!(generic?/^q[1-5]$/:/^q[12]$/).test(k))return reply({error:'未知題目。'},400);
+  const qrowQ=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week}).maybeSingle());
+  const questionsQ=resolveQuestions(week,qrowQ);
+  if(generic&&!questionKeys(questionsQ).includes(k))return reply({error:'未知題目。'},400);
   const envOpenQ=Deno.env.get('SJL_WRITE_OPEN_AT'),openAtQ=envOpenQ&&Number.isFinite(Date.parse(envOpenQ))?envOpenQ:WRITE_OPEN_AT;
   if(!writeOpen(s.student_id,Date.now(),openAtQ))return reply({error:`${WRITE_OPEN_LABEL} 開放作答，到時候再問。`},423);
   const table=generic?'week_class_answers':week===4?'week4_research':'week5_compare',rowScope=generic?{...scope,week}:scope;
@@ -185,8 +196,6 @@ Deno.serve(async req=>{
   const qai=(r.stamps&&typeof r.stamps.qai==='object'&&r.stamps.qai)||{},used=Number(qai[k]?.n)||0;
   if(used>=CLASS_Q_AI_LIMIT)return reply({error:`這一題的 AI 評語已經用了 ${CLASS_Q_AI_LIMIT} 次（不計分）。可以改好答案直接存，或按「自己用 Gemini 問」。`,used,limit:CLASS_Q_AI_LIMIT},429);
   const key=Deno.env.get('OPENAI_API_KEY');if(!key)return reply({error:'AI 暫時無法使用；答案已存，不影響出席。'},503);
-  const qrowQ=must(await db.from('week_questions').select('*').match({class_id:s.class_id,week}).maybeSingle());
-  const questionsQ=resolveQuestions(week,qrowQ);
   const userText=week===4?buildPrompt(k,d,questionsQ):buildPrompt5(k,d,questionsQ);
   const modelQ=Deno.env.get('WEEK2_OPENAI_MODEL')||Deno.env.get('OPENAI_MODEL')||'gpt-4o-mini';
   let text='';
@@ -247,7 +256,9 @@ Deno.serve(async req=>{
     // 每個組員推薦的公司的理由卡摘要（來源、一句話、估價、網址、探索／找碴），比較頁拉證據用
     for(const r of must(await db.from('islands_progress').select('student_id,data').eq('class_id',s.class_id).in('student_id',ids))){const m=members.find((x:any)=>x.student_id===r.student_id);const reps=normalizeReps(m?.reps);const out:Record<string,unknown>={};for(const cid of Object.values(reps)){const bx=r.data?.boxes?.[cid]||{};const cd=r.data?.cards?.[cid]||{};out[cid]={why:cd.why||'',sources:Array.isArray(cd.sources)?cd.sources:[],url:bx.url||'',est:bx.est||'',estOk:!!bx.estOk,insight:bx.insight||'',argue:bx.argue||'',opened:!!bx.opened};}cards[r.student_id]=out;}
    }
-   return {me,team,members,week4,names,cards,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
+   // Week 11 預演講評（老師寫在 teacher_remarks 的 'TEAM'+組碼、week 11）：只轉這一格給學生，其他備註學生永遠看不到
+   let rehearsal=null;if(team){const rh=must(await db.from('teacher_remarks').select('note').match({class_id:s.class_id,student_id:teamKey(team.code),week:11}).maybeSingle());if(rh?.note)rehearsal=parseRehearsal(rh.note);}
+   return {me,team,members,week4,names,cards,rehearsal,locked:teamLocked(team,nowT),lock_at:TEAM_LOCK_AT,max:TEAM_MAX,min:TEAM_MIN};
   };
   const me=must(await db.from('team_members').select('*').match(scope).maybeSingle());
   const myTeam=me?.team_id?must(await db.from('teams').select('*').match({class_id:s.class_id,id:me.team_id}).maybeSingle()):null;

@@ -12,7 +12,7 @@ await p.goto(`${BASE}/week.html?week=6`);await p.waitForTimeout(1200);
 const v0=await p.evaluate(()=>({nav:!document.querySelector('#week-six-navigation').hidden,card:document.querySelector('#week-six').hidden,blue:document.querySelector('#week-blueprint').hidden,vid:!!document.querySelector('#week-blueprint .preclass iframe[src*="ZGPb1bSGqUE"]'),link:!!document.querySelector('#week-six-materials a[href="#card"]')}));
 ok('Week 6 學習藍圖：有導覽列、影片在標題下且載入、作答頁先藏起來、教材區有「答 Week 6 課堂兩題」',v0.nav&&v0.card&&!v0.blue&&v0.vid&&v0.link,v0);
 await p.click('#week-six-navigation a[data-week-view="card"]');await p.waitForTimeout(400);
-const v1=await p.evaluate(()=>({card:!document.querySelector('#week-six').hidden,blue:document.querySelector('#week-blueprint').hidden,qs:document.querySelectorAll('#week-six .w4-q').length,t1:document.querySelector('#week-six .w4-q-title')?.textContent||'',rule:document.querySelector('#week-six .w4-rule')?.textContent||''}));
+const v1=await p.evaluate(()=>({card:!document.querySelector('#week-six').hidden,blue:document.querySelector('#week-blueprint').hidden,qs:document.querySelectorAll('#week-six .w4-q:not([hidden])').length,t1:document.querySelector('#week-six .w4-q-title')?.textContent||'',rule:document.querySelector('#week-six .w4-rule')?.textContent||''}));
 ok('作答頁：兩題、Week 6 預設題（發電廠）、規則寫 11/06 與 Week 6 出席',v1.card&&v1.blue&&v1.qs===2&&/發電廠/.test(v1.t1)&&/11\/06/.test(v1.rule)&&/Week 6 出席/.test(v1.rule),v1);
 // 空答案按 Gemini：提示、不開分頁
 await p.click('#week-six .w4-own');await p.waitForTimeout(200);

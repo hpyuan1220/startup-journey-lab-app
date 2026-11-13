@@ -550,3 +550,5 @@ main > .my-progress{margin:12px 0 16px}
 .cmp-ev{width:100%;box-sizing:border-box;font:inherit;font-size:13px}.cmp-warn{background:#fff3e0}.cmp-total td{font-weight:700}.cmp-top-cell{background:#e6f3ee}
 .cmp-pick{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}.cmp-counter{margin:8px 0}
 .cmp-pages{padding-left:1.2em}.cmp-pages li{margin:8px 0}.cmp-page-body{white-space:pre-line;background:#fff;border-radius:8px;padding:8px 10px;margin:4px 0;font-size:13px}.cmp-script pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px;font:inherit;font-size:13px}
+.rh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin:8px 0}.rh-cell{display:flex;flex-direction:column;gap:2px}.rh-cell input{width:100%;box-sizing:border-box;font:inherit;font-size:13px}
+.rh-view{border:1px solid #d9d4c7;border-radius:12px;padding:12px 14px;background:#fbf8f1;margin:12px 0}.rh-view ol{padding-left:1.3em}.rh-view li{margin:4px 0}
