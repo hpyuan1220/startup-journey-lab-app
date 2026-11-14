@@ -111,5 +111,7 @@ body{padding:12px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang TC","
 @keyframes ovbob{0%,100%{margin-top:0}50%{margin-top:-3px}}
 @keyframes ovsail{0%,100%{margin-top:0;rotate:-4deg}50%{margin-top:-4px;rotate:4deg}}
 @media(prefers-reduced-motion:reduce){#harbor .ov-boat{transition:none;animation:none}}
+#harbor.port .chapter{top:auto;bottom:12px}/* 總覽圖時章節牌移到左下，不蓋島 1 與小船 */
+@media(max-width:650px){#harbor.port .chapter{bottom:8px}}
 @media(max-width:650px){#harbor .ov-boat{width:42px;height:36px}}
 @media(max-width:650px){#harbor .ov-pin{gap:16px}#harbor .ov-pin .ov-label{font-size:10px;padding:2px 6px}#harbor .ov-pin .ov-label small{display:none}#harbor .ov-pin .ov-dot{width:11px;height:11px}}
