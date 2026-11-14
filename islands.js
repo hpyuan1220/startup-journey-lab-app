@@ -50,7 +50,8 @@ const OVERVIEW_POS={1:[15.5,22.7],2:[11.9,48.5],3:[19.6,70.3],4:[40,16.5],5:[50.
 // 小船：停在上次到的地方（港口或某座島），點別的島就開過去再登島。位置只記在這台瀏覽器這一次（sessionStorage）。
 let boatAt=(()=>{try{const v=sessionStorage.getItem('sjl-boat');return v&&OVERVIEW_POS[v]?v:'harbor';}catch{return 'harbor';}})();let sailing=false;
 const BOAT_OFF=[-3.2,3.6];// 船停在圖釘左下，不蓋住島名
-function boatEl(){let b=$('#overview-boat');if(!b){b=el('div','⛵',$('#overview'),'ov-boat');b.id='overview-boat';b.setAttribute('aria-hidden','true');}return b;}
+const BOAT_SVG='<svg viewBox="0 0 64 56" width="100%" height="100%"><ellipse cx="32" cy="50" rx="26" ry="5" fill="#0b3a45" opacity=".35"/><path d="M8 38h50l-7 10H16z" fill="#7a4a1f"/><path d="M8 38h50l-2 3H10z" fill="#c98a4b"/><rect x="31" y="6" width="3" height="33" fill="#5a3a1a"/><path d="M34 8l20 26H34z" fill="#ff6b35"/><path d="M34 12l16 22H34z" fill="#ffd166" opacity=".55"/><path d="M31 10L12 34h19z" fill="#fff3e0"/><path d="M34 6h12l-12 5z" fill="#e63946"/></svg>';
+function boatEl(){let b=$('#overview-boat');if(!b){b=el('div','',$('#overview'),'ov-boat');b.id='overview-boat';b.innerHTML=BOAT_SVG;b.setAttribute('aria-hidden','true');}return b;}
 function placeBoat(key){const [x,y]=OVERVIEW_POS[key]||OVERVIEW_POS.harbor;const b=boatEl();b.style.left=(x+BOAT_OFF[0])+'%';b.style.top=(y+BOAT_OFF[1])+'%';}
 function sailTo(key,then){
  if(sailing)return;if(key===boatAt||reduced()||!$('#overview')||$('#overview').hidden){boatAt=key;try{sessionStorage.setItem('sjl-boat',key);}catch{}placeBoat(key);then();return;}
