@@ -121,7 +121,19 @@ const PRECLASS_QUIZ={
   items:[
    {q:'「大家午餐都決定不了要吃什麼，討論很久，很煩。」',answer:'a',why:'人人有感，但訪談時一問「上次最後怎麼決定的？」答案常常是「隨便啦三分鐘」，代價不存在。這就是影片講的焦油坑。'},
    {q:'「我想做一個 AI，一鍵幫我訂票、訂房、辦簽證。」',answer:'b',why:'整句話都是產品，沒有一件真的發生過的事。先拿掉「AI」「一鍵」，問自己上一次規劃完行程之後卡在哪一步。'},
-   {q:'「便利商店交班時漏記缺貨品項，下一班重新盤點一次，每週至少兩次。」',answer:'c',why:'看起來不起眼，但每週發生、代價明確（重做一次盤點）、現在的做法是紙本硬撐。影片說的「無聊的好題目」就是這種。'}]}
+   {q:'「便利商店交班時漏記缺貨品項，下一班重新盤點一次，每週至少兩次。」',answer:'c',why:'看起來不起眼，但每週發生、代價明確（重做一次盤點）、現在的做法是紙本硬撐。影片說的「無聊的好題目」就是這種。'}]},
+ 9:{title:'看完影片，做三題：這句話是在答 Thiel 七問的哪一題？',
+  options:[['a','技術：好 10 倍，不是好 10%'],['b','時機：騎到一個剛發生的轉折'],['c','壟斷：先在很小的市場拿到大份額'],['d','都不是：這是形容詞，不是七問的答案']],
+  items:[
+   {q:'「以前餐廳付外送平台 15–30% 抽成，它改成固定月費 199 美元——對月營收 50 萬的店每月差上萬。」',answer:'a',why:'有「取代誰」、有數字、差距是 10 倍級。這是技術那一問的樣子：客戶換過來划得來。'},
+   {q:'「三年前要養客服團隊才接得住夜間訊息；2023 年後一個 Agent 能接上千家店。」',answer:'b',why:'講的是一個具體、回不去的變化（Agent 能執行），而且說得出三年前為什麼做不到——這就是轉折。'},
+   {q:'「AI 很強，什麼都做得到，市場很大。」',answer:'d',why:'套在任何公司都成立的句子等於沒說。七問每一題都要有名字、有數字、說得出為什麼。'}]},
+ 10:{title:'看完影片，做三題：這家公司靠的是哪一力？',
+  options:[['a','反向定位：大廠跟了會砍自己的收入，所以不跟'],['b','轉換成本：客戶資料與流程都在它這，換掉要重來'],['c','流程力：把工作流拆得比誰都細，模型只是其中一步'],['d','沒有力：AI 包裝，大廠加個功能就沒了']],
+  items:[
+   {q:'「它按『每通接起來的電話』收費；舊軟體按席位每人每月收 80 美元，所以舊軟體不敢跟。」',answer:'a',why:'新的收費方式會砍掉舊軟體的席位收入——對手明知道也不跟，這是反向定位。'},
+   {q:'「它接進店家的 Shopify 後台，兩年來所有客服對話都存在它那。」',answer:'b',why:'換一家要重接系統、歷史紀錄歸零——客戶因為代價高而不走，這是轉換成本。'},
+   {q:'「它用 GPT 幫你把產品說明改得更順，介面很好看。」',answer:'d',why:'拿掉模型剩下一層介面；資料、通路、定價都沒有——大廠加一個功能就取代了。比較表第四問和反方「技術」那一刀都該是 0 分。'}]}
 };
 const str=v=>typeof v==='string'?v.replace(/\r/g,'').trim().slice(0,2000):'';
 function normalizeRecord(input){
@@ -704,24 +716,24 @@ function buildFramework(d,members,names,cards,companyInfo){
   {n:5,title:PAGES[4][0],speaker:others[0]?.student_id||owner?.student_id||'',body:[chosenKind?`最狠的一刀（${chosenKind[1]}）：${d.counters[chosenKind[0]]}`:'最狠的一刀：（還沒選）',`七格卡的風險：${grid('風險')}`,myCard.argue?`找碴紀錄：${myCard.argue}`:'',`我們的回法：（用證據回，或老實說沒證據、下一步查什麼）`].filter(Boolean).join('\n')},
   {n:6,title:PAGES[5][0],speaker:others[1]?.student_id||others[0]?.student_id||owner?.student_id||'',body:[`台灣同層：${grid('台灣同層')}`,`五問第 5 題證據：${d.scores[pick]?.q5?.evidence||'（待查）'}`,'我們學到的一件事：（一句）'].join('\n')},
  ];
- const scripts={};for(const m of members||[]){const mine=pages.filter(p=>String(p.speaker).split('、').includes(m.student_id));scripts[m.student_id]=mine.map(p=>`【第 ${p.n} 頁 ${p.title}｜60 秒】\n${p.body}`).join('\n\n')||'（還沒分到頁：到比較表下面的分工改）';}
+ const scripts={};for(const m of members||[]){const mine=pages.filter(p=>String(p.speaker).split('、').includes(m.student_id));scripts[m.student_id]=mine.map(p=>`【第 ${p.n} 頁 ${p.title}｜約 90 秒】\n${p.body}`).join('\n\n')||'（還沒分到頁：到比較表下面的分工改）';}
  const pdf=[`一、三張理由卡（個人分）：${(members||[]).map(m=>`${nm(m.student_id)}＝${Object.values(m.reps||{}).map(c=>COMPANY_NAME[c]||c).join('、')||'（未推薦）'}`).join('；')}`,`二、比較表：${Object.entries(t).map(([c,x])=>`${COMPANY_NAME[c]||c} ${x.sum}／${MAX_COMPARE}`).join('、')}`,`三、選定 ${name} 為什麼是好新創（組分）：用六頁的講稿改。`];
  return {company:pick,name,pages,scripts,pdf,owner:owner?.student_id||''};
 }
 
-// 期末（Week 12）與預演（Week 11）的規則：前端 teacher-final.js／teacher-rehearsal.js／week.html Week 11 用；Edge 只把預演講評轉給學生（team_load）。
+// 期末上台分兩場（Week 11 組碼前一半、Week 12 後一半，每組 10 分鐘）的規則：前端 teacher-final.js／teacher-rehearsal.js／week.html Week 11 用；Edge 只把上台講評轉給學生（team_load）。
 // 2026-11-12 草案（待老師確認；改數字只改這裡）：總分 100 ＝ 組分 50 ＋ 個人分 50。
 //  組分 50：五項各 0／5／10（老師打）。
 //  個人分 50：上台自己那幾頁 0–30（老師打）＋ 個人完成度 20（電腦算：開 ≥2 箱 5、推薦 1 家 5、理由卡完成 5、Week 9＋10 課堂兩題 5）。
 //  PDF 五段：只記「已交／遲交」，不另計分（遲交記在備註）。
 // 分數存 teacher_remarks：組分存 week 12、student_id＝'TEAM'＋組碼，note 'FG1|g=10,5,10,0,5|pdf=1'；個人存 week 12、本人學號，note 'FG1|c=25'。
-// 預演（Week 11）：student_id＝'TEAM'＋組碼、week 11，note 'RH1|t=1|n=第1頁講評;第2頁講評;…'（六句，分號分隔，分號換成全形）。
+// 上台講評（兩場都存 week 11）：student_id＝'TEAM'＋組碼、week 11，note 'RH1|t=1|n=第1頁講評;第2頁講評;…'（六句，分號分隔，分號換成全形）。
 const GROUP_ITEMS=[
  ['① 一句話＋錢流','第 1–2 頁：10 秒內聽得出誰付錢給誰；收費有數字或估價；取代誰。0：沒有誰付錢給誰｜5：有，沒數字｜10：有名字、有數字、有取代誰'],
  ['② 為什麼是現在','第 3 頁：具體的那一個改變；募資／客戶數當押注證據，分清不是賺錢。0：「AI 很強」｜5：有變化但關係弱｜10：具體、有來源'],
  ['③ 為什麼不是另外兩家','第 4 頁：比較表三家同一把尺；落選兩家各 30 秒說輸在哪一問。0：各講各的｜5：有比較表沒講輸在哪｜10：同一把尺＋每家一句'],
  ['④ 風險與反方','第 5 頁：三種反方選最狠一刀；用證據回或老實說沒證據。0：沒反方｜5：有反方、回應是形容詞｜10：證據回或老實＋下一步'],
- ['⑤ 台灣同層＋整體','第 6 頁：台灣有沒有同一層、差在哪；一句學到什麼。整體：6 分鐘內、每個數字有來源標籤。0：空白｜5：一半｜10：都有'],
+ ['⑤ 台灣同層＋整體','第 6 頁：台灣有沒有同一層、差在哪；一句學到什麼。整體：10 分鐘內、每個數字有來源標籤。0：空白｜5：一半｜10：都有'],
 ];
 const C_MAX=30;
 const PERSONAL_ITEMS=[['開 ≥2 箱',5],['推薦 1 家給組',5],['理由卡完成（3 來源＋一句話）',5],['Week 9＋10 課堂兩題',5]];
@@ -742,7 +754,7 @@ function personalCompletion({prog,reps,classq9,classq10}){
  return {items,total:items.reduce((s,ok,i)=>s+(ok?PERSONAL_ITEMS[i][1]:0),0),boxes};
 }
 const finalTotal=(group,personalC,completion)=>groupSum(group)+(personalC||0)+completion;
-// 預演講評
+// 上台講評
 function parseRehearsal(note){const s=String(note||'').trim();const out={onTime:null,notes:Array(6).fill(''),general:''};if(!/^RH1\|/.test(s))return out;
  for(const part of s.split('|').slice(1)){const i=part.indexOf('=');const k=part.slice(0,i),v=part.slice(i+1);if(k==='t')out.onTime=v===''?null:v==='1';if(k==='n')v.split(';').slice(0,6).forEach((x,j)=>{out.notes[j]=x.replace(/／／/g,'|');});if(k==='x')out.general=v.replace(/／／/g,'|');}return out;}
 const clean=s=>String(s||'').replace(/\r?\n/g,' ').replace(/[|]/g,'／／').replace(/;/g,'；').trim();

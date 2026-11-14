@@ -65,7 +65,7 @@ export function buildFramework(d,members,names,cards,companyInfo){
   {n:5,title:PAGES[4][0],speaker:others[0]?.student_id||owner?.student_id||'',body:[chosenKind?`最狠的一刀（${chosenKind[1]}）：${d.counters[chosenKind[0]]}`:'最狠的一刀：（還沒選）',`七格卡的風險：${grid('風險')}`,myCard.argue?`找碴紀錄：${myCard.argue}`:'',`我們的回法：（用證據回，或老實說沒證據、下一步查什麼）`].filter(Boolean).join('\n')},
   {n:6,title:PAGES[5][0],speaker:others[1]?.student_id||others[0]?.student_id||owner?.student_id||'',body:[`台灣同層：${grid('台灣同層')}`,`五問第 5 題證據：${d.scores[pick]?.q5?.evidence||'（待查）'}`,'我們學到的一件事：（一句）'].join('\n')},
  ];
- const scripts={};for(const m of members||[]){const mine=pages.filter(p=>String(p.speaker).split('、').includes(m.student_id));scripts[m.student_id]=mine.map(p=>`【第 ${p.n} 頁 ${p.title}｜60 秒】\n${p.body}`).join('\n\n')||'（還沒分到頁：到比較表下面的分工改）';}
+ const scripts={};for(const m of members||[]){const mine=pages.filter(p=>String(p.speaker).split('、').includes(m.student_id));scripts[m.student_id]=mine.map(p=>`【第 ${p.n} 頁 ${p.title}｜約 90 秒】\n${p.body}`).join('\n\n')||'（還沒分到頁：到比較表下面的分工改）';}
  const pdf=[`一、三張理由卡（個人分）：${(members||[]).map(m=>`${nm(m.student_id)}＝${Object.values(m.reps||{}).map(c=>COMPANY_NAME[c]||c).join('、')||'（未推薦）'}`).join('；')}`,`二、比較表：${Object.entries(t).map(([c,x])=>`${COMPANY_NAME[c]||c} ${x.sum}／${MAX_COMPARE}`).join('、')}`,`三、選定 ${name} 為什麼是好新創（組分）：用六頁的講稿改。`];
  return {company:pick,name,pages,scripts,pdf,owner:owner?.student_id||''};
 }

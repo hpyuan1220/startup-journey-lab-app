@@ -5,11 +5,11 @@ const LIBS=['https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.j
 export function buildDeckSpec(f,team,members,names){
  const nm=id=>names?.[id]||id;
  const people=(members||[]).map(m=>nm(m.student_id)).filter(Boolean);
- const slides=[{kind:'cover',title:`${f.name}`,sub:`${team?.name||''}｜為什麼它是好新創`,lines:[people.join('、'),'Startup Journey Lab · 期末 6 分鐘'],notes:'第 0 頁不用講：上台直接從第 1 頁開始。'}];
+ const slides=[{kind:'cover',title:`${f.name}`,sub:`${team?.name||''}｜為什麼它是好新創`,lines:[people.join('、'),'Startup Journey Lab · 期末 10 分鐘'],notes:'第 0 頁不用講：上台直接從第 1 頁開始。'}];
  for(const p of f.pages){
   const speaker=String(p.speaker||'').split('、').filter(Boolean).map(nm).join('、');
   const lines=String(p.body||'').split('\n').map(s=>s.trim()).filter(Boolean);
-  slides.push({kind:'page',n:p.n,title:`${p.n}｜${p.title}`,lines,footer:`講：${speaker||'（還沒分到）'} · 60 秒`,notes:`【第 ${p.n} 頁 ${p.title}｜60 秒】\n${p.body}\n\n（改成自己的話；每個數字標來源。）`});
+  slides.push({kind:'page',n:p.n,title:`${p.n}｜${p.title}`,lines,footer:`講：${speaker||'（還沒分到）'} · 約 90 秒`,notes:`【第 ${p.n} 頁 ${p.title}｜約 90 秒】\n${p.body}\n\n（改成自己的話；每個數字標來源。）`});
  }
  return {file:`${(team?.name||'期末').replace(/[\\/:*?"<>|]/g,'')}_${f.name}_六頁初稿.pptx`,slides};
 }

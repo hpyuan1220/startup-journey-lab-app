@@ -1,9 +1,9 @@
-import {GROUP_ITEMS,C_MAX,PERSONAL_ITEMS,teamKey,parseGroup,formatGroup,parsePersonal,formatPersonal,groupSum,personalCompletion,finalTotal} from './final-core.mjs?v=20261113-fin';
+import {GROUP_ITEMS,C_MAX,PERSONAL_ITEMS,teamKey,parseGroup,formatGroup,parsePersonal,formatPersonal,groupSum,personalCompletion,finalTotal} from './final-core.mjs?v=20261114-fin2';
 import {COMPANY_NAME,normalizeReps,teamReps} from './islands-core.mjs?v=20261112-w10';
 import {normalizeDirections,directionName} from './team-core.mjs?v=20261106-tm';
-import {normalizeCompare} from './compare-core.mjs?v=20261112-fix';
+import {normalizeCompare} from './compare-core.mjs?v=20261114-fin2';
 import {findRemark,mergeRemarks,listenRemarks} from './teacher-remarks.mjs?v=20261025-w5';
-// 教師洞察 · Week 12 期末評分表（12/18 上台；規則 final-core.mjs，草案待老師確認）
+// 教師洞察 · 期末評分表（12/11 組碼前一半、12/18 後一半上台，每組 10 分鐘；規則 final-core.mjs，草案待老師確認）
 // 一組一列：選定的公司、組分五項 0／5／10（50）、PDF 已交；展開看三個人：上台自己那幾頁 0–30（老師打）＋個人完成度 20（電腦算）＝個人分；每人總分＝組分＋個人分。
 // 組分存 teacher_remarks week 12 的 'TEAM'+組碼；個人分存 week 12 本人學號。學生看不到。
 const WEEK=12;
@@ -11,8 +11,8 @@ const dashboard=document.getElementById('teacher-dashboard');
 if(dashboard){
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 const root=document.createElement('section');root.id='teacher-week12';root.className='tw4';(dashboard.querySelector('.statusbar')||dashboard).after(root);
-el('h2','Week 12 期末評分表（總分 100＝組分 50＋個人分 50）',root);
-el('p','依組碼排序。組分 50：五項各 0／5／10，上台時點；個人分 50：展開組，每人「上台自己那幾頁」0–30 你打＋「個人完成度」20 電腦算（開 ≥2 箱、推薦 1 家、理由卡完成、Week 9＋10 課堂兩題各 5）。PDF 五段只勾「已交」，不計分。點了就存，學生看不到。',root);
+el('h2','期末評分表（12/11＋12/18 兩場；總分 100＝組分 50＋個人分 50）',root);
+el('p','依組碼排序＝上台順序（前一半 12/11、後一半 12/18）。組分 50：五項各 0／5／10，上台時點；個人分 50：展開組，每人「上台自己那幾頁」0–30 你打＋「個人完成度」20 電腦算（開 ≥2 箱、推薦 1 家、理由卡完成、Week 9＋10 課堂兩題各 5）。PDF 五段只勾「已交」，不計分。點了就存，學生看不到。',root);
 const legend=el('details','',root,'tw4-detail');el('summary','組分五項判準（0／5／10）',legend);for(const [i,[h,t]] of GROUP_ITEMS.entries())el('p',`${h}　${t}`,legend);
 const status=el('p','',root);status.setAttribute('role','status');
 const bar=el('div','',root,'w4-row');const reloadBtn=el('button','重新載入期末評分表',bar,'quiet');reloadBtn.type='button';const csvBtn=el('button','匯出期末成績 CSV',bar,'quiet');csvBtn.type='button';

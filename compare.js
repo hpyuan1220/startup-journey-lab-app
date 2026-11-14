@@ -1,4 +1,4 @@
-import {COMPARE_QUESTIONS,COUNTER_KINDS,MAX_COMPARE,PAGES,emptyCompare,normalizeCompare,compareTotals,topCompany,pickNeedsReason,pickOk,compareProgress,buildFramework} from './compare-core.mjs?v=20261112-fix';
+import {COMPARE_QUESTIONS,COUNTER_KINDS,MAX_COMPARE,PAGES,emptyCompare,normalizeCompare,compareTotals,topCompany,pickNeedsReason,pickOk,compareProgress,buildFramework} from './compare-core.mjs?v=20261114-fin2';
 import {COMPANY_NAME,normalizeReps,teamReps,companyDir} from './islands-core.mjs?v=20261112-w10';
 import {DIRECTIONS,normalizeDirections} from './team-core.mjs?v=20261106-tm';
 import {COMPANIES,companyById} from './islands-data.mjs?v=20261111-art';
@@ -58,7 +58,7 @@ function render(){body.replaceChildren();
  const f=buildFramework(d,T.members.map(m=>({student_id:m.student_id,reps:normalizeReps(m.reps),directions:normalizeDirections(m.directions)})),names,T.cards||{},cid=>companyById(cid));
  if(!f){el('p','先在 ② 選定一家，框架會自動出現。',fw,'w4-hint');}
  else{
-  el('p',`選定：${f.name}。研究它的人（${names[f.owner]||f.owner}）講前三頁，另外兩人講後三頁；每頁 60 秒，每人至少 2 頁。`,fw,'w4-hint');
+  el('p',`選定：${f.name}。研究它的人（${names[f.owner]||f.owner}）講前三頁，另外兩人講後三頁；每組 10 分鐘、每頁約 90 秒，每人至少 2 頁。`,fw,'w4-hint');
   const pg=el('ol','',fw,'cmp-pages');for(const page of f.pages){const li=el('li','',pg);el('b',`第 ${page.n} 頁　${page.title}`,li);el('small','　講：'+String(page.speaker).split('、').map(s=>names[s]||s).filter(Boolean).join('、'),li);el('p',page.body,li,'cmp-page-body');el('small',PAGES[page.n-1][1],li,'w4-hint');}
   const me=session.student_id;const mine=f.scripts[me];const scb=el('div','',fw,'cmp-script');el('h4','我的講稿草稿（'+(names[me]||me)+'）',scb);const pre=el('pre',mine||'（還沒分到頁）',scb);
   const row=el('div','',fw,'w4-row');const msg=el('span','',row,'w4-hint');

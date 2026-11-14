@@ -60,7 +60,7 @@ ok('老師頁最上面是 week12、week11、compare；預演表有 7 個文字�
 await tp.fill('#teacher-week11 input[aria-label="比較隊 第 1 頁講評"]','誰付錢講清楚了');await tp.fill('#teacher-week11 input[aria-label="比較隊 第 4 頁講評"]','要比三家，不是各講各的');await tp.waitForTimeout(1200);await tp.evaluate(()=>{const c=document.querySelector('#teacher-week11 input[type=checkbox]');c.click();});await tp.waitForTimeout(2500);
 await p.goto(`${BASE}/week.html?week=11`);await p.waitForTimeout(2000);
 const rhv=await p.evaluate(()=>({t:document.querySelector('#rehearsal').innerText,hidden:document.querySelector('#week-eleven-materials').hidden}));
-ok('學生 Week 11 頁：看到本組講評（第 1、4 頁＋6 分鐘內）',/比較隊：本組講評/.test(rhv.t)&&/誰付錢講清楚了/.test(rhv.t)&&/要比三家/.test(rhv.t)&&/6 分鐘內講完/.test(rhv.t)&&!rhv.hidden,rhv);
+ok('學生 Week 11 頁：看到本組講評（第 1、4 頁＋10 分鐘內）',/比較隊：本組講評/.test(rhv.t)&&/誰付錢講清楚了/.test(rhv.t)&&/要比三家/.test(rhv.t)&&/10 分鐘內講完/.test(rhv.t)&&!rhv.hidden,rhv);
 const fn=await tp.evaluate(()=>{const s=document.querySelector('#teacher-week12');const row=s.querySelector('tbody tr');return {th:[...s.querySelectorAll('thead th')].map(x=>x.textContent),pick:row?.children[2]?.textContent,btns:row?.querySelectorAll('.trk-tag').length};});
 ok('期末評分表：一組一列、選定 Sage、五項×3 顆分數鈕',fn.th.includes('組分 /50')&&/Sage/.test(fn.pick||'')&&fn.btns===15,fn);
 await tp.evaluate(()=>{const s=document.querySelector('#teacher-week12');[...s.querySelectorAll('.trk-tag')].filter(b=>b.textContent==='10').slice(0,5).forEach(b=>b.click());});await tp.waitForTimeout(3500);

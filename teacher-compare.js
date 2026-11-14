@@ -1,4 +1,4 @@
-import {COMPARE_QUESTIONS,MAX_COMPARE,COUNTER_KINDS,normalizeCompare,compareTotals,compareProgress} from './compare-core.mjs?v=20261112-fix';
+import {COMPARE_QUESTIONS,MAX_COMPARE,COUNTER_KINDS,normalizeCompare,compareTotals,compareProgress} from './compare-core.mjs?v=20261114-fin2';
 import {COMPANY_NAME,normalizeReps,teamReps} from './islands-core.mjs?v=20261112-w10';
 // 教師洞察 · Week 10 比較與選定：每組三家、比較表總分、選定哪一家（非最高分的理由）、反方三格、完成度；哪家被幾組選。只讀。
 const dashboard=document.getElementById('teacher-dashboard');
