@@ -8,18 +8,19 @@ const SID='A1139900'+String(Date.now()%100).padStart(2,'0');
 const post=(p,body)=>fetch(`${BASE}/functions/v1/${p}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json());
 const TOKEN=(await post('Student-api',{action:'login',student_id:SID,invite_code:'GOOD-CODE',confirm_new:true})).token;
 await post('week2-api',{action:'team_create',token:TOKEN,name:'示範組'});// 方向等遊戲裡選完再認（讓影片看得到 Irene 問方向）
-const W=414,H=896;
+// 版型：DESKTOP=1 → 1040×880（錄成 1920×1625，字幕大，適合投影／YouTube）；預設手機直式 414×896（錄成 828×1792）
+const DESK=process.env.DESKTOP==='1';const W=DESK?1040:414,H=DESK?880:896,SCALE=DESK?1920/1040:2;
 const b=await chromium.launch();
-const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:2,isMobile:true,hasTouch:true,recordVideo:{dir:OUT,size:{width:W*2,height:H*2}}});
+const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:SCALE,isMobile:!DESK,hasTouch:!DESK,recordVideo:{dir:OUT,size:{width:Math.round(W*SCALE),height:Math.round(H*SCALE)}}});
 await ctx.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));},[TOKEN,SID]);
 const p=await ctx.newPage();
 const t0=Date.now();const caps=[];
 const sleep=ms=>p.waitForTimeout(ms);
 // 字幕條＋假游標
-async function overlayInit(){await p.evaluate(()=>{
- const s=document.createElement('style');s.textContent=`#demo-cap{position:fixed;left:12px;right:12px;bottom:22px;z-index:9999;background:#102b33ee;color:#fff;font:600 17px/1.45 "Noto Sans CJK TC",sans-serif;padding:12px 14px;border-radius:12px;box-shadow:0 6px 20px #0008;pointer-events:none;opacity:0;transition:opacity .25s}#demo-cap.on{opacity:1}#demo-cap small{display:block;font-weight:500;font-size:13px;opacity:.85;margin-top:3px}
- #demo-cur{position:fixed;z-index:10000;width:26px;height:26px;border-radius:50%;background:#ff6b35cc;border:3px solid #fff;box-shadow:0 2px 8px #0008;pointer-events:none;transform:translate(-50%,-50%);left:200px;top:400px;transition:left .45s ease,top .45s ease,transform .12s}#demo-cur.tap{transform:translate(-50%,-50%) scale(.7)}`;
- document.head.append(s);const c=document.createElement('div');c.id='demo-cap';document.body.append(c);const k=document.createElement('div');k.id='demo-cur';document.body.append(k);});}
+async function overlayInit(){await p.evaluate((DESK)=>{
+ const s=document.createElement('style');s.textContent=`#demo-cap{position:fixed;left:50%;transform:translateX(-50%);width:min(92vw,${DESK?1000:600}px);${DESK?'top:14px':'bottom:22px'};z-index:9999;background:#102b33f0;color:#fff;font:700 ${DESK?27:17}px/1.45 "Noto Sans CJK TC",sans-serif;padding:${DESK?16:12}px ${DESK?22:14}px;border-radius:14px;box-shadow:0 6px 20px #0008;pointer-events:none;opacity:0;transition:opacity .25s;text-align:left}#demo-cap.on{opacity:1}${DESK?'body{padding-top:118px!important}':''}#demo-cap small{display:block;font-weight:500;font-size:${DESK?20:13}px;opacity:.9;margin-top:4px}
+ #demo-cur{position:fixed;z-index:10000;width:${DESK?34:26}px;height:${DESK?34:26}px;border-radius:50%;background:#ff6b35cc;border:3px solid #fff;box-shadow:0 2px 8px #0008;pointer-events:none;transform:translate(-50%,-50%);left:200px;top:400px;transition:left .45s ease,top .45s ease,transform .12s}#demo-cur.tap{transform:translate(-50%,-50%) scale(.7)}`;
+ document.head.append(s);const c=document.createElement('div');c.id='demo-cap';document.body.append(c);const k=document.createElement('div');k.id='demo-cur';document.body.append(k);},DESK);}
 async function cap(text,sub){const at=(Date.now()-t0)/1000;caps.push({at:+at.toFixed(1),text,sub:sub||''});await p.evaluate(([t,s])=>{const c=document.getElementById('demo-cap');c.innerHTML=t+(s?'<small>'+s+'</small>':'');c.classList.add('on');},[text,sub||'']);}
 async function capOff(){await p.evaluate(()=>document.getElementById('demo-cap')?.classList.remove('on'));}
 // 把元素捲到畫面中、游標移過去、點
