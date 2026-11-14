@@ -45,6 +45,7 @@ ok('找島頁：三區十島、線索三句',await p.evaluate(()=>!document.quer
 await p.screenshot({path:'/tmp/islands-s1.png'});
 // 猜錯兩次 → 二選一
 await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(1600);
+ok('猜錯一次：Irene 對話框也顯示提示',await p.evaluate(()=>/不是這座島/.test(document.querySelector('#d-title').textContent)&&/不在這座島/.test(document.querySelector('#d-speech').textContent)));
 ok('猜錯一次：Irene 第一層提示、該島劃掉',await p.evaluate(()=>/不在這座島/.test(document.querySelector('#find-hint').textContent)&&document.querySelectorAll('#find-map .island-btn.wrong').length===1));
 await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 7 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 ok('猜錯兩次：二選一亮框',await p.evaluate(()=>document.querySelectorAll('#find-map .island-btn.candidate').length===2));

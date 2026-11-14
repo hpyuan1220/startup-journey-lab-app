@@ -214,7 +214,11 @@ function pickIsland(id){
  if(!b.wrong.includes(id))b.wrong.push(id);
  b.hints=Math.min(2,b.hints+1);save();
  $('#find-hint').textContent=(b.hints===1?'不在這座島。'+c.islandHints[0]:'還不是。'+c.islandHints[1]+' 我把範圍縮到亮框的兩座島。');
- renderFind();$('#find-hint').textContent=(b.hints===1?'不在這座島。'+c.islandHints[0]:'還不是。'+c.islandHints[1]+' 我把範圍縮到亮框的兩座島。');
+ const hint=(b.hints===1?'不在這座島。'+c.islandHints[0]:'還不是。'+c.islandHints[1]+' 我把範圍縮到亮框的兩座島。');
+ renderFind();$('#find-hint').textContent=hint;
+ // 猜錯的提示也放進 Irene 的對話框（線索卡在手機上會在畫面外，學生常看不到）
+ say('teacher','Irene 老師 · 海圖',b.hints===1?'不是這座島，再想想。':'還不是，範圍縮到亮框的兩座島。',hint+(b.hints>=2?' 點亮框（會閃）的其中一座。':''));
+ toast(b.hints===1?'猜錯了，看 Irene 的提示':'再看一次提示，剩兩座島');
 }
 // ---------- 視圖 3：島上 ----------
 const points={start:[11,84],bridge:[22,76],landing:[35,66],hub:[52,63],shop:[43,49],station:[59,43],house:[79,58],teacher:[73,57],chest:[49,68]};
