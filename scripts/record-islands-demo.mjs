@@ -15,10 +15,11 @@ const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:SCAL
 await ctx.addInitScript(([t,s])=>{localStorage.setItem('sjl-student-session',JSON.stringify({token:t,class_id:'class-a',student_id:s}));},[TOKEN,SID]);
 const p=await ctx.newPage();
 const t0=Date.now();const caps=[];
-const sleep=ms=>p.waitForTimeout(ms);
+const SLOW=Number(process.env.SLOW||1);// 1.3＝整體慢 30%
+const sleep=ms=>p.waitForTimeout(ms*SLOW);
 // 字幕條＋假游標
 async function overlayInit(){await p.evaluate((DESK)=>{
- const s=document.createElement('style');s.textContent=`#demo-cap{position:fixed;left:50%;transform:translateX(-50%);width:min(92vw,${DESK?1000:600}px);${DESK?'top:14px':'bottom:22px'};z-index:9999;background:#102b33f0;color:#fff;font:700 ${DESK?27:17}px/1.45 "Noto Sans CJK TC",sans-serif;padding:${DESK?16:12}px ${DESK?22:14}px;border-radius:14px;box-shadow:0 6px 20px #0008;pointer-events:none;opacity:0;transition:opacity .25s;text-align:left}#demo-cap.on{opacity:1}${DESK?'body{padding-top:118px!important}':''}#demo-cap small{display:block;font-weight:500;font-size:${DESK?20:13}px;opacity:.9;margin-top:4px}
+ const s=document.createElement('style');s.textContent=`#demo-cap{position:fixed;left:50%;transform:translateX(-50%);width:min(94vw,${DESK?800:600}px);${DESK?'top:14px':'bottom:22px'};z-index:9999;background:#102b33f0;color:#fff;font:700 ${DESK?24:17}px/1.45 "Noto Sans CJK TC",sans-serif;padding:${DESK?16:12}px ${DESK?22:14}px;border-radius:14px;box-shadow:0 6px 20px #0008;pointer-events:none;opacity:0;transition:opacity .25s;text-align:left}#demo-cap.on{opacity:1}${DESK?'html{zoom:1.28}body{padding-top:96px!important}':''}#demo-cap small{display:block;font-weight:500;font-size:${DESK?18:13}px;opacity:.9;margin-top:4px}
  #demo-cur{position:fixed;z-index:10000;width:${DESK?34:26}px;height:${DESK?34:26}px;border-radius:50%;background:#ff6b35cc;border:3px solid #fff;box-shadow:0 2px 8px #0008;pointer-events:none;transform:translate(-50%,-50%);left:200px;top:400px;transition:left .45s ease,top .45s ease,transform .12s}#demo-cur.tap{transform:translate(-50%,-50%) scale(.7)}`;
  document.head.append(s);const c=document.createElement('div');c.id='demo-cap';document.body.append(c);const k=document.createElement('div');k.id='demo-cur';document.body.append(k);},DESK);}
 async function cap(text,sub){const at=(Date.now()-t0)/1000;caps.push({at:+at.toFixed(1),text,sub:sub||''});await p.evaluate(([t,s])=>{const c=document.getElementById('demo-cap');c.innerHTML=t+(s?'<small>'+s+'</small>':'');c.classList.add('on');},[text,sub||'']);}
