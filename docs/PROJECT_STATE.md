@@ -2049,3 +2049,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - week.html：Week 9／10 的「本週影片：YC…」整段換成「課前預習影片（準備中）」卡（含三題 `PRECLASS_QUIZ[9]`、`[10]`，data-preclass 掛載）＋「本週理論」導讀五重點（理論怎麼說／白話／群島例子／應用）；YC 影片降成一行「延伸（選看，英文）」。week.js 藍圖影片標題改「課前影片：準備中」。?v 全部 20261114。
   - 課前影片來源（NotebookLM「說明影片」格式，9–11 分鐘）：Mac `116/Week9/Week9_課前影片_本週摘要_來源.md`、`116/Week10/Week10_課前影片_本週摘要_來源.md`（也在 docs/private/）。老師生完上傳 YouTube 不公開 → 給我 ID → 我嵌進「課前預習影片」卡（同 Week 4／5 做法）。
   - 測試：單元 228 ✅；week10-student 21 ✅；week8 23 ✅；兩週頁手機寬度目視（三題、導讀可展開）。
+- 2026-11-14 11:00：Week 9 課前影片上線（YouTube 不公開 `lDLypO2jOw8`「Week 9 課前預習：AI 新創群島」，NotebookLM 依 Week9_課前影片_本週摘要_來源.md 生成）。Week 9／10 的課前區改成與 Week 4–6 相同結構 `<section class="preclass" data-preclass="N">`（eyebrow＋h2＋說明＋.preclass-video＋三題），week.js 會搬到藍圖標題下並延後載入 iframe；Week 10 影片仍「準備中」，拿到 ID 後換同一段即可。week.js?v=20261114-v9。
