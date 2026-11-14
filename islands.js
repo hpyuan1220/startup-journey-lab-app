@@ -47,18 +47,31 @@ function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?
 function show(view){for(const v of ['hub','find','island','browse'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();renderOverview();}
 // 群島總覽：港口／逛島／找島時蓋在場景上（一島一景時隱藏）。座標＝ map_overview.jpg 上各島的重心（%）。
 const OVERVIEW_POS={1:[15.5,22.7],2:[11.9,48.5],3:[19.6,70.3],4:[40,16.5],5:[50.2,39.4],6:[62.9,26.8],7:[56.2,58.3],8:[81.2,21.2],9:[84.3,46.2],10:[78.5,72.1],harbor:[45.9,81.9]};
+// 小船：停在上次到的地方（港口或某座島），點別的島就開過去再登島。位置只記在這台瀏覽器這一次（sessionStorage）。
+let boatAt=(()=>{try{const v=sessionStorage.getItem('sjl-boat');return v&&OVERVIEW_POS[v]?v:'harbor';}catch{return 'harbor';}})();let sailing=false;
+const BOAT_OFF=[-3.2,3.6];// 船停在圖釘左下，不蓋住島名
+function boatEl(){let b=$('#overview-boat');if(!b){b=el('div','⛵',$('#overview'),'ov-boat');b.id='overview-boat';b.setAttribute('aria-hidden','true');}return b;}
+function placeBoat(key){const [x,y]=OVERVIEW_POS[key]||OVERVIEW_POS.harbor;const b=boatEl();b.style.left=(x+BOAT_OFF[0])+'%';b.style.top=(y+BOAT_OFF[1])+'%';}
+function sailTo(key,then){
+ if(sailing)return;if(key===boatAt||reduced()||!$('#overview')||$('#overview').hidden){boatAt=key;try{sessionStorage.setItem('sjl-boat',key);}catch{}placeBoat(key);then();return;}
+ const from=OVERVIEW_POS[boatAt]||OVERVIEW_POS.harbor,to=OVERVIEW_POS[key];const b=boatEl();b.classList.toggle('flip',to[0]<from[0]);b.classList.add('sailing');
+ sailing=true;$('#overview').classList.add('sailing');toast('開船前往：'+(key==='harbor'?'港口':islandById(key).name.replace(/^島 \d+ /,'')));
+ requestAnimationFrame(()=>placeBoat(key));
+ setTimeout(()=>{sailing=false;boatAt=key;try{sessionStorage.setItem('sjl-boat',key);}catch{}b.classList.remove('sailing');$('#overview')?.classList.remove('sailing');then();},SAIL_MS);
+}
+const SAIL_MS=1150;
 function renderOverview(){
  const ov=$('#overview');if(!ov)return;const on=mode!=='island';ov.hidden=!on;if(!on)return;
- const pins=$('#overview-pins');pins.replaceChildren();
+ const pins=$('#overview-pins');pins.replaceChildren();placeBoat(boatAt);
  const mk=(key,label,sub,cls,fn)=>{const [x,y]=OVERVIEW_POS[key];const b=el('button','',pins,'ov-pin'+(cls?' '+cls:''));b.type='button';b.style.left=x+'%';b.style.top=y+'%';el('span','',b,'ov-dot');const l=el('span',label,b,'ov-label');if(sub)el('small',sub,l);b.setAttribute('aria-label',label+(sub?'：'+sub:''));if(fn)b.addEventListener('click',fn);else b.disabled=true;return b;};
  const c=current?company():null;
  for(const i of ISLANDS){
   const cs=COMPANIES.filter(x=>x.island===i.id);const opened=cs.filter(x=>store.boxes[x.id]?.opened).length;const cand=cs.filter(x=>store.candidates.includes(x.id)).length;
   const cls=[i.dir===myDir?'mine':'',opened&&opened===cs.length?'done':'',mode==='find'&&c&&store.boxes[c.id]?.hints>=2&&(c.island===i.id||ISLANDS.filter(x=>x.dir===c.dir&&x.id!==c.island)[0]?.id===i.id)?'hot':'',mode==='find'&&c&&store.boxes[c.id]?.wrong?.includes(i.id)?'wrong':''].filter(Boolean).join(' ');
   const sub=mode==='find'?'':(cs.length?`${cs.length} 箱${opened?'・開 '+opened:''}${cand?'・★'+cand:''}`:'準備中');
-  mk(i.id,i.name.replace(/^島 \d+ /,''),sub,cls,mode==='find'?(i.id===10?null:()=>pickIsland(i.id)):(cs.length?()=>browseIsland(i.id):null));
+  mk(i.id,i.name.replace(/^島 \d+ /,''),sub,cls,mode==='find'?(i.id===10?null:()=>sailTo(i.id,()=>pickIsland(i.id))):(cs.length?()=>sailTo(i.id,()=>browseIsland(i.id)):null));
  }
- mk('harbor','港口','回港口','harbor',mode==='hub'?null:renderHub);
+ mk('harbor','港口','回港口','harbor',mode==='hub'?null:()=>sailTo('harbor',renderHub));
 }
 function toast(t){clearTimeout(timer);const x=$('#toast');x.textContent=t;x.hidden=false;timer=setTimeout(()=>x.hidden=true,2400);}
 function openedCount(){return Object.values(store.boxes).filter(b=>b.opened).length;}
@@ -145,17 +158,17 @@ function renderBrowse(){
    const cs=COMPANIES.filter(c=>c.island===i.id);
    const ib=el('button','',r,'island-btn');ib.type='button';ib.append(i.name+'　');const sm=el('small','',ib);sm.textContent=cs.length?cs.map(c=>store.candidates.includes(c.id)?'☆ '+c.name:c.name).join('・'):i.hint;
    if(!cs.length)ib.disabled=true;
-   ib.addEventListener('click',()=>browseIsland(i.id));
+   ib.addEventListener('click',()=>sailTo(i.id,()=>browseIsland(i.id)));
   }
  }
 }
 function browseIsland(id){
  const i=islandById(id),cs=COMPANIES.filter(c=>c.island===id);
  $('#chapter-small').textContent='CHAPTER '+String(id).padStart(2,'0');$('#chapter-title').textContent=i.name.replace(/^島 \d+ /,'');
- $('#scenery').src=sceneSrc(id);$('#owner-art').src=npcSrc(id);$('#owner-art').alt=i.name+'的店家';const ovm=$('#overview');if(ovm)ovm.hidden=true;// 一島一景：進島就收起總覽圖
+ $('#scenery').src=sceneSrc(id);$('#owner-art').src=npcSrc(id);$('#owner-art').alt=i.name+'的店家';const ovm=$('#overview');if(ovm)ovm.hidden=true;boatAt=id;try{sessionStorage.setItem('sjl-boat',String(id));}catch{}// 一島一景：進島就收起總覽圖；船停在這座島
  $('#mission').textContent=`候選 ${store.candidates.length}／${CAND_MAX}`;
  const d=dirById(i.dir),mine=i.dir===myDir;
- say('teacher','Irene 老師 · 島長介紹',i.name+'：'+i.hint,`這座島屬於${d.name}（${d.short}：${d.blurb}）。島上 ${cs.length} 家公司如下${mine?'，是你的方向，可以圈候選。':'，不是你的方向：可以看、可以開箱，但不能圈候選。'}`,[['回海圖',renderBrowse,false],['回港口',renderHub,false]]);
+ say('teacher','Irene 老師 · 島長介紹',i.name+'：'+i.hint,`這座島屬於${d.name}（${d.short}：${d.blurb}）。島上 ${cs.length} 家公司如下${mine?'，是你的方向，可以圈候選。':'，不是你的方向：可以看、可以開箱，但不能圈候選。'}`,[['⛵ 航向別的島',renderBrowse,false],['回港口',renderHub,false]]);
  const ov=overlay(i.name+' 的公司');
  for(const c of cs){
   const b=store.boxes[c.id];const card=el('article','',ov,'treasure'+(b?.opened?' opened':'')+(c.ready===false?' locked':''));card.style.marginBottom='10px';
@@ -190,7 +203,7 @@ function renderFind(){
    const ib=el('button','',r,'island-btn'+(b.wrong.includes(i.id)?' wrong':'')+(candidates.includes(i.id)?' candidate':''));ib.type='button';
    ib.append(i.name);el('small',i.hint,ib);
    if(i.id===10){ib.disabled=true;}
-   ib.addEventListener('click',()=>pickIsland(i.id));
+   ib.addEventListener('click',()=>sailTo(i.id,()=>pickIsland(i.id)));
   }
  }
 }
@@ -226,9 +239,9 @@ function refreshIsland(){
  refreshTop();
 }
 function enterIsland(fresh=false){
- show('island');const c=company(),b=box();closeOverlay();
+ show('island');const c=company(),b=box();closeOverlay();boatAt=c.island;try{sessionStorage.setItem('sjl-boat',String(c.island));}catch{}
  location='start';put(person(),points.start);put(teacher(),[85,52]);walkingToken++;busy=false;refreshIsland();
- if(b.opened){const n=nextBox();say('student','你 · 探索進度','這一箱已經開過了。','可以再看店家故事、公司卡，或開下一箱。',[...(n?[['開下一箱：'+n.name,()=>goBox(n),true]]:[]),['看公司卡與夥伴',showBag,!n],['回寶箱清單',renderHub,false]]);}
+ if(b.opened){const n=nextBox();say('student','你 · 探索進度','這一箱已經開過了。','可以再看店家故事、公司卡，或開下一箱。',[...(n?[['開下一箱：'+n.name,()=>goBox(n),true]]:[]),['看公司卡與夥伴',showBag,!n],['⛵ 航向別的島',renderBrowse,false],['回寶箱清單',renderHub,false]]);}
  else if(b.passed===3)say('teacher','Irene 老師','三題都對了，去開寶箱。',estPending(c,b)?'也可以先做估價題（+'+EST_BONUS+'，選填）。':'',[['走到寶箱',openChest,true],...(estPending(c,b)?[['估價加分 +'+EST_BONUS,estimateForm,false]]:[])]);
  else say('student','你 · 新創探險者',fresh?'登島成功：'+islandById(c.island).name:'回到 '+c.name+' 島','先去店家聽故事，再到 Irene 研究屋整理；探索站是加分。三題都對才能開箱。',[['走過木橋，去店家',()=>visit('shop'),true],['直接找 Irene',()=>visit('house'),false]]);
 }
@@ -306,7 +319,7 @@ function showReward(){const c=company(),b=box();const ov=overlay('開箱！');
  const dl=el('dl','',card,'facts');c.card.forEach(([k,v],i)=>{el('dt',k,dl);el('dd',v+(i===1&&b.est?'｜我的估價：'+b.est+(b.estOk?'（+'+EST_BONUS+'）':''):''),dl);});
  const pet=el('div','',card,'companion-card');pet.innerHTML=`<div class="pet-art real ${b.deep?'evolved':''}"><span class="pet-cape"></span><img src="${petSrc(c.island,b.deep?2:1)}" alt="${c.pet.name}"><span class="pet-star">✦</span></div><div><p class="eyebrow">夥伴</p><h3 style="font-size:16px">${c.pet.name} · ${c.pet.kind}${b.deep?' · 研究員':''}</h3><p class="fine" style="padding:0">${c.pet.desc}。${b.deep?'探索站做完，夥伴已升級到 Lv.2。':'做完探索站或找碴，牠會升級到 Lv.2。'}</p></div>`;
  const row=el('div','',card,'choices');const st=el('p','',card,'fine');st.style.padding='4px 0 0';
- const n=nextBox();row.append(btn('複製七格，貼進公司卡',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製，到 Week 9 公司卡貼上。':'複製失敗，請手動選取。';}),...(estPending(c,b)?[btn('估價加分 +'+EST_BONUS,estimateForm)]:[]),...(n?[btn('開下一箱：'+n.name,()=>goBox(n),true)]:[]),btn('回寶箱清單',renderHub));
+ const n=nextBox();row.append(btn('複製七格，貼進公司卡',async()=>{st.textContent=(await copyText(cardText(c,b.est)))?'已複製，到 Week 9 公司卡貼上。':'複製失敗，請手動選取。';}),...(estPending(c,b)?[btn('估價加分 +'+EST_BONUS,estimateForm)]:[]),...(n?[btn('開下一箱：'+n.name,()=>goBox(n),true)]:[]),btn('⛵ 航向別的島',renderBrowse),btn('回寶箱清單',renderHub));
 }
 // ---------- 情報袋 ----------
 function closeOverlay(){$('#overlay').hidden=true;$('#overlay').replaceChildren();}

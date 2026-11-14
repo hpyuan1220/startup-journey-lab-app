@@ -21,16 +21,19 @@ ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、�
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/逛島/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('海圖：十座島、方向二那區亮框、島 5 列出 Owner・Palona',await p.evaluate(()=>document.querySelectorAll('#browse-map .island-btn').length===10&&!!document.querySelector('#browse-map .region.mine')&&/Owner・Palona/.test([...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).textContent)));
 ok('群島總覽：港口＋十島 11 個圖釘、方向二 4 座亮綠、逛島時港口釘可按',await p.evaluate(()=>{const pins=[...document.querySelectorAll('#overview:not([hidden]) .ov-pin')];return pins.length===11&&pins.filter(x=>x.classList.contains('mine')).length===4&&pins.find(x=>x.classList.contains('harbor'))?.disabled===false;}));
-await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>/餐飲零售/.test(x.getAttribute('aria-label'))).click();});await p.waitForTimeout(500);
+ok('小船一開始停在港口',await p.evaluate(()=>{const b=document.querySelector('#overview-boat');return !!b&&Math.abs(parseFloat(b.style.left)-42.7)<0.5;}));
+await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>/餐飲零售/.test(x.getAttribute('aria-label'))).click();});await p.waitForTimeout(300);
+ok('點島後先開船：總覽還在、船在航行中、圖釘暫時不能按',await p.evaluate(()=>!document.getElementById('overview').hidden&&document.querySelector('#overview-boat').classList.contains('sailing')&&document.getElementById('overview').classList.contains('sailing')));
+await p.waitForTimeout(1300);
 ok('點總覽圖的「餐飲零售」釘：進島 5 的公司清單、場景換成島 5 大圖、總覽圖收起',await p.evaluate(()=>/島 5 餐飲零售 的公司/.test(document.querySelector('.overlay h2,.overlay h3')?.textContent||'')&&/scene_island05/.test(document.querySelector('#scenery').src)&&document.getElementById('overview').hidden));
-await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/回海圖/.test(b.textContent)).click());await p.waitForTimeout(400);
-ok('按「回海圖」：總覽圖回來',await p.evaluate(()=>!document.getElementById('overview').hidden&&document.querySelectorAll('#overview .ov-pin').length===11));
-await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>x.classList.contains('harbor')).click();});await p.waitForTimeout(500);
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/航向別的島/.test(b.textContent)).click());await p.waitForTimeout(400);
+ok('按「⛵ 航向別的島」：總覽圖回來、船停在島 5',await p.evaluate(()=>!document.getElementById('overview').hidden&&document.querySelectorAll('#overview .ov-pin').length===11&&Math.abs(parseFloat(document.querySelector('#overview-boat').style.left)-47)<0.5));
+await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>x.classList.contains('harbor')).click();});await p.waitForTimeout(1600);
 ok('點港口釘：回港口',await p.evaluate(()=>document.querySelector('#chapter-small').textContent.includes('HARBOR')));
-await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(300);
+await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 ok('逛別方向的島：可看，☆ 不能按',await p.evaluate(()=>/不是你的方向/.test(document.querySelector('#d-speech').textContent)&&[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent)).every(b=>b.disabled)));
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/回海圖/.test(b.textContent)).click());await p.waitForTimeout(200);
-await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(300);
+await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent))[0].click());await p.waitForTimeout(200);
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent))[0].click());await p.waitForTimeout(200);
 ok('圈兩家候選：★ 兩個',await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].filter(b=>/已是候選/.test(b.textContent)).length===2));
@@ -41,11 +44,11 @@ await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/開
 ok('找島頁：三區十島、線索三句',await p.evaluate(()=>!document.querySelector('#view-find').hidden&&document.querySelectorAll('#find-map .island-btn').length===10&&document.querySelectorAll('#find-clues li').length===3));
 await p.screenshot({path:'/tmp/islands-s1.png'});
 // 猜錯兩次 → 二選一
-await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(200);
+await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 ok('猜錯一次：Irene 第一層提示、該島劃掉',await p.evaluate(()=>/不在這座島/.test(document.querySelector('#find-hint').textContent)&&document.querySelectorAll('#find-map .island-btn.wrong').length===1));
-await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 7 /.test(b.textContent)).click());await p.waitForTimeout(200);
+await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 7 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 ok('猜錯兩次：二選一亮框',await p.evaluate(()=>document.querySelectorAll('#find-map .island-btn.candidate').length===2));
-await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(600);
+await p.evaluate(()=>[...document.querySelectorAll('#find-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).click());await p.waitForTimeout(1600);
 ok('選對：進島、章節標 Owner',await p.evaluate(()=>!document.querySelector('#view-island').hidden&&document.querySelector('#chapter-title').textContent==='Owner'));
 // 沒讀材料直接答題 → 擋
 await p.click('#btn-quiz');await p.waitForTimeout(200);
