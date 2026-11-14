@@ -33,7 +33,7 @@ const filterButtons=FILTERS.map(([key,label])=>{const b=el('button',label,filter
 const sortLabel=el('label','排序',controls);const sortSel=el('select','',sortLabel);
 for(const [v,t] of [['priority','需要你先看的'],['quality-asc','品質分數 低 → 高'],['quality-desc','品質分數 高 → 低'],['name','姓名']]){const o=el('option',t,sortSel);o.value=v;}
 let sortBy='priority';sortSel.onchange=()=>{sortBy=sortSel.value;if(data)render();};
-const searchLabel=el('label','搜尋姓名或學號',controls);const search=el('input','',searchLabel);search.type='search';search.placeholder='例：A113270021 或 何';
+const searchLabel=el('label','搜尋姓名或學號',controls);const search=el('input','',searchLabel);search.type='search';search.placeholder='例：A113279021 或 何';
 search.oninput=()=>{query=search.value.trim().toLowerCase();if(data)render();};
 
 function latestAI(usage,classId,studentId){return usage.filter(u=>u.class_id===classId&&u.student_id===studentId&&u.feedback).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];}
@@ -291,7 +291,7 @@ function renderRoster(section,c,rows,w1){
  if(!rows.length)el('p','這班還沒有名單：任何學號都能進入。加入第一位之後，不在名單上的學號就會被擋在門口，所以要加就把全班一次加齊。',box).className='tw2-warn';
  else el('p',missing.length?'還沒進過系統：'+missing.map(r=>`${r.student_name||'（無姓名）'} ${r.student_id}`).join('、'):'名單上的同學都進入過系統了。',box).className='tw2-roster-missing';
  const form=el('div','',box);form.className='tw2-roster-add';
- const idL=el('label','學號',form),idI=el('input','',idL);idI.placeholder='A113270021';idI.autocapitalize='characters';idI.autocomplete='off';
+ const idL=el('label','學號',form),idI=el('input','',idL);idI.placeholder='A113279021';idI.autocapitalize='characters';idI.autocomplete='off';
  const nmL=el('label','姓名',form),nmI=el('input','',nmL);nmI.placeholder='王小明';nmI.autocomplete='off';
  const add=button('加入名單',async()=>{const sid=idI.value.trim().toUpperCase();if(!sid){status.textContent='請先填學號。';idI.focus();return;}
   await call({action:'teacher_roster',class_id:c.id,op:'add',student_id:sid,student_name:nmI.value});idI.value='';nmI.value='';rosterOpen.add(c.id);await load();status.textContent=`已把 ${sid} 加進名單。`;},form);

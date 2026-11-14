@@ -58,21 +58,21 @@ test('前端：提交之後不再顯示「儲存草稿」與「清除內容」',
 });
 
 // 正式班實查：44 個學號登入過，只有 37 筆作答。
-// A111270229 與 a111270229 是同一個人的兩種寫法，各自一張卡；
+// A111279229 與 a111279229 是同一個人的兩種寫法，各自一張卡；
 // A1130309125 / A30309125 / A11309125 是同一人的三種寫法。
 // 學號打錯或大小寫不同 → 靜默進到一張全新的空白卡 → 學生以為作業不見了。
 test('學號一律轉大寫去空白：大小寫不同的同一人不會變成兩張卡',async()=>{
  const h=await harness();
  // 先用大寫建立一份已提交的卡
- const upper=await h.student('A111270229');
+ const upper=await h.student('A111279229');
  await h.call({action:'save',token:upper,submission:{...fullCard(),status:'submitted'}});
 
  // 再用小寫登入，應該被視為同一個人（而且不必確認，因為紀錄已存在）
- const r=await h.call({action:'login',student_id:' a111270229 ',invite_code:'whatever'});
+ const r=await h.call({action:'login',student_id:' a111279229 ',invite_code:'whatever'});
  assert.equal(r.status,200,r.body?.error);
- assert.equal(r.body.student_id,'A111270229','學號要正規化成大寫並去掉空白');
+ assert.equal(r.body.student_id,'A111279229','學號要正規化成大寫並去掉空白');
 
- const rows=h.tables.week1_submissions.filter(x=>x.student_id.toUpperCase()==='A111270229');
+ const rows=h.tables.week1_submissions.filter(x=>x.student_id.toUpperCase()==='A111279229');
  assert.equal(rows.length,1,'不可以變成兩張卡');
 });
 
@@ -96,9 +96,9 @@ test('真的第一次進入的人按「是」就能進去，不會被擋住',asy
 
 test('已經有作答紀錄的人照常登入，不會被多問一次',async()=>{
  const h=await harness();
- const t=await h.student('A113270003');
+ const t=await h.student('A113279003');
  await h.call({action:'save',token:t,submission:{...fullCard(),status:'submitted'}});
- const r=await h.call({action:'login',student_id:'A113270003',invite_code:'whatever'});
+ const r=await h.call({action:'login',student_id:'A113279003',invite_code:'whatever'});
  assert.equal(r.status,200,'有紀錄的人不該被攔');
 });
 
@@ -185,22 +185,22 @@ test('C4：AI 等待要有上限、要有進度、重新整理前要先問', asy
 // ---- 名單閘門：老師匯入班級名單後，不在名單上的學號直接擋在門口 ----
 test('學號含空白（把邀請碼貼進學號欄）：直接擋下並講清楚哪一格填什麼',async()=>{
  const h=await harness();const before=h.tables.student_sessions.length;
- const r=await h.call({action:'login',student_id:'A113270021 SJL-W1-2026-TAIPEI',invite_code:'whatever'});
+ const r=await h.call({action:'login',student_id:'A113279021 SJL-W1-2026-TAIPEI',invite_code:'whatever'});
  assert.equal(r.status,422);assert.match(r.body.error,/不能有空白/);assert.match(r.body.error,/邀請碼填在/);
  assert.equal(h.tables.student_sessions.length,before,'不可建立 session');
 });
 test('班上有名單：不在名單上的學號擋下，不建立資料，也不給「是，我第一次進入」的旗標',async()=>{
- const h=await harness();h.tables.class_roster.push({class_id:'class-a',student_id:'A113270013',student_name:'吳承叡'});
+ const h=await harness();h.tables.class_roster.push({class_id:'class-a',student_id:'A113279013',student_name:'名單甲'});
  const before=h.tables.student_sessions.length;
- const r=await h.call({action:'login',student_id:'A132097798',invite_code:'whatever',confirm_new:true});
- assert.equal(r.status,422);assert.match(r.body.error,/名單裡沒有「A132097798」/);assert.match(r.body.error,/學生證/);
+ const r=await h.call({action:'login',student_id:'A132099798',invite_code:'whatever',confirm_new:true});
+ assert.equal(r.status,422);assert.match(r.body.error,/名單裡沒有「A132099798」/);assert.match(r.body.error,/學生證/);
  assert.equal(r.body.unknown_student,undefined,'不能再觸發「是，我第一次進入」');assert.equal(r.body.not_on_roster,true);
  assert.equal(h.tables.student_sessions.length,before);
 });
 test('班上有名單：在名單上的學號照常登入（第一次也不用再確認）；小寫也認得',async()=>{
- const h=await harness();h.tables.class_roster.push({class_id:'class-a',student_id:'A113270013',student_name:'吳承叡'});
- const r=await h.call({action:'login',student_id:'a113270013',invite_code:'whatever'});
- assert.equal(r.status,200,r.body?.error||'名單上的人不該再被問一次');assert.equal(r.body.student_id,'A113270013');
+ const h=await harness();h.tables.class_roster.push({class_id:'class-a',student_id:'A113279013',student_name:'名單甲'});
+ const r=await h.call({action:'login',student_id:'a113279013',invite_code:'whatever'});
+ assert.equal(r.status,200,r.body?.error||'名單上的人不該再被問一次');assert.equal(r.body.student_id,'A113279013');
 });
 test('班上沒有名單：維持原本「先問一次」的流程',async()=>{
  const h=await harness();

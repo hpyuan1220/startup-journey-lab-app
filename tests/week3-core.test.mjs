@@ -13,7 +13,7 @@ test('checkRecord：三次都要有代稱／時地／原話與是否成立，還
 });
 test('checkRecord：原話裡有電話／學號／Email 就擋；沒括號、沒代價只是提醒',()=>{
  const r=full();r.interviews[1].quotes='「打 0912345678 找我」';assert.match(checkRecord(r).errors.join(''),/姓名、電話/);
- const r2=full();r2.interviews[0].who='A113270021 同學';assert.match(checkRecord(r2).errors.join(''),/姓名、電話/);
+ const r2=full();r2.interviews[0].who='A113279021 同學';assert.match(checkRecord(r2).errors.join(''),/姓名、電話/);
  const r3=full();r3.interviews[0].quotes='上禮拜三我排到快上課直接不吃了';r3.interviews[0].cost='';const c=checkRecord(r3);assert.equal(c.ok,true);assert.equal(c.warnings.length,2);
 });
 test('week3Completion：0 還沒交 → 1 交了 → 2 三次都記了 → 3 老師 OK；下一步只有一句',()=>{

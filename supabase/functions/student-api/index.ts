@@ -17,13 +17,13 @@ Deno.serve(async (request) => {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   if (!body) return reply({ error: '格式不正確。' }, 400);
   if (body.action === 'login') {
-    // 學號一律去空白並轉大寫。先前是原樣接受：同一個人用 a111270229 和 A111270229
+    // 學號一律去空白並轉大寫。先前是原樣接受：同一個人用 a111279229 和 A111279229
     // 登入會變成兩個不同的身分，各自一張卡。
     const studentId = String(body.student_id || '').trim().toUpperCase();
     const inviteCode = String(body.invite_code || '');
     if(!studentId||studentId.length>60||inviteCode.length>200)return reply({error:'學號或邀請碼格式不正確。'},422);
-    // 課堂實況：有人把邀請碼貼進學號欄，變成「A113270021 SJL-W1-2026-TAIPEI」這種學號。
-    if(/\s/.test(studentId))return reply({error:'學號不能有空白。學號欄只填學號（例如 A113270021），邀請碼填在下面那一格。'},422);
+    // 課堂實況：有人把邀請碼貼進學號欄，變成「A113279021 SJL-W1-2026-TAIPEI」這種學號。
+    if(/\s/.test(studentId))return reply({error:'學號不能有空白。學號欄只填學號（例如 A113279021），邀請碼填在下面那一格。'},422);
     const { data: classId } = await db.rpc('validate_class_invite', { p_invite_code: inviteCode });
     if (!studentId || !classId) return reply({ error: '學號或班級邀請碼不正確。' }, 401);
     // 名單閘門：老師匯入過班級名單的班，不在名單上的學號直接擋在門口，

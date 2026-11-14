@@ -48,7 +48,7 @@ const csvBtn=el('button','匯出期中成績 CSV',bar,'quiet');csvBtn.type='butt
 const paste=el('details','',root,'tw4-detail');el('summary','貼上 TronClass 已交學號，一次勾 PDF',paste);
 el('p','從 TronClass 作業頁複製「已繳」的學號（整頁貼上也行，會自動抓 A 開頭的學號）。沒在名單裡的會被取消勾選，所以要貼完整名單。',paste,'w4-hint');
 const pRow=el('div','',paste,'w4-row');const pSel=el('select','',pRow);for(const [v,t] of [['0','Week 4 研究報告'],['1','Week 5 研究報告']]){const o=el('option',t,pSel);o.value=v;}
-const pTa=el('textarea','',paste);pTa.rows=3;pTa.style.width='100%';pTa.placeholder='A113270004 吳宗誠 已繳 … 或一行一個學號';pTa.setAttribute('aria-label','已交學號');
+const pTa=el('textarea','',paste);pTa.rows=3;pTa.style.width='100%';pTa.placeholder='A113279999 王小明 已繳 … 或一行一個學號';pTa.setAttribute('aria-label','已交學號');
 const pBtn=el('button','套用到這一欄',pRow,'primary');pBtn.type='button';const pSt=el('span','',pRow,'w4-hint');
 pBtn.addEventListener('click',async()=>{if(!data)return;const ids=new Set((pTa.value.match(/A\d{8,10}/g)||[]).map(x=>x.toUpperCase()));if(!ids.size){pSt.textContent='沒抓到學號。';return;}const col=Number(pSel.value);let n=0,changed=0;pBtn.disabled=true;
  for(const c of data.classes)for(const x of rowsFor(c)){const want=ids.has(x.id);if(x.sc.p[col]!==want){x.sc.p[col]=want;await saveScore(c,x,pSt);changed++;}if(want)n++;}

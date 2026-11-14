@@ -1044,7 +1044,7 @@ RLS 會回傳該老師所有授權班級的列，兩班同學號時後讀到的�
 ### 2026-09-30（F1：學號打錯不再靜默開一張新的空白卡）
 
 正式班實查：**44 個學號登入過，只有 37 筆作答**。
-`A111270229` 與 `a111270229` 是同一個人的兩種寫法，各自一張卡；
+`A111270xxx` 與 `a111270229` 是同一個人的兩種寫法，各自一張卡；
 `A1130309125` / `A30309125` / `A11309125` 是同一人的三種寫法。
 
 成因：`student-api` 的 login **只驗班級邀請碼，學號原樣接受**
@@ -1527,7 +1527,7 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 `tests/after-submit.mjs`：修正前提交後與重開頁後可見答案格都是 0；修正後重開頁可見 1（引導模式一次一題）。紅→綠。
 
 同日課堂數據：Week 1 已交 44，Week 2 有卡 29（已交 15／草稿 14）。
-兩位同學把邀請碼貼進學號欄（A113270021、A113270032 後面多了 " SJL-W1-2026-TAIPEI"），
+兩位同學把邀請碼貼進學號欄（A113270xxx、A113270xxx 後面多了 " SJL-W1-2026-TAIPEI"），
 內容完整，下課後改學號並把學號欄的空白擋掉。
 待做：教師頁把每位學生的 Week 1 與 Week 2 合在同一張卡看。
 
@@ -1535,11 +1535,9 @@ regex lookbehind、checkVisibility、.at()、??=、AbortSignal.timeout、toSorte
 46 人，存於 `docs/private/roster-2026-course25170.csv`（已 gitignore，姓名＋學號不進公開 repo）。
 同資料夾有依名單修正過的座位表 xlsx。
 和系統比對：
-- 打錯的學號 4 筆：A113270021/032 後面黏了邀請碼、A113270039 應為 A113270030（劉芝羽）、
-  A132097798 是吳承叡多出來的一筆（只有 Week 1；A113270013 那筆才是完整的）。
-- 還沒進系統 4 人：劉昱佑 A111270226、李雲峰 A112270208、屠均泰 A113270010、李婕炘 A113010129。
-- 座位表上不在名單的：饒蘇娃 A113270014、陸晏嶸（學號和呂鈞愷重複）；
-  「何1129022／張顥瑋 A113270001」應為張皓瑋 A111270229。
+- 打錯的學號 4 筆：兩筆後面黏了邀請碼、一筆少打一位數、一筆是同一人多出來的學號（只有 Week 1；正確那筆才是完整的）。（學號與姓名見 docs/private）
+- 還沒進系統 4 人（名單見 docs/private）。
+- 座位表上不在名單的 2 人、一筆姓名學號對錯的（細節見 docs/private）。
 待做（下課後）：
 1. 把名單放進資料庫（class_roster），登入時擋掉不在名單上的學號 —— 這四筆打錯的都會在門口被擋下。
 2. 改學號 SQL（三筆改名、一筆合併或刪除）。
@@ -1581,7 +1579,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 順序：push → migration（建表）→ 部署 student-api → fix_student_ids → roster_import（最後匯入，匯入後閘門才生效）。
 單元 147。
 - 2026-10-11 上線完成（實證）：class_roster 建表 → student-api 部署（83a5f7ff…，7134 B，三方雜湊一致）→ 四筆學號修正（week1 44→43、week2 40 不變、三位改名後版本號不變、舊學號殘留 0；觸發器全 O）→ 名單匯入 47 列、不在名單 0、名單上還沒進系統 4。
-  線上探針：不在名單 422 not_on_roster（帶 confirm_new 也擋）、舊錯學號 A113270039 擋、含空白 422、錯邀請碼 401、GET 405、空 body 400、假 token 401。
+  線上探針：不在名單 422 not_on_roster（帶 confirm_new 也擋）、舊錯學號 A113270xxx 擋、含空白 422、錯邀請碼 401、GET 405、空 body 400、假 token 401。
   踩到的坑：student_sessions 有 unique(class_id,student_id)，改名會撞已存在的正確學號 session → 改成刪舊學號 session；pg_trigger.tgenabled 是 "char"，拼字串要 ::text。
 
 #### 2026-10-11 老師端班級名單（加選／移除）
@@ -1592,7 +1590,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 測試：單元 149（含 2 個 teacher_roster）、bundle 模式 34、瀏覽器 tests/teacher-roster.mjs 6/6（含端到端：名單一有人，Student-api 真的擋 422）、teacher-week2-view 9/9。
 - 部署：week2-api bundle 7f855af8…（23,062 B）。
 - 2026-10-11 上線（實證）：week2-api 部署 7f855af8…（23,062 B，雜湊不變、M 歸零、a few seconds ago）；探針 GET 405／壞 JSON 400／學生無 token 401／teacher_roster 無 JWT 401／假 JWT 401；GitHub Pages 已是 teacher-week2.js?v=20261011-roster；
-  正式站教師洞察載入：班級名單 47 人、還沒進過系統 4 人（劉昱佑、李雲峰、李婕炘、屠均泰）、47 張卡（含 4 張「還沒進過系統」）、已交 36／還沒審 36／草稿 4／尚未開始 3。
+  正式站教師洞察載入：班級名單 47 人、還沒進過系統 4 人、47 張卡（含 4 張「還沒進過系統」）、已交 36／還沒審 36／草稿 4／尚未開始 3。
 
 #### 2026-10-12 Week 3 使用者訪談：簡報、學習頁、訪談準備單、訪談紀錄卡、教師洞察
 - 影片：YC Startup School 2022〈How To Talk To Users〉Gustaf Alströmer，youtube.com/watch?v=z1iF1c8w5Lg（約 17 分鐘）。
@@ -1636,7 +1634,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 ## 2026-10-12 老師審完 36 張 Week 2 卡之後的兩個修正
 - 實證：36 張審完（確認 13／需要小幅修訂 19／請先與老師討論 4）。過程中教師登入過期（閒置 30 分鐘），按審核鈕回 401，錯誤只顯示在 Week 2 區塊頂端「請重新登入教師帳號。」，老師沒看到，連續兩張以為已存；重新登入後名單重載，打好的回饋被清掉。
 - 修正一（teacher-week2.js）：審核結果改顯示在審核按鈕旁 `.tw2-msg`（成功「儲存中…」→ 重載；失敗紅字「沒有存進去：…妳打的回饋還在這格裡」，登入過期附「去重新登入」連結，點了展開登入表單並捲過去）。回饋與指路存在記憶體 `drafts`（以學生為 key），儲存失敗或重新載入名單都保留，存成功才清掉。
-- 修正二（week2-quality.mjs，QUALITY_VERSION q-20261012a）：「是問題不是解法」改法——解法字擴充（場所／吸菸室／機器人／媒合／自動幫…／「做一個 __」句型／「希望有人推薦」）；單獨「開發」不算（「陌生開發」誤判）；「社交平台／外送平台／平台上」先剔除（描述現況不是解法）；訪談題「如果有 __ 你會不會／意願嗎」直接 0 分並指到那一題；假設＋選題理由＋改變條件＋為什麼不夠：一格在想解法 1 分、兩格以上 0 分。預期：王柏勳 15→13、黃立竹更低、吳承叡 11→13（開發誤判解除）。
+- 修正二（week2-quality.mjs，QUALITY_VERSION q-20261012a）：「是問題不是解法」改法——解法字擴充（場所／吸菸室／機器人／媒合／自動幫…／「做一個 __」句型／「希望有人推薦」）；單獨「開發」不算（「陌生開發」誤判）；「社交平台／外送平台／平台上」先剔除（描述現況不是解法）；訪談題「如果有 __ 你會不會／意願嗎」直接 0 分並指到那一題；假設＋選題理由＋改變條件＋為什麼不夠：一格在想解法 1 分、兩格以上 0 分。預期：三位同學的分數各自上下修正（開發誤判解除）。
 - 測試：單元 162/162（week2-quality 新增 4 條）；瀏覽器 tests/teacher-review-expired.mjs 6/6（401 時訊息在按鈕旁、草稿保留、重載保留、恢復後再按一次存進去）；teacher-week2-view、quality-box 重跑仍全綠。版本號：teacher-week2.js?v=20261012-reviewmsg、week2.js?v=20261012-solution、quality ?v=20261012-solution、styles.css?v=20261014-reviewmsg。
 - 不動後端，不用部署 Edge Function；push 即上線。
 
@@ -1798,7 +1796,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 問題（老師 10/26）：按「載入 Week 5」後 47 列全展開（約 4,400px），沒有辦法收回去；Week 4 區同樣。教師洞察也沒有 Week 3 區（Week 3 訪談資料在 `teacher_load.week3`，頁面沒做）——Week 3 區待做，排在 Week 5 影片之後、Week 6 頁之前。
 - 改法：`teacher-week4.js`／`teacher-week5.js` 在「重新載入」旁加 `收合 Week N`／`展開 Week N` 按鈕（載入成功後才出現；收合＝`body.hidden`，並捲到該區頂端；`aria-expanded`）。只動前端，不動 Edge。`index.html` 版號 `?v=20261026-fold`。
 - 測試：`tests/week5-student.mjs` 加 1 條（兩區都能收合、再展開）→ 全過（這支共 17 條；先前筆記寫 18 是數錯）；單元 190/190。
-- Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270032 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
+- Week 5 其餘狀態不變：影片 NotebookLM 已生成 13:32，待老師下載、上 YouTube、嵌入並換掉「準備中」。正式庫 10/26：Week 4 2 列（測試帳號＋A113270xxx 10/18 卡 1、痛開頭「【測試】」），Week 5 1 列（測試帳號）。
 - 10/26 追加（老師：「Week 1 也可以收小？」）：改成通用版 `teacher-fold.mjs`——教師洞察每個 `section[id^=teacher-week]` 的 h2 右邊一顆「收合／展開」，收合＝標題以下全藏（含按鈕與說明），狀態記 sessionStorage；MutationObserver 接住後插入的區塊。Week 4／5 原本各自的按鈕拿掉，避免兩顆。`styles.css` 加 h2 flex 與 `.tfold`；`index.html` 載 `teacher-fold.mjs?v=20261026-fold2`、`styles.css?v=20261026-fold2`。測試改成四區（5／4／2／1）都驗 → 18/18。
 
 ## 2026-10-26 Week 4 課前影片加「只看這四段」
@@ -1957,7 +1955,7 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-06：老師頁 Week 7 改成「期中報告評分表（總分 100）」（teacher-midterm.js?v=20261106-gr）：A 內容七項各 0／5／10（共 70，點學號展開，旁邊附學生的對應內容：產業線與第一步、錢流句、卡 2、三個機會、五問證據、選擇與一頁、反方）＋B 完成度 10（電腦：Week 4 產業線／卡 1–3／兩題、Week 5 計分／選／反方／一頁／兩題，各 1）＋C 上台 0–20（老師）。分數存 teacher_remarks week 7 note，格式 MT1|a=…|c=…（舊的純數字視為上台分數，>20 不算）；純前端、不用 Deploy。匯出「期中成績 CSV」。之後 AI 建議接同一張表。單元 212/212；week5-student 26 項全過。
 - 2026-11-06：Week 5 教學簡報更新 4 頁（11 反方改 app 內「開始反方」、外部 AI 貼回為備案；14／15 研究筆記 v2 用比較頁「v2 草稿」→ PDF 交 TronClass、期中上台 2 分鐘四段；16 Week 6 有自己的兩題、期中交 TronClass）。原本寫「上課前上傳」「上台 3 分鐘」「PDF 上傳功能上線」都改掉。docs/WEEK5_SLIDES_SOURCE.json → build-slides.py → soffice 轉 PDF；week.html 連結 ?v=20261106。116/Week5 同步。
 - 2026-11-06：Week5_研究筆記v2範本.docx 頁首改成「Week 4–5（10/30、11/6）· 個人 · 11/13 13:00 前把 PDF 交到 TronClass」（原本是颱風前的日期與「上課前上傳」）；連結 ?v=20261106（week.html、week5.js）。
-- 2026-11-06 課中：A113270021 說 Week 4 存了 6 次都沒完成。查到 learning_versions 有她 10/19 的 week 4 v1 快照，但 week4_research 沒有她的列 → 每次存檔撞快照唯一鍵、整筆退回（10/25 記過的坑）。根治：migration 20261106_snapshot_on_conflict.sql（snapshot_learning 加 on conflict do nothing），老師在 SQL Editor Run；不刪資料。
+- 2026-11-06 課中：A113270xxx 說 Week 4 存了 6 次都沒完成。查到 learning_versions 有她 10/19 的 week 4 v1 快照，但 week4_research 沒有她的列 → 每次存檔撞快照唯一鍵、整筆退回（10/25 記過的坑）。根治：migration 20261106_snapshot_on_conflict.sql（snapshot_learning 加 on conflict do nothing），老師在 SQL Editor Run；不刪資料。
 
 ## 2026-11-06 課中「Week 5 全部打完卻存不了」：一個學號只能一個登入
 - 診斷（老師在 SQL Editor 跑只讀查詢）：今天 12:00 後重新登入 22 人；Week 5 有資料列 37 人且都是今天存的；孤兒快照 0；登入已過期 2 人。結論〔推論〕：student_sessions 以 (class_id,student_id) upsert，手機登入答兩題後，電腦上原本的 token 立刻失效（401）→ 比較頁 expired=true、save() 直接 return；請重新進入的卡片在頁面上方。
@@ -2070,3 +2068,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
 - 2026-11-14 18:45：老師看過手機直式版後決定**無聲、大字幕、電腦寬度**。錄製腳本加 `DESKTOP=1`（1040×880 @1.846 → 1920×1624，字幕 27px 放在畫面上方、body 加 padding-top 避免蓋住內容）。輸出 `materials/群島玩法示範_大字幕版.mp4`（2:12）。Suno Speech 旁白試過兩版（平靜版聲音太平、未採用；活力版稿子在 docs/handouts 與 Week9 資料夾，老師之後想配音再用）。
 - 2026-11-14 19:10：老師回饋「畫面在左上角太小、字太小、太快」→ 桌面版加 `html{zoom:1.28}`（內容填滿 1920 寬）、字幕 24px、`SLOW=1.3` 全段停留慢 30%。重錄 `materials/群島玩法示範_大字幕版.mp4`（2:48）。指令：`DESKTOP=1 SLOW=1.3 node scripts/record-islands-demo.mjs <outDir>`。
 - 2026-11-14 19:20：老師要把 repo 分享給工程師共同開發 Week 8 → `docs/HANDOVER.md` 加第 8 節「與工程師共同開發」：GitHub Collaborator（Write）＋ main 需 PR 的 ruleset、Supabase 先不給、工程師分支→PR→老師 merge 的流程、四條界線、Week 8 現況與測試。
+- 2026-11-14 19:30：**交接前個資掃描**：以 docs/private 名單（47 名、48 個學號）比對所有 git 追蹤檔。清掉 PROJECT_STATE 2026-10-09 座位表比對段與 10-12 品質修正段的學生姓名、AUDIT_20260930 與 PROJECT_STATE 內真實學號遮後三碼（A11327xxxx）、tests/week1-server 測試用名改「名單甲」、teacher-midterm placeholder 改合成學號。第二輪：程式註解、migration 註解、placeholder 與測試 fixture 中與真實名單重疊的 8 個學號全部改成合成學號（A11327**9**0xx 型），單元 228 ✅。Student-api 只改註解，線上不必重 Deploy。

@@ -52,29 +52,29 @@ test('老師端名單：加人會正規化學號、改名用同一個動作；te
  const h=await harness();
  const bad=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'a113 270021',student_name:'王'},'teacher-token');
  assert.equal(bad.status,422);
- const a=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:' a113270021 ',student_name:'王小明'},'teacher-token');
- assert.equal(a.status,200);assert.deepEqual(a.body.roster.map(r=>[r.student_id,r.student_name]),[['A113270021','王小明']]);
- const b=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021',student_name:'王大明'},'teacher-token');
+ const a=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:' a113279021 ',student_name:'王小明'},'teacher-token');
+ assert.equal(a.status,200);assert.deepEqual(a.body.roster.map(r=>[r.student_id,r.student_name]),[['A113279021','王小明']]);
+ const b=await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113279021',student_name:'王大明'},'teacher-token');
  assert.equal(b.body.roster.length,1);assert.equal(b.body.roster[0].student_name,'王大明');
- assert.equal((await h.call({action:'teacher_roster',class_id:'class-b',op:'add',student_id:'A113270021'},'teacher-token')).status,403);
- assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021'},'expired')).status,401);
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-b',op:'add',student_id:'A113279021'},'teacher-token')).status,403);
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113279021'},'expired')).status,401);
  const load=await h.call({action:'teacher_load'},'teacher-token');
- assert.deepEqual(load.body.roster.map(r=>r.student_id),['A113270021']);
+ assert.deepEqual(load.body.roster.map(r=>r.student_id),['A113279021']);
 });
 test('老師端名單：移除只能移除還沒有作業資料的人', async () => {
- const h=await harness();await h.student('A113270021');
- await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270021',student_name:'有作業'},'teacher-token');
+ const h=await harness();await h.student('A113279021');
+ await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113279021',student_name:'有作業'},'teacher-token');
  await h.call({action:'teacher_roster',class_id:'class-a',op:'add',student_id:'A113270099',student_name:'還沒來'},'teacher-token');
- const blocked=await h.call({action:'teacher_roster',class_id:'class-a',op:'remove',student_id:'A113270021'},'teacher-token');
+ const blocked=await h.call({action:'teacher_roster',class_id:'class-a',op:'remove',student_id:'A113279021'},'teacher-token');
  assert.equal(blocked.status,422);assert.match(blocked.body.error,/已經有作業資料/);
  const ok=await h.call({action:'teacher_roster',class_id:'class-a',op:'remove',student_id:'A113270099'},'teacher-token');
- assert.equal(ok.status,200);assert.deepEqual(ok.body.roster.map(r=>r.student_id),['A113270021']);
+ assert.equal(ok.status,200);assert.deepEqual(ok.body.roster.map(r=>r.student_id),['A113279021']);
  assert.equal(h.tables.week1_submissions.length,1,'移除名單不會動到作業');
- assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'nuke',student_id:'A113270021'},'teacher-token')).status,400);
+ assert.equal((await h.call({action:'teacher_roster',class_id:'class-a',op:'nuke',student_id:'A113279021'},'teacher-token')).status,400);
 });
 
 test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存、提交要通過檢查；版本衝突 409；teacher_load 帶 week3', async () => {
- const h=await harness(),token=await h.student('A113270021');
+ const h=await harness(),token=await h.student('A113279021');
  const empty=await h.call({action:'week3_load',token});assert.equal(empty.status,200);assert.equal(empty.body.week2,null);assert.equal(empty.body.row,null);
  const rec={interviews:[{who:'通勤同學 A',when_where:'10/14 走廊',quotes:'「排到快上課就不吃了」',fits:'yes'}],judgment:'',learned:'',statement:''};
  assert.equal((await h.call({action:'week3_save',token,status:'draft',record:rec})).status,409,'沒有 Week 2 卡就不能存');
@@ -85,7 +85,7 @@ test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存�
  const fullRec={interviews:[0,1,2].map(i=>({who:`通勤同學 ${'ABC'[i]}`,when_where:'10/14 走廊',quotes:'「排到快上課就不吃了」',cost:'20 分鐘',fits:'yes'})),judgment:'keep',learned:'',statement:'午休五十分鐘的通勤同學買餐要等二十分鐘，常常不吃。'};
  assert.equal((await h.call({action:'week3_save',token,status:'submitted',version:0,record:fullRec})).status,409,'版本不對要擋');
  const ok=await h.call({action:'week3_save',token,status:'submitted',version:1,record:fullRec});assert.equal(ok.status,200);assert.equal(ok.body.row.status,'submitted');assert.ok(ok.body.row.submitted_at);
- const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week3.length,1);assert.equal(t.body.week3[0].student_id,'A113270021');
+ const t=await h.call({action:'teacher_load'},'teacher-token');assert.equal(t.body.week3.length,1);assert.equal(t.body.week3[0].student_id,'A113279021');
  // 課前預習：存問題不會動到提交狀態；老師端讀得到；亂塞的選項被清掉
  const pre=await h.call({action:'week3_save',token,status:'submitted',version:ok.body.row.version,record:{...fullRec,preclass:{question:'上次你排隊最久那次，後來怎麼辦？',answers:['a','c','zz'],done_at:'2026-10-13T01:00:00Z'}}});
  assert.equal(pre.status,200);assert.equal(pre.body.row.status,'submitted');assert.equal(pre.body.row.record.preclass.question,'上次你排隊最久那次，後來怎麼辦？');assert.deepEqual(pre.body.row.record.preclass.answers,['a','c','']);
@@ -94,7 +94,7 @@ test('Week 3：載入帶 Week 2 摘要；沒有 Week 2 不能存；草稿可存�
 });
 
 test('普查：老師設題目（整份覆寫、沒送的關掉）；學生載入／作答／改答；彙總只給代稱；沒題目不能答；別班 403', async () => {
- const h=await harness(),token=await h.student('A113270021'),token2=await h.student('A113270022');
+ const h=await harness(),token=await h.student('A113279021'),token2=await h.student('A113279022');
  assert.equal((await h.call({action:'survey_save',token,survey:{answers:[{topic_id:1,experienced:true}]}})).status,409,'老師還沒設題目');
  const t=await h.call({action:'teacher_survey_topics',class_id:'class-a',topics:[{topic_id:1,label:'午餐排隊',hint:'h'},{topic_id:2,label:'早八'},{topic_id:3,label:'穿搭'}]},'teacher-token');
  assert.equal(t.status,200);assert.equal(t.body.topics.length,3);
@@ -112,5 +112,5 @@ test('普查：老師設題目（整份覆寫、沒送的關掉）；學生載�
  assert.equal(t2.body.topics.find(x=>x.topic_id===3).active,false);
  const l2=await h.call({action:'survey_load',token});assert.equal(l2.body.topics.length,2);
  const tl=await h.call({action:'teacher_load'},'teacher-token');assert.equal(tl.body.survey_topics.length,3);assert.equal(tl.body.survey_responses.length,5);
- assert.equal((await h.call({action:'survey_save',token,survey:{alias:'A113270021',answers:[{topic_id:1,experienced:true}]}})).status,422,'代稱不能是學號');
+ assert.equal((await h.call({action:'survey_save',token,survey:{alias:'A113279021',answers:[{topic_id:1,experienced:true}]}})).status,422,'代稱不能是學號');
 });
