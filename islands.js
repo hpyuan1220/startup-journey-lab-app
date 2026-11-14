@@ -105,7 +105,7 @@ function renderHub(){
  }else{
   const candLine=cands.length?`\n你的候選（${cands.length}／${CAND_MAX}）：${cands.map(c=>c.name).join('、')}。`:'\n你還沒圈候選：先去「逛島」，在自己方向圈 2 家，再開箱。';
   say('teacher','Irene 老師 · 港口','怎麼玩：先逛島圈候選，再開箱。','① 逛島：到你方向那一區看看每座島住哪些公司，圈 2 家候選。\n② 開箱：一箱＝一家公司，讀線索找島、聽故事、答三題，開箱拿七格卡。\n③ 開完挑 1 家「推薦給我的組」；三個人湊 3 家，12/4 比一比，期末講 1 家。'+candLine,
-   [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:'開箱：'+(cands.includes(next)?next.name:'第 '+(COMPANIES.indexOf(next)+1)+' 箱'),()=>goBox(next),!!cands.length]]:[]),
+   [['逛島、圈候選 →',renderBrowse,!cands.length],...(next?[[store.boxes[next.id]?.found?'繼續：'+next.name:(openedCount()?'開下一箱：':'開箱：')+next.name,()=>goBox(next),!!cands.length]]:[]),
     ['換方向',()=>{myDir=0;store.dir=0;save();renderHub();},false]]);
  }
  $('#dir-tabs').hidden=true;
