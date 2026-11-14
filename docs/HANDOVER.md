@@ -111,6 +111,8 @@ git checkout -b week8-<主題>                          # 一個功能一條分�
 4. 本機 `.git` 的 `HEAD.lock`／`index.lock` 問題只發生在老師電腦（Cowork 無刪除權），工程師自己的 clone 不會有。
 
 **Week 8 現況（給工程師的起點）**
-- 頁面：`week.html` → `<section id="week-eight-materials">`；流程文件 `docs/SECOND_HALF_FLOW.md`（11/20 講座課：講師講三個方向、課堂兩題、下課前確認分組）。
+- 第一版已經有：`week.html` → `<section id="week-eight-materials">`（講座說明、課堂題入口、建組提醒、教材連結）、講義 `materials/Week8_講義.pdf`（原稿 `docs/handouts/WEEK8_HANDOUT.html`）、簡報 `materials/Week8_教學簡報.pptx/pdf`（來源 `docs/WEEK8_SLIDES_SOURCE.json`）、講師提要 `docs/handouts/WEEK8_SPEAKER_BRIEF.html`。工程師是接手做第二版，改什麼由老師指定。
+- Week 8 頁只管 11/20 當天；頁尾原本的「接下來」時程已拿掉（11/14），Week 8→9 的銜接由老師另外處理，工程師不用管。
+- 流程文件 `docs/SECOND_HALF_FLOW.md`（11/20 講座課：講師講三個方向、課堂題、下課前確認分組）。
 - 已有：課堂兩題（`classq.js`，`CLASSQ_WEEKS` 含 8，可 2–5 題）、建組（`team.js`）、老師頁對應區塊。
 - 測試：`tests/week8-student.mjs`（23 條）是 Week 8 的驗收，改完要全綠。

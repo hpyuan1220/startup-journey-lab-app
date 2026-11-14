@@ -77,5 +77,6 @@ ok('學生 1 重整：顯示已鎖定、沒有離開按鈕',await p.evaluate(()=
 // Week 6 不受影響
 await p.goto(`${BASE}/week.html?week=6#card`);await p.waitForTimeout(1200);
 ok('Week 6 頁：兩題還在、沒有建組區',await p.evaluate(()=>document.querySelectorAll('#week-six .w4-q:not([hidden])').length===2&&!document.querySelector('.tm')));
-ok('沒有 JS 錯誤',errs.length===0,errs);
+const realErrs=errs.filter(e=>!/localStorage.*Access is denied/.test(e));// 課前影片 YouTube iframe 在 headless 的第三方儲存 SecurityError，真瀏覽器沒有（同 islands／week10）
+ok('沒有 JS 錯誤（排除 YouTube iframe 的 SecurityError）',realErrs.length===0,realErrs);
 await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);
