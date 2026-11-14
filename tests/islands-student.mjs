@@ -22,7 +22,9 @@ await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/逛
 ok('海圖：十座島、方向二那區亮框、島 5 列出 Owner・Palona',await p.evaluate(()=>document.querySelectorAll('#browse-map .island-btn').length===10&&!!document.querySelector('#browse-map .region.mine')&&/Owner・Palona/.test([...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).textContent)));
 ok('群島總覽：港口＋十島 11 個圖釘、方向二 4 座亮綠、逛島時港口釘可按',await p.evaluate(()=>{const pins=[...document.querySelectorAll('#overview:not([hidden]) .ov-pin')];return pins.length===11&&pins.filter(x=>x.classList.contains('mine')).length===4&&pins.find(x=>x.classList.contains('harbor'))?.disabled===false;}));
 await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>/餐飲零售/.test(x.getAttribute('aria-label'))).click();});await p.waitForTimeout(500);
-ok('點總覽圖的「餐飲零售」釘：進島 5 的公司清單、場景換成島 5 圖、總覽仍在（港口模式）',await p.evaluate(()=>/島 5 餐飲零售 的公司/.test(document.querySelector('.overlay h2,.overlay h3')?.textContent||'')&&/scene_island05/.test(document.querySelector('#scenery').src)&&!document.getElementById('overview').hidden));
+ok('點總覽圖的「餐飲零售」釘：進島 5 的公司清單、場景換成島 5 大圖、總覽圖收起',await p.evaluate(()=>/島 5 餐飲零售 的公司/.test(document.querySelector('.overlay h2,.overlay h3')?.textContent||'')&&/scene_island05/.test(document.querySelector('#scenery').src)&&document.getElementById('overview').hidden));
+await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/回海圖/.test(b.textContent)).click());await p.waitForTimeout(400);
+ok('按「回海圖」：總覽圖回來',await p.evaluate(()=>!document.getElementById('overview').hidden&&document.querySelectorAll('#overview .ov-pin').length===11));
 await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>x.classList.contains('harbor')).click();});await p.waitForTimeout(500);
 ok('點港口釘：回港口',await p.evaluate(()=>document.querySelector('#chapter-small').textContent.includes('HARBOR')));
 await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(300);
@@ -133,5 +135,6 @@ ok('40 張美術檔都在 materials/islands',missing.length===0,missing);
 const art=await b.newPage();await art.goto(`${BASE}/islands.html`);await art.waitForTimeout(1000);
 const artChecks=await art.evaluate(async()=>{const urls=[];for(let i=1;i<=10;i++){const n=String(i).padStart(2,'0');urls.push(`materials/islands/scene_island${n}.jpg`,`materials/islands/npc_island${n}.png`,`materials/islands/pet_island${n}_lv1.png`,`materials/islands/pet_island${n}_lv2.png`);}const bad=[];for(const u of urls){const r=await fetch(u);if(!r.ok)bad.push(u);}return bad;});
 ok('40 張美術檔伺服器都抓得到',artChecks.length===0,artChecks);await art.close();
-ok('沒有 JS 錯誤',errs.length===0,errs);
+const realErrs=errs.filter(e=>!/localStorage.*Access is denied/.test(e));// Week 9 頁的 YouTube 課前影片 iframe 在 headless 讀不到第三方儲存會丟 SecurityError，真瀏覽器沒有（同 Week 6／10）
+ok('沒有 JS 錯誤（排除 YouTube iframe 的第三方儲存 SecurityError）',realErrs.length===0,realErrs);
 await b.close();console.log(R.join('\n'));process.exit(R.some(x=>x.startsWith('❌'))?1:0);

@@ -152,7 +152,7 @@ function renderBrowse(){
 function browseIsland(id){
  const i=islandById(id),cs=COMPANIES.filter(c=>c.island===id);
  $('#chapter-small').textContent='CHAPTER '+String(id).padStart(2,'0');$('#chapter-title').textContent=i.name.replace(/^島 \d+ /,'');
- $('#scenery').src=sceneSrc(id);$('#owner-art').src=npcSrc(id);$('#owner-art').alt=i.name+'的店家';
+ $('#scenery').src=sceneSrc(id);$('#owner-art').src=npcSrc(id);$('#owner-art').alt=i.name+'的店家';const ovm=$('#overview');if(ovm)ovm.hidden=true;// 一島一景：進島就收起總覽圖
  $('#mission').textContent=`候選 ${store.candidates.length}／${CAND_MAX}`;
  const d=dirById(i.dir),mine=i.dir===myDir;
  say('teacher','Irene 老師 · 島長介紹',i.name+'：'+i.hint,`這座島屬於${d.name}（${d.short}：${d.blurb}）。島上 ${cs.length} 家公司如下${mine?'，是你的方向，可以圈候選。':'，不是你的方向：可以看、可以開箱，但不能圈候選。'}`,[['回海圖',renderBrowse,false],['回港口',renderHub,false]]);
