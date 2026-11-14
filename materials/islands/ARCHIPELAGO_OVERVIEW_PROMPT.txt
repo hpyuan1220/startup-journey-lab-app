@@ -1,0 +1,19 @@
+A hand-painted nautical chart style overview map of an archipelago, 16:10, 1600x1000, clean stylized game art. Attached image is STYLE AND PALETTE REFERENCE ONLY, not layout: same painterly bright turquoise-sea isometric island game, soft daylight, vivid but not neon, no text, no labels, no numbers, no people, no logos, no UI, no compass rose text.
+Top-down 3/4 view. Bright turquoise sea light wave texture few whitecaps, faint dotted sailing routes between islands, few tiny sailboats. EXACTLY ELEVEN landmasses at fixed center positions (% width,height from top-left), do not add extra landmasses:
+HARBOR (46,88), bottom-center largest, round island wooden pier small lighthouse warm terracotta-roof houses lively dock without people. Fit fully inside frame.
+LEFT GROUP cooler slate-blue steel infrastructure:
+1 (14,22) hardware island colorful pipes conveyor tubes small boxes antenna masts.
+2 (10,50) watchtower island round radar dish striped barrier gate searchlight tower.
+3 (18,74) bank island vault building round steel door bronze scale sign without letters.
+CENTER GROUP warm lively AI services:
+4 (40,14) toy-studio island giant colorful building blocks.
+5 (50,38) restaurant island striped awning cafe outdoor tables two-storey white house balcony flowers, matching reference restaurant.
+6 (64,26) post-office island colorful mailboxes blank speech-bubble sign.
+7 (56,62) library/archive island glass-walled archive stacks of document boxes.
+RIGHT GROUP earthy industrial physical world:
+8 (82,20) cargo island loading dock containers small crane truck-stop diner.
+9 (86,48) care-home island warm pharmacy cafe rocking chairs soft green lawns.
+10 (80,76) robot lab island hangar tiny robot test track robot-arm sculpture.
+Each task island 10–14% image width, distinct silhouette, clearly separated by generous empty sea for overlay labels. Harbor slightly larger about17% width. Keep geographic positions exact; only 11 island silhouettes, no decorative extra islets. Slightly darker sea edges light vignette. Consistent upper-left lighting. No parchment border, no lettering anywhere.
+
+Revision: Reduce task islands to 10–14% canvas width, harbor to17%; enforce requested percentage centers and generous empty sea. Preserve all11 island identities, no labels.

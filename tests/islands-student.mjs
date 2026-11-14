@@ -20,6 +20,11 @@ await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/方
 ok('選方向二後：三步說明、「逛島、圈候選」是主要按鈕、清單 15 箱按三個方向分段',await p.evaluate(()=>/先逛島圈候選/.test(document.querySelector('#d-title').textContent)&&[...document.querySelectorAll('#choices .ui.primary')].some(b=>/逛島/.test(b.textContent))&&document.querySelectorAll('.treasure').length===15&&document.querySelectorAll('.t-section').length===3));
 await p.evaluate(()=>[...document.querySelectorAll('#choices .ui')].find(b=>/逛島/.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('海圖：十座島、方向二那區亮框、島 5 列出 Owner・Palona',await p.evaluate(()=>document.querySelectorAll('#browse-map .island-btn').length===10&&!!document.querySelector('#browse-map .region.mine')&&/Owner・Palona/.test([...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 5 /.test(b.textContent)).textContent)));
+ok('群島總覽：港口＋十島 11 個圖釘、方向二 4 座亮綠、逛島時港口釘可按',await p.evaluate(()=>{const pins=[...document.querySelectorAll('#overview:not([hidden]) .ov-pin')];return pins.length===11&&pins.filter(x=>x.classList.contains('mine')).length===4&&pins.find(x=>x.classList.contains('harbor'))?.disabled===false;}));
+await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>/餐飲零售/.test(x.getAttribute('aria-label'))).click();});await p.waitForTimeout(500);
+ok('點總覽圖的「餐飲零售」釘：進島 5 的公司清單、場景換成島 5 圖、總覽仍在（港口模式）',await p.evaluate(()=>/島 5 餐飲零售 的公司/.test(document.querySelector('.overlay h2,.overlay h3')?.textContent||'')&&/scene_island05/.test(document.querySelector('#scenery').src)&&!document.getElementById('overview').hidden));
+await p.evaluate(()=>{[...document.querySelectorAll('.ov-pin')].find(x=>x.classList.contains('harbor')).click();});await p.waitForTimeout(500);
+ok('點港口釘：回港口',await p.evaluate(()=>document.querySelector('#chapter-small').textContent.includes('HARBOR')));
 await p.evaluate(()=>[...document.querySelectorAll('#browse-map .island-btn')].find(b=>/島 2 /.test(b.textContent)).click());await p.waitForTimeout(300);
 ok('逛別方向的島：可看，☆ 不能按',await p.evaluate(()=>/不是你的方向/.test(document.querySelector('#d-speech').textContent)&&[...document.querySelectorAll('#overlay .ui')].filter(b=>/設為候選/.test(b.textContent)).every(b=>b.disabled)));
 await p.evaluate(()=>[...document.querySelectorAll('#overlay .ui')].find(b=>/回海圖/.test(b.textContent)).click());await p.waitForTimeout(200);

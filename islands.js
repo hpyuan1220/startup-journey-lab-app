@@ -44,7 +44,22 @@ function setPet(img,islandId,evolved){img.src=petSrc(islandId,evolved?2:1);img.c
 const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const el=(tag,text,parent,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;if(parent)parent.append(e);return e;};
 function btn(text,fn,primary=false){const b=el('button',text,null,'ui'+(primary?' primary':''));b.type='button';b.disabled=busy;b.addEventListener('click',fn);return b;}
-function show(view){for(const v of ['hub','find','island','browse'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();}
+function show(view){for(const v of ['hub','find','island','browse'])$('#view-'+v).hidden=v!==view;mode=view;root.classList.toggle('port',view!=='island');refreshTop();renderOverview();}
+// 群島總覽：港口／逛島／找島時蓋在場景上（一島一景時隱藏）。座標＝ map_overview.jpg 上各島的重心（%）。
+const OVERVIEW_POS={1:[15.5,22.7],2:[11.9,48.5],3:[19.6,70.3],4:[40,16.5],5:[50.2,39.4],6:[62.9,26.8],7:[56.2,58.3],8:[81.2,21.2],9:[84.3,46.2],10:[78.5,72.1],harbor:[45.9,81.9]};
+function renderOverview(){
+ const ov=$('#overview');if(!ov)return;const on=mode!=='island';ov.hidden=!on;if(!on)return;
+ const pins=$('#overview-pins');pins.replaceChildren();
+ const mk=(key,label,sub,cls,fn)=>{const [x,y]=OVERVIEW_POS[key];const b=el('button','',pins,'ov-pin'+(cls?' '+cls:''));b.type='button';b.style.left=x+'%';b.style.top=y+'%';el('span','',b,'ov-dot');const l=el('span',label,b,'ov-label');if(sub)el('small',sub,l);b.setAttribute('aria-label',label+(sub?'：'+sub:''));if(fn)b.addEventListener('click',fn);else b.disabled=true;return b;};
+ const c=current?company():null;
+ for(const i of ISLANDS){
+  const cs=COMPANIES.filter(x=>x.island===i.id);const opened=cs.filter(x=>store.boxes[x.id]?.opened).length;const cand=cs.filter(x=>store.candidates.includes(x.id)).length;
+  const cls=[i.dir===myDir?'mine':'',opened&&opened===cs.length?'done':'',mode==='find'&&c&&store.boxes[c.id]?.hints>=2&&(c.island===i.id||ISLANDS.filter(x=>x.dir===c.dir&&x.id!==c.island)[0]?.id===i.id)?'hot':'',mode==='find'&&c&&store.boxes[c.id]?.wrong?.includes(i.id)?'wrong':''].filter(Boolean).join(' ');
+  const sub=mode==='find'?'':(cs.length?`${cs.length} 箱${opened?'・開 '+opened:''}${cand?'・★'+cand:''}`:'準備中');
+  mk(i.id,i.name.replace(/^島 \d+ /,''),sub,cls,mode==='find'?(i.id===10?null:()=>pickIsland(i.id)):(cs.length?()=>browseIsland(i.id):null));
+ }
+ mk('harbor','港口','回港口','harbor',mode==='hub'?null:renderHub);
+}
 function toast(t){clearTimeout(timer);const x=$('#toast');x.textContent=t;x.hidden=false;timer=setTimeout(()=>x.hidden=true,2400);}
 function openedCount(){return Object.values(store.boxes).filter(b=>b.opened).length;}
 function refreshTop(){
