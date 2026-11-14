@@ -2051,3 +2051,4 @@ after-submit 測試加上這三個條件，紅→綠。week2.js v=20261011-showa
   - 測試：單元 228 ✅；week10-student 21 ✅；week8 23 ✅；兩週頁手機寬度目視（三題、導讀可展開）。
 - 2026-11-14 11:00：**Week 10 課前影片上線**（YouTube 不公開 `lDLypO2jOw8`；老師用 Week10 來源生成，上傳時標題誤打 Week 9，內容是三家比一比，故嵌在 Week 10；Week 9 影片仍待生成）。Week 9／10 的課前區改成與 Week 4–6 相同結構 `<section class="preclass" data-preclass="N">`（eyebrow＋h2＋說明＋.preclass-video＋三題），week.js 會搬到藍圖標題下並延後載入 iframe；Week 9 影片仍「準備中」，拿到 ID 後換同一段即可。week.js?v=20261114-v10。
 - 2026-11-14 11:25：Week 10 課前影片改用 `obsDR7FUcng`（老師重新生成的版本；第一支 `lDLypO2jOw8` 不再使用）。
+- 2026-11-14 11:50：核對 YouTube 頻道後定案：**Week 9 ＝ `lDLypO2jOw8`**（11:39，「Week 9 課前預習：AI 新創群島」，縮圖是 Week 9 來源的檢驗題）、**Week 10 ＝ `obsDR7FUcng`**（7:49，「實戰教戰手冊：第十週預習」，偏短）；`s83IgxsxzDc`「期末總結」不用。兩週課前影片都上線。
