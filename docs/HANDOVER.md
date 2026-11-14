@@ -30,7 +30,7 @@ Startup Journey Lab：世新大學企管三甲的 12 週 AI 創業課（43 位�
 
 ```
 # 在 repo 根目錄
-node --test tests/*.test.mjs                       # 單元（221 條）
+node --test tests/*.test.mjs                       # 單元（228 條）
 node scripts/build-week2-function.mjs             # 動到 *-core.mjs 或 supabase/functions/week2-api/index.ts 時
 WEEK2_HANDLER=bundled node --test tests/*.test.mjs # 測實際部署的 bundle
 SJL_WRITE_OPEN_AT=2000-01-01T00:00:00Z PORT=4261 node tests/serve-acceptance.mjs &   # 假後端＋靜態檔
@@ -86,3 +86,31 @@ node tests/week8-student.mjs; node tests/islands-student.mjs; node tests/week10-
 - **兩人組**：一人認兩個方向、推薦兩家，期末 A 講 1–3 頁、B 講 4–6 頁，程式已支援。
 - **建組鎖定**：12/19 00:00 自動鎖；老師頁可提前鎖或解鎖；鎖的是名單，比較表照樣能存。
 - **git commit 後出現 `.git/HEAD.lock`**：老師電腦上 `rm -f .git/HEAD.lock .git/objects/*/tmp_obj_*`。
+
+## 8. 與工程師共同開發（2026-11-14 起，先從 Week 8 開始）
+
+**權限（老師在 GitHub 設定）**
+- Repo → Settings → Collaborators → Add people → 工程師的 GitHub 帳號 → 角色 **Write**（不要 Admin）。
+- Settings → Branches → Add branch ruleset：`main` 需要 Pull Request 才能合併（Require a pull request before merging）。這樣誰都不能直接推 main，老師 merge 才上線。
+- Supabase 先**不**給：Week 8 內容是前端（`week.html` 的 `#week-eight-materials`＋課堂兩題，已經能動）。若之後要改 Edge Function，再到 Supabase → Project Settings → Team 加 **Developer**；Secrets 永遠不給。
+
+**工程師的流程**
+```
+git clone https://github.com/hpyuan1220/startup-journey-lab-app.git
+cd startup-journey-lab-app && npm install            # 只有 playwright（真瀏覽器測試）
+git checkout -b week8-<主題>                          # 一個功能一條分支
+# 改 → 本機測（見第 3 節的指令）→ 改 ?v= 版本號 → docs/PROJECT_STATE.md 加一段 → commit → push 分支 → 開 PR 到 main
+```
+- PR 描述寫：改了哪些檔、測試數字（單元幾條、瀏覽器幾條）、要不要跑 migration／Deploy。
+- 老師（或助理）review → merge → GitHub Pages 自動上線；有 migration／Edge 變更時由老師在 Supabase 按。
+
+**界線（寫在 PR 範本裡，也口頭講一次）**
+1. `docs/private/` 不存在於 repo，也不要向任何人要學生名單；測試只用合成學號 `A1139900xx`（假後端 `tests/serve-acceptance.mjs` 的邀請碼是 `GOOD-CODE`）。
+2. 不改 `*-core.mjs` 的既有規則、不改 `teacher_remarks` 的格式（`MT2|…`、`FG1|…`、`RH1|…`），不動 `supabase/functions/*` 除非 PR 標題寫明。
+3. 前端檔改了就改引用它的 `?v=`；不改 `CLASSQ_WEEKS`、週名、日期。
+4. 本機 `.git` 的 `HEAD.lock`／`index.lock` 問題只發生在老師電腦（Cowork 無刪除權），工程師自己的 clone 不會有。
+
+**Week 8 現況（給工程師的起點）**
+- 頁面：`week.html` → `<section id="week-eight-materials">`；流程文件 `docs/SECOND_HALF_FLOW.md`（11/20 講座課：講師講三個方向、課堂兩題、下課前確認分組）。
+- 已有：課堂兩題（`classq.js`，`CLASSQ_WEEKS` 含 8，可 2–5 題）、建組（`team.js`）、老師頁對應區塊。
+- 測試：`tests/week8-student.mjs`（23 條）是 Week 8 的驗收，改完要全綠。
